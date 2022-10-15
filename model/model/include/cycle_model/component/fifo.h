@@ -60,7 +60,7 @@ namespace component
                     return false;
                 }
 
-                buffer[wptr.get_new()] = element;
+                buffer[wptr.get_new()].set(element);
 
                 if(wptr.get_new() >= size - 1)
                 {
@@ -80,7 +80,7 @@ namespace component
                     return false;
                 }
 
-                *element = buffer[rptr.get_new()];
+                *element = buffer[rptr.get_new()].get();
 
                 if(rptr.get_new() >= size - 1)
                 {

@@ -16,27 +16,24 @@ namespace component
 {
     typedef struct rob_item_t : public if_print_t
     {
-        uint32_t new_phy_reg_id;
-        uint32_t old_phy_reg_id;
-        bool old_phy_reg_id_valid;
-        bool finish;
-        uint32_t pc;
-        uint32_t inst_value;
-        bool has_exception;
-        riscv_exception_t exception_id;
-        uint32_t exception_value;
-        bool predicted;
-        bool predicted_jump;
-        uint32_t predicted_next_pc;
-        bool checkpoint_id_valid;
-        uint32_t checkpoint_id;
-        bool bru_op;
-        bool bru_jump;
-        uint32_t bru_next_pc;
-        bool is_mret;
-        uint32_t csr_addr;
-        uint32_t csr_newvalue;
-        bool csr_newvalue_valid;
+        uint32_t new_phy_reg_id = 0;
+        uint32_t old_phy_reg_id = 0;
+        bool old_phy_reg_id_valid = false;
+        bool finish = false;
+        uint32_t pc = 0;
+        uint32_t inst_value = 0;
+        bool has_exception = false;
+        riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
+        uint32_t exception_value = 0;
+        bool bru_op = false;
+        bool bru_jump = false;
+        uint32_t bru_next_pc = 0;
+        bool is_mret = false;
+        uint32_t csr_addr = 0;
+        uint32_t csr_newvalue = 0;
+        bool csr_newvalue_valid = false;
+        uint32_t phy_id_free_list_rptr = 0;
+        bool phy_id_free_list_rstage = false;
         
         virtual void print(std::string indent)
         {
@@ -65,11 +62,6 @@ namespace component
             ret["has_exception"] = has_exception;
             ret["exception_id"] = outenum(exception_id);
             ret["exception_value"] = exception_value;
-            ret["predicted"] = predicted;
-            ret["predicted_jump"] = predicted_jump;
-            ret["predicted_next_pc"] = predicted_next_pc;
-            ret["checkpoint_id_valid"] = checkpoint_id_valid;
-            ret["checkpoint_id"] = checkpoint_id;
             ret["bru_op"] = bru_op;
             ret["bru_jump"] = bru_jump;
             ret["bru_next_pc"] = bru_next_pc;
@@ -150,9 +142,8 @@ namespace component
                 commit_num = 0;
             }
             
-            bool push(rob_item_t element, uint32_t *item_id)
+            virtual bool push(rob_item_t element)
             {
-                *item_id = this->wptr.get_new();
                 return fifo<rob_item_t>::push(element);
             }
             
@@ -226,6 +217,11 @@ namespace component
                 assert(customer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 return customer_check_id_valid(*next_id);
+            }
+            
+            virtual bool pop(rob_item_t *element)
+            {
+                return fifo<rob_item_t>::pop(element);
             }
             
             bool pop()

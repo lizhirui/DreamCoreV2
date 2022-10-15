@@ -87,5 +87,34 @@ namespace component
                 
                 return ret;
             }
+            
+            void save(uint32_t *rptr, bool *rstage)
+            {
+                *rptr = this->rptr.get_new();
+                *rstage = this->rstage.get_new();
+            }
+            
+            void restore(uint32_t rptr, bool rstage)
+            {
+                assert(rptr < this->size);
+                this->rptr.set(rptr);
+                this->rstage.set(rstage);
+                
+                uint32_t cur_rptr = rptr;
+                bool cur_rstage = rstage;
+    
+                while((cur_rptr != this->rptr.get()) || (cur_rstage != this->rstage.get()))
+                {
+                    assert(this->free_list_set.find(cur_rptr) == this->free_list_set.end());
+                    this->free_list_set.insert(cur_rptr);
+                    cur_rptr++;
+                    
+                    if(cur_rptr >= this->size)
+                    {
+                        cur_rptr = 0;
+                        cur_rstage = !cur_rstage;
+                    }
+                };
+            }
     };
 }

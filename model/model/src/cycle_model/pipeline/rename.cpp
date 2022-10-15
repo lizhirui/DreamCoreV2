@@ -17,118 +17,52 @@
 
 namespace pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_issue_pack_t> *rename_issue_port, component::rat *speculative_rat, component::rob *rob) : tdb(TRACE_RENAME)
+    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_issue_pack_t> *rename_issue_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
     {
         this->decode_rename_fifo = decode_rename_fifo;
         this->rename_issue_port = rename_issue_port;
         this->speculative_rat = speculative_rat;
         this->rob = rob;
+        this->phy_id_free_list = phy_id_free_list;
     }
     
     void rename::reset()
     {
-    
+        phy_id_free_list->reset();
     }
     
-    rename_feedback_pack_t rename::run(issue_feedback_pack_t issue_pack, commit_feedback_pack_t commit_feedback_pack)
+    rename_feedback_pack_t rename::run(issue_feedback_pack_t issue_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
-        bool stall = issue_pack.stall;
-        
         rename_feedback_pack_t feedback_pack;
-        
+        rename_issue_pack_t send_pack;
         feedback_pack.idle = decode_rename_fifo->customer_is_empty();
         
         if(!commit_feedback_pack.flush)
         {
-            if(!stall)
+            if(!issue_feedback_pack.stall)
             {
-                rename_issue_pack_t send_pack;
-                
-                uint32_t phy_reg_req_cnt = 0;
-                uint32_t rob_req_cnt = 0;
-                uint32_t new_phy_reg_id[RENAME_WIDTH];
-                component::rob_item_t rob_item[RENAME_WIDTH];
-                memset(rob_item, 0 ,sizeof(rob_item));
-                uint32_t used_phy_reg_cnt = 0;
-                component::checkpoint_t global_cp;
-                rat->save(global_cp);
-                
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "decode_rename_fifo_pop", 1, 0);
-                
                 //generate base send_pack
                 for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                 {
-                    if(!decode_rename_fifo->is_empty())
+                    component::rob_item_t rob_item;
+                    
+                    if(!decode_rename_fifo->customer_is_empty())
                     {
-                        decode_rename_fifo->get_front(&rev_pack);
-                        
-                        //count new physical registers requirement and rob requirement
-                        if(rev_pack.enable && rev_pack.valid && rev_pack.need_rename)
-                        {
-                            phy_reg_req_cnt++;
-                        }
-                        
-                        if(rev_pack.enable)
-                        {
-                            rob_req_cnt++;
-                        }
-                        
-                        {
-                            auto cnt = rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id);
-                            
-                            for(uint32_t j = 0;j < cnt;j++)
-                            {
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id", new_phy_reg_id[j], j);
-                                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rat_rename_new_phy_id_valid", 1, j, 0);
-                            }
-                        }
-                        
                         //start to rename
-                        if((rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) >= phy_reg_req_cnt) && rob->get_free_space() >= 1)
+                        if(!phy_id_free_list->customer_is_empty() && !rob->customer_is_full())
                         {
-                            decode_rename_fifo->pop(&rev_pack);
-                            
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.enable", rev_pack.enable, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.value", rev_pack.value, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.valid", rev_pack.valid, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.pc", rev_pack.pc, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.imm", rev_pack.imm, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.has_exception", rev_pack.has_exception, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.exception_id", (uint32_t)rev_pack.exception_id, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.exception_value", rev_pack.exception_value, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.predicted", rev_pack.predicted, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.predicted_jump", rev_pack.predicted_jump, i);
-                            this->tdb.update_signal<uint32_t>(trace::domain_t::input, "decode_rename_fifo_data_out.predicted_next_pc", rev_pack.predicted_next_pc, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.checkpoint_id_valid", rev_pack.checkpoint_id_valid, i);
-                            this->tdb.update_signal<uint16_t>(trace::domain_t::input, "decode_rename_fifo_data_out.checkpoint_id", rev_pack.checkpoint_id, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rs1", rev_pack.rs1, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.arg1_src", (uint8_t)rev_pack.arg1_src, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rs1_need_map", rev_pack.rs1_need_map, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rs2", rev_pack.rs2, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.arg2_src", (uint8_t)rev_pack.arg2_src, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rs2_need_map", rev_pack.rs2_need_map, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rd", rev_pack.rd, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.rd_enable", rev_pack.rd_enable, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.need_rename", rev_pack.need_rename, i);
-                            this->tdb.update_signal<uint16_t>(trace::domain_t::input, "decode_rename_fifo_data_out.csr", rev_pack.csr, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.op", (uint8_t)rev_pack.op, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.op_unit", (uint8_t)rev_pack.op_unit, i);
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::input, "decode_rename_fifo_data_out.sub_op", *(uint8_t *)&rev_pack.sub_op, i);
-                            this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "decode_rename_fifo_data_pop_valid", 1, i, 0);
+                            decode_rename_pack_t rev_pack;
+                            assert(decode_rename_fifo->pop(&rev_pack));
                             
                             send_pack.op_info[i].enable = rev_pack.enable;
                             send_pack.op_info[i].value = rev_pack.value;
                             send_pack.op_info[i].valid = rev_pack.valid;
+                            send_pack.op_info[i].last_uop = rev_pack.last_uop;
                             send_pack.op_info[i].pc = rev_pack.pc;
                             send_pack.op_info[i].imm = rev_pack.imm;
                             send_pack.op_info[i].has_exception = rev_pack.has_exception;
                             send_pack.op_info[i].exception_id = rev_pack.exception_id;
                             send_pack.op_info[i].exception_value = rev_pack.exception_value;
-                            send_pack.op_info[i].predicted = rev_pack.predicted;
-                            send_pack.op_info[i].predicted_jump = rev_pack.predicted_jump;
-                            send_pack.op_info[i].predicted_next_pc = rev_pack.predicted_next_pc;
-                            send_pack.op_info[i].checkpoint_id_valid = rev_pack.checkpoint_id_valid;
-                            send_pack.op_info[i].checkpoint_id = rev_pack.checkpoint_id;
                             send_pack.op_info[i].rs1 = rev_pack.rs1;
                             send_pack.op_info[i].arg1_src = rev_pack.arg1_src;
                             send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;
@@ -143,6 +77,7 @@ namespace pipeline
                             send_pack.op_info[i].op_unit = rev_pack.op_unit;
                             
                             memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                            
                             //generate rob items
                             if(rev_pack.enable)
                             {
@@ -150,274 +85,83 @@ namespace pipeline
                                 {
                                     if(rev_pack.need_rename)
                                     {
-                                        rob_item[i].old_phy_reg_id_valid = true;
-                                        assert(rat->get_phy_id(rev_pack.rd, &rob_item[i].old_phy_reg_id));
-                                        
-                                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rd, i * 3 + 2);
-                                        this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", rob_item[i].old_phy_reg_id, i * 3 + 2);
-                                        
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rd, i * 3 + 2);
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", rob_item[i].old_phy_reg_id, i * 3 + 2);
-                                        
-                                        send_pack.op_info[i].rd_phy = new_phy_reg_id[used_phy_reg_cnt++];
-                                        rat->set_map_sync(rev_pack.rd, send_pack.op_info[i].rd_phy);
-                                        
-                                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_phy_id", send_pack.op_info[i].rd_phy, i);
-                                        this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_rat_phy_id_valid", 1, i, 0);
-                                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_arch_id", rev_pack.rd, i);
-                                        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_map", 1, 0);
-                                        
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id", send_pack.op_info[i].rd_phy, i);
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_phy_id_valid", 1, i);
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_arch_id", rev_pack.rd, i);
-                                        rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_map", 1, 0);
-                                        
-                                        rat->cp_set_map(global_cp, rev_pack.rd, send_pack.op_info[i].rd_phy);
-                                        
-                                        if(i > 0)
-                                        {
-                                            //old_phy_reg_id feedback
-                                            for(auto j = i - 1;;j--)
-                                            {
-                                                if(send_pack.op_info[j].enable && send_pack.op_info[j].valid && send_pack.op_info[j].need_rename)
-                                                {
-                                                    if(rev_pack.rd == send_pack.op_info[j].rd)
-                                                    {
-                                                        rob_item[i].old_phy_reg_id = send_pack.op_info[j].rd_phy;
-                                                        break;
-                                                    }
-                                                }
-                                                
-                                                if(j == 0)
-                                                {
-                                                    break;
-                                                }
-                                            }
-                                        }
+                                        rob_item.old_phy_reg_id_valid = true;
+                                        assert(speculative_rat->producer_get_phy_id(rev_pack.rd, &rob_item.old_phy_reg_id));
+                                        assert(phy_id_free_list->pop(&send_pack.op_info[i].rd_phy));
+                                        speculative_rat->set_map(rev_pack.rd, send_pack.op_info[i].rd_phy);
                                     }
                                     else
                                     {
-                                        rob_item[i].old_phy_reg_id_valid = false;
-                                        rob_item[i].old_phy_reg_id = 0;
+                                        rob_item.old_phy_reg_id_valid = false;
+                                        rob_item.old_phy_reg_id = 0;
                                     }
                                 }
                                 
-                                rob_item[i].finish = false;
+                                rob_item.finish = false;
                                 //fill rob item
-                                rob_item[i].new_phy_reg_id = send_pack.op_info[i].rd_phy;
-                                rob_item[i].pc = rev_pack.pc;
-                                rob_item[i].inst_value = rev_pack.value;
-                                rob_item[i].has_exception = rev_pack.has_exception;
-                                rob_item[i].exception_id = rev_pack.exception_id;
-                                rob_item[i].exception_value = rev_pack.exception_value;
-                                rob_item[i].is_mret = rev_pack.op == op_t::mret;
-                                rob_item[i].csr_addr = rev_pack.csr;
+                                rob_item.new_phy_reg_id = send_pack.op_info[i].rd_phy;
+                                rob_item.pc = rev_pack.pc;
+                                rob_item.inst_value = rev_pack.value;
+                                rob_item.has_exception = rev_pack.has_exception;
+                                rob_item.exception_id = rev_pack.exception_id;
+                                rob_item.exception_value = rev_pack.exception_value;
+                                rob_item.bru_op = rev_pack.op_unit == op_unit_t::bru;
+                                rob_item.bru_jump = false;
+                                rob_item.bru_next_pc = 0;
+                                rob_item.is_mret = rev_pack.op == op_t::mret;
+                                rob_item.csr_addr = rev_pack.csr;
+                                rob_item.csr_newvalue = 0;
+                                rob_item.csr_newvalue_valid = false;
+                                phy_id_free_list->save(&rob_item.phy_id_free_list_rptr, &rob_item.phy_id_free_list_rstage);
                                 //write to rob
                                 assert(rob->get_new_id(&send_pack.op_info[i].rob_id));
-                                uint32_t t;
-                                assert(rob->push(rob_item[i], &t));
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rob_rename_new_id", send_pack.op_info[i].rob_id, i);
-                                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::input, "rob_rename_new_id_valid", 1, i, 0);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.new_phy_reg_id", rob_item[i].new_phy_reg_id, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.old_phy_reg_id", rob_item[i].old_phy_reg_id, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.old_phy_reg_id_valid", rob_item[i].old_phy_reg_id_valid, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.finish", rob_item[i].finish, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.pc", rob_item[i].pc, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.inst_value", rob_item[i].inst_value, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.has_exception", rob_item[i].has_exception, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.exception_id", (uint32_t)rob_item[i].exception_id, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.exception_value", rob_item[i].exception_value, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted", rob_item[i].predicted, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.predicted_jump", rob_item[i].predicted_jump, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.predicted_next_pc", rob_item[i].predicted_next_pc, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id_valid", rob_item[i].checkpoint_id_valid, i);
-                                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_rob_data.checkpoint_id", rob_item[i].checkpoint_id, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_op", rob_item[i].bru_op, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.bru_jump", rob_item[i].bru_jump, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.bru_next_pc", rob_item[i].bru_next_pc, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.is_mret", rob_item[i].is_mret, i);
-                                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_rob_data.csr_addr", rob_item[i].csr_addr, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_rob_data.csr_newvalue", rob_item[i].csr_newvalue, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_data.csr_newvalue_valid", rob_item[i].csr_newvalue_valid, i);
-                                this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_rob_data_valid", 1, i, 0);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rob_push", 1, 0);
-                                
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.new_phy_reg_id", rob_item[i].new_phy_reg_id, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id", rob_item[i].old_phy_reg_id, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.old_phy_reg_id_valid", rob_item[i].old_phy_reg_id_valid, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.finish", rob_item[i].finish, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.pc", rob_item[i].pc, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.inst_value", rob_item[i].inst_value, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.has_exception", rob_item[i].has_exception, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_id", (uint32_t)rob_item[i].exception_id, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.exception_value", rob_item[i].exception_value, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted", rob_item[i].predicted, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.predicted_jump", rob_item[i].predicted_jump, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.predicted_next_pc", rob_item[i].predicted_next_pc, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id_valid", rob_item[i].checkpoint_id_valid, i);
-                                rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.checkpoint_id", rob_item[i].checkpoint_id, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_op", rob_item[i].bru_op, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.bru_jump", rob_item[i].bru_jump, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.bru_next_pc", rob_item[i].bru_next_pc, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.is_mret", rob_item[i].is_mret, i);
-                                rob->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_rob_data.csr_addr", rob_item[i].csr_addr, i);
-                                rob->get_tdb()->update_signal<uint32_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue", rob_item[i].csr_newvalue, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data.csr_newvalue_valid", rob_item[i].csr_newvalue_valid, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_data_valid", 1, i);
-                                rob->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rob_push", 1, 0);
+                                assert(rob->push(rob_item));
                                 
                                 //start to map source registers
                                 if(rev_pack.rs1_need_map)
                                 {
-                                    assert(rat->get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs1, i * 3);
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 3);
-                                    
-                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rs1, i * 3);
-                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", send_pack.op_info[i].rs1_phy, i * 3);
+                                    assert(speculative_rat->producer_get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
                                 }
                                 
                                 if(rev_pack.rs2_need_map)
                                 {
-                                    assert(rat->get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_rat_read_arch_id", rev_pack.rs2, i * 3 + 1);
-                                    this->tdb.update_signal<uint8_t>(trace::domain_t::input, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 3 + 1);
-                                    
-                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_rat_read_arch_id", rev_pack.rs2, i * 3 + 1);
-                                    rat->get_tdb()->update_signal<uint8_t>(trace::domain_t::output, "rat_rename_read_phy_id", send_pack.op_info[i].rs2_phy, i * 3 + 1);
+                                    assert(speculative_rat->producer_get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
                                 }
-                                
-                                //source registers feedback
-                                if(rev_pack.valid)
-                                {
-                                    for(uint32_t j = 0;j < i;j++)
-                                    {
-                                        if(send_pack.op_info[j].enable && send_pack.op_info[j].valid && send_pack.op_info[j].rd_enable)
-                                        {
-                                            if(send_pack.op_info[i].rs1_need_map && (send_pack.op_info[i].rs1 == send_pack.op_info[j].rd))
-                                            {
-                                                send_pack.op_info[i].rs1_phy = send_pack.op_info[j].rd_phy;
-                                            }
-                                            
-                                            if(send_pack.op_info[i].rs2_need_map && (send_pack.op_info[i].rs2 == send_pack.op_info[j].rd))
-                                            {
-                                                send_pack.op_info[i].rs2_phy = send_pack.op_info[j].rd_phy;
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                if(rev_pack.valid && rev_pack.predicted && rev_pack.checkpoint_id_valid)
-                                {
-                                    component::checkpoint_t cp;
-                                    global_cp.clone(cp);
-                                    component::checkpoint_t origin_cp = checkpoint_buffer->get_item(rev_pack.checkpoint_id);
-                                    cp.global_history = origin_cp.global_history;
-                                    cp.local_history = origin_cp.local_history;
-                                    checkpoint_buffer->set_item_sync(rev_pack.checkpoint_id, cp);
-                                    
-                                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_id", rev_pack.checkpoint_id, i);
-                                    this->tdb.update_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
-                                    this->tdb.update_signal_bitmap(trace::domain_t::output, "rename_cpbuf_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
-                                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_data.global_history", cp.global_history, i);
-                                    this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_cpbuf_data.local_history", cp.local_history, i);
-                                    this->tdb.update_signal_bit<uint8_t>(trace::domain_t::output, "rename_cpbuf_we", 1, i, 0);
-                                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.global_history", origin_cp.global_history, i);
-                                    this->tdb.update_signal<uint16_t>(trace::domain_t::input, "cpbuf_rename_data.local_history", origin_cp.local_history, i);
-                                    
-                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_id", rev_pack.checkpoint_id, i);
-                                    checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_valid", &cp.rat_phy_map_table_valid, i);
-                                    checkpoint_buffer->get_tdb()->update_signal_bitmap(trace::domain_t::input, "rename_cpbuf_data.rat_phy_map_table_visible", &cp.rat_phy_map_table_visible, i);
-                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.global_history", cp.global_history, i);
-                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::input, "rename_cpbuf_data.local_history", cp.local_history, i);
-                                    checkpoint_buffer->get_tdb()->update_signal<uint8_t>(trace::domain_t::input, "rename_cpbuf_we", 1, i);
-                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.global_history", origin_cp.global_history, i);
-                                    checkpoint_buffer->get_tdb()->update_signal<uint16_t>(trace::domain_t::output, "cpbuf_rename_data.local_history", origin_cp.local_history, i);
-                                }
-                                
-                                /*if(rev_pack.valid && (rev_pack.op_unit == op_unit_t::bru))
-                                {
-                                    break;
-                                }*/
-                                
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.enable", send_pack.op_info[i].enable, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.value", send_pack.op_info[i].value, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.valid", send_pack.op_info[i].valid, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rob_id", send_pack.op_info[i].rob_id, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.pc", send_pack.op_info[i].pc, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.imm", send_pack.op_info[i].imm, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.has_exception", send_pack.op_info[i].has_exception, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.exception_id", (uint32_t)send_pack.op_info[i].exception_id, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.exception_value", send_pack.op_info[i].exception_value, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.predicted", send_pack.op_info[i].predicted, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.predicted_jump", send_pack.op_info[i].predicted_jump, i);
-                                this->tdb.update_signal<uint32_t>(trace::domain_t::output, "rename_readreg_port_data_in.predicted_next_pc", send_pack.op_info[i].predicted_next_pc, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.checkpoint_id_valid", send_pack.op_info[i].checkpoint_id_valid, i);
-                                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_readreg_port_data_in.checkpoint_id", send_pack.op_info[i].checkpoint_id, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs1", send_pack.op_info[i].rs1, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.arg1_src", (uint8_t)send_pack.op_info[i].arg1_src, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs1_need_map", send_pack.op_info[i].rs1_need_map, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs1_phy", send_pack.op_info[i].rs1_phy, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs2", send_pack.op_info[i].rs2, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.arg2_src", (uint8_t)send_pack.op_info[i].arg2_src, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs2_need_map", send_pack.op_info[i].rs2_need_map, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rs2_phy", send_pack.op_info[i].rs2_phy, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rd", send_pack.op_info[i].rd, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rd_enable", send_pack.op_info[i].rd_enable, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.need_rename", send_pack.op_info[i].need_rename, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.rd_phy", send_pack.op_info[i].rd_phy, i);
-                                this->tdb.update_signal<uint16_t>(trace::domain_t::output, "rename_readreg_port_data_in.csr", send_pack.op_info[i].csr, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.op", (uint8_t)send_pack.op_info[i].op, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.op_unit", (uint8_t)send_pack.op_info[i].op_unit, i);
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_data_in.sub_op", *(uint8_t *)&send_pack.op_info[i].sub_op, i);
                             }
                         }
-                        else if(rat->get_free_phy_id(phy_reg_req_cnt, new_phy_reg_id) < phy_reg_req_cnt)
+                        else if(phy_id_free_list->customer_is_empty())
                         {
-                            phy_regfile_full_add();
+                            //phy_regfile_full_add();
                             this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_csrf_phy_regfile_full_add", 1, 0);
                             
-                            if(rob->get_free_space() < (rob_req_cnt))
+                            if(rob->customer_is_full())
                             {
-                                rob_full_add();
-                                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_csrf_rob_full_add", 1, 0);
+                                //rob_full_add();
                             }
                             
-                            assert(true);//phy_regfile is full
                             break;
                         }
                         else
                         {
-                            rob_full_add();
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_csrf_rob_full_add", 1, 0);
-                            assert(true);//is busy
+                            //rob_full_add();
                             break;
                         }
                     }
                     else
                     {
+                        //idle
                         break;
                     }
                 }
                 
-                rename_readreg_port->set(send_pack);
-                this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_we", 1, 0);
+                rename_issue_port->set(send_pack);
             }
         }
         else
         {
-            rename_readreg_pack_t send_pack;
-            memset(&send_pack, 0, sizeof(send_pack));
-            rename_readreg_port->set(send_pack);
-            busy = false;
-            memset(&rev_pack, 0, sizeof(rev_pack));
-            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_readreg_port_flush", 1, 0);
+            rename_issue_port->set(send_pack);
         }
         
-        this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_feedback_pack.idle", feedback_pack.idle, 0);
-        
-        this->tdb.capture_output_status();
-        this->tdb.write_row();
         return feedback_pack;
     }
 }
