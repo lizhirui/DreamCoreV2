@@ -39,11 +39,11 @@ namespace pipeline
             component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff;
             component::handshake_dff<readreg_execute_pack_t> **readreg_mul_hdff;
             component::regfile<uint32_t> *phy_regfile;
-            component::rat *rat;
+            component::rat *speculative_rat;
             trace::trace_database tdb;
         
         public:
-            readreg(component::port<issue_readreg_pack_t> *issue_readreg_port, component::fifo<readreg_execute_pack_t> **issue_alu_fifo, component::fifo<readreg_execute_pack_t> **issue_bru_fifo, component::fifo<readreg_execute_pack_t> **issue_csr_fifo, component::fifo<readreg_execute_pack_t> **issue_div_fifo, component::fifo<readreg_execute_pack_t> **issue_lsu_fifo, component::fifo<readreg_execute_pack_t> **issue_mul_fifo, component::regfile<uint32_t> *phy_regfile, component::rat *speculative_rat);
+            readreg(component::port<issue_readreg_pack_t> *issue_readreg_port, component::handshake_dff<readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile, component::rat *speculative_rat);
             virtual void reset();
             readreg_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
     };

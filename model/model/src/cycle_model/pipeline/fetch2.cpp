@@ -22,13 +22,13 @@ namespace pipeline
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->fetch2_decode_fifo = fetch2_decode_fifo;
         this->busy = false;
-        rev_pack = fetch1_fetch2_pack_t();
+        this->rev_pack = fetch1_fetch2_pack_t();
     }
     
     void fetch2::reset()
     {
-        busy = false;
-        rev_pack = fetch1_fetch2_pack_t();
+        this->busy = false;
+        this->rev_pack = fetch1_fetch2_pack_t();
     }
     
     fetch2_feedback_pack_t fetch2::run(commit_feedback_pack_t commit_feedback_pack)
@@ -41,24 +41,24 @@ namespace pipeline
         if(!commit_feedback_pack.flush)
         {
             //if no hold rev_pack exists, get a new instruction pack
-            if(!busy)
+            if(!this->busy)
             {
-                rev_pack = fetch1_fetch2_port->get();
+                this->rev_pack = fetch1_fetch2_port->get();
             }
             
-            busy = false;//set not busy state temporarily
+            this->busy = false;//set not busy state temporarily
             uint32_t fail_index = 0;//busy item index
             
             for(auto i = 0;i < FETCH_WIDTH;i++)
             {
-                send_pack.enable = rev_pack.op_info[i].enable;
-                send_pack.pc = rev_pack.op_info[i].pc;
-                send_pack.value = rev_pack.op_info[i].value;
-                send_pack.has_exception = rev_pack.op_info[i].has_exception;
-                send_pack.exception_id = rev_pack.op_info[i].exception_id;
-                send_pack.exception_value = rev_pack.op_info[i].exception_value;
+                send_pack.enable = this->rev_pack.op_info[i].enable;
+                send_pack.pc = this->rev_pack.op_info[i].pc;
+                send_pack.value = this->rev_pack.op_info[i].value;
+                send_pack.has_exception = this->rev_pack.op_info[i].has_exception;
+                send_pack.exception_id = this->rev_pack.op_info[i].exception_id;
+                send_pack.exception_value = this->rev_pack.op_info[i].exception_value;
                 
-                if(rev_pack.op_info[i].enable)
+                if(this->rev_pack.op_info[i].enable)
                 {
                     //cancel idle state
                     feedback_pack.idle = false;
@@ -66,7 +66,7 @@ namespace pipeline
                     if(!fetch2_decode_fifo->push(send_pack))
                     {
                         //fifo is full, some data must be saved
-                        busy = true;
+                        this->busy = true;
                         fail_index = i;
                         break;
                     }
@@ -76,12 +76,17 @@ namespace pipeline
             //let remain instructions keep right alignment
             for(auto i = fail_index;i < FETCH_WIDTH;i++)
             {
-                rev_pack.op_info[i - fail_index] = rev_pack.op_info[i];
-                rev_pack.op_info[i].enable = false;
+                this->rev_pack.op_info[i - fail_index] = this->rev_pack.op_info[i];
+                this->rev_pack.op_info[i].enable = false;
             }
         }
+        else
+        {
+            this->busy = false;
+            fetch2_decode_fifo->flush();
+        }
     
-        feedback_pack.stall = busy;//if busy state is asserted, stall signal must be asserted too
+        feedback_pack.stall = this->busy;//if busy state is asserted, stall signal must be asserted too
         return feedback_pack;
     }
 }
