@@ -81,6 +81,8 @@ namespace pipeline
                             //generate rob items
                             if(rev_pack.enable)
                             {
+                                phy_id_free_list->save(&rob_item.old_phy_id_free_list_rptr, &rob_item.old_phy_id_free_list_rstage);
+                                
                                 if(rev_pack.valid)
                                 {
                                     if(rev_pack.need_rename)
@@ -98,10 +100,10 @@ namespace pipeline
                                 }
                                 
                                 rob_item.finish = false;
-                                //fill rob item
                                 rob_item.new_phy_reg_id = send_pack.op_info[i].rd_phy;
                                 rob_item.pc = rev_pack.pc;
                                 rob_item.inst_value = rev_pack.value;
+                                rob_item.rd = rev_pack.rd;
                                 rob_item.has_exception = rev_pack.has_exception;
                                 rob_item.exception_id = rev_pack.exception_id;
                                 rob_item.exception_value = rev_pack.exception_value;
@@ -112,7 +114,7 @@ namespace pipeline
                                 rob_item.csr_addr = rev_pack.csr;
                                 rob_item.csr_newvalue = 0;
                                 rob_item.csr_newvalue_valid = false;
-                                phy_id_free_list->save(&rob_item.phy_id_free_list_rptr, &rob_item.phy_id_free_list_rstage);
+                                phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 //write to rob
                                 assert(rob->get_new_id(&send_pack.op_info[i].rob_id));
                                 assert(rob->push(rob_item));

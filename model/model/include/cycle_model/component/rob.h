@@ -22,6 +22,7 @@ namespace component
         bool finish = false;
         uint32_t pc = 0;
         uint32_t inst_value = 0;
+        uint32_t rd = 0;
         bool has_exception = false;
         riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
         uint32_t exception_value = 0;
@@ -32,8 +33,10 @@ namespace component
         uint32_t csr_addr = 0;
         uint32_t csr_newvalue = 0;
         bool csr_newvalue_valid = false;
-        uint32_t phy_id_free_list_rptr = 0;
-        bool phy_id_free_list_rstage = false;
+        uint32_t old_phy_id_free_list_rptr = 0;
+        bool old_phy_id_free_list_rstage = false;
+        uint32_t new_phy_id_free_list_rptr = 0;
+        bool new_phy_id_free_list_rstage = false;
         
         virtual void print(std::string indent)
         {
@@ -59,6 +62,7 @@ namespace component
             ret["finish"] = finish;
             ret["pc"] = pc;
             ret["inst_value"] = inst_value;
+            ret["rd"] = rd;
             ret["has_exception"] = has_exception;
             ret["exception_id"] = outenum(exception_id);
             ret["exception_value"] = exception_value;
@@ -69,6 +73,10 @@ namespace component
             ret["csr_addr"] = csr_addr;
             ret["csr_newvalue"] = csr_newvalue;
             ret["csr_newvalue_valid"] = csr_newvalue_valid;
+            ret["old_phy_id_free_list_rptr"] = old_phy_id_free_list_rptr;
+            ret["old_phy_id_free_list_rstage"] = old_phy_id_free_list_rstage;
+            ret["new_phy_id_free_list_rptr"] = new_phy_id_free_list_rptr;
+            ret["new_phy_id_free_list_rstage"] = new_phy_id_free_list_rstage;
             return ret;
         }
     }rob_item_t;

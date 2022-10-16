@@ -16,6 +16,7 @@
 #include "../component/rob.h"
 #include "../component/csrfile.h"
 #include "../component/regfile.h"
+#include "../component/free_list.h"
 #include "../component/interrupt_interface.h"
 #include "wb_commit.h"
 
@@ -56,35 +57,22 @@ namespace pipeline
         }
     }commit_feedback_pack_t;
     
-    enum class state_t
-    {
-        normal,
-        flush,
-        interrupt_flush
-    };
-    
     class commit : public if_reset_t
     {
         private:
             component::port<wb_commit_pack_t> *wb_commit_port;
-            component::rat *rat;
+            component::rat *speculative_rat;
+            component::rat *retire_rat;
             component::rob *rob;
             component::csrfile *csr_file;
             component::regfile<uint32_t> *phy_regfile;
+            component::free_list *phy_id_free_list;
             component::interrupt_interface *interrupt_interface;
             
-            state_t cur_state;
-            
-            component::rob_item_t rob_item;
-            uint32_t rob_item_id;
-            uint32_t restore_rob_item_id;
-            
-            uint32_t interrupt_pc;
-            riscv_interrupt_t interrupt_id;
             trace::trace_database tdb;
         
         public:
-            commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::interrupt_interface *interrupt_interface);
+            commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface);
             virtual void reset();
             commit_feedback_pack_t run();
     };

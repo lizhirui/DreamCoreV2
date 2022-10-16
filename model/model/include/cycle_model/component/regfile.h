@@ -11,9 +11,12 @@
 #pragma once
 #include "common.h"
 #include "dff.h"
+#include "rat.h"
 
 namespace component
 {
+    class rat;
+    
     template<typename T>
     class regfile : public if_reset_t
     {
@@ -85,6 +88,14 @@ namespace component
             {
                 assert(addr < size);
                 return reg_data_valid[addr];
+            }
+            
+            void restore(rat *element)
+            {
+                for(auto i = 0;i < size;i++)
+                {
+                    reg_data_valid[i].set(element->producer_get_valid(i));
+                }
             }
     };
 }

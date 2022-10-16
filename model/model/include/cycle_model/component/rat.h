@@ -11,9 +11,12 @@
 #pragma once
 #include "common.h"
 #include "dff.h"
+#include "regfile.h"
 
 namespace component
 {
+    class regfile;
+    
     class rat : public if_print_t, public if_reset_t
     {
         private:
@@ -63,6 +66,8 @@ namespace component
             }
             
         public:
+            friend class regfile;
+            
             rat(uint32_t phy_reg_num, uint32_t arch_reg_num) : tdb(TRACE_RAT)
             {
                 this->phy_reg_num = phy_reg_num;
@@ -117,6 +122,16 @@ namespace component
                 return &tdb;
             }
             
+            void load(rat *element)
+            {
+                for(auto i = 0;i < phy_reg_num;i++)
+                {
+                    phy_map_table[i].set(element->phy_map_table[i].get_new());
+                    phy_map_table_valid[i].set(element->phy_map_table_valid[i].get_new());
+                    phy_map_table_visible[i].set(element->phy_map_table_visible[i].get_new());
+                }
+            }
+            
             bool producer_get_phy_id(uint32_t arch_id, uint32_t *phy_id)
             {
                 int cnt = 0;
@@ -164,7 +179,7 @@ namespace component
                 if(!init_rat)
                 {
                     assert(ret);
-                    assert(!producer_get_valid(phy_id));
+                    assert(producer_get_valid(old_phy_id));
                 }
                 
                 phy_map_table[phy_id].set(arch_id);
@@ -177,6 +192,21 @@ namespace component
                 }
                 
                 return old_phy_id;
+            }
+            
+            void commit_map(uint32_t arch_id, uint32_t phy_id)
+            {
+                uint32_t old_phy_id;
+                assert(phy_id < phy_reg_num);
+                assert((arch_id > 0) && (arch_id < arch_reg_num));
+                assert(!producer_get_valid(phy_id));
+                bool ret = producer_get_phy_id(arch_id, &old_phy_id);
+                assert(ret);
+                assert(producer_get_valid(old_phy_id));
+                
+                phy_map_table[phy_id].set(arch_id);
+                set_valid(phy_id, true);
+                set_visible(phy_id, true);
             }
             
             void release_map(uint32_t phy_id)
