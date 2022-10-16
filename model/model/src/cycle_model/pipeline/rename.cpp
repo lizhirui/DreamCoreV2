@@ -132,7 +132,6 @@ namespace pipeline
                         else if(phy_id_free_list->customer_is_empty())
                         {
                             //phy_regfile_full_add();
-                            this->tdb.update_signal<uint8_t>(trace::domain_t::output, "rename_csrf_phy_regfile_full_add", 1, 0);
                             
                             if(rob->customer_is_full())
                             {

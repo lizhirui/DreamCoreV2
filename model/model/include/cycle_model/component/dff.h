@@ -40,12 +40,21 @@ namespace component
                     dff->sync();
                 }
             }
+            
+            static void reset_all()
+            {
+                for(auto dff : dff_list)
+                {
+                    dff->reset();
+                }
+            }
     };
 
     template<typename T>
     class dff : dff_base
     {
         private:
+            T init_value;
             T cur_value;
             T new_value;
 
@@ -54,15 +63,24 @@ namespace component
             {
                 this->cur_value = this->new_value;
             }
+        
+            virtual void reset()
+            {
+                this->cur_value = this->init_value;
+                this->new_value = this->init_value;
+            }
 
         public:
             dff()
             {
-
+                this->init_value = T();
+                this->cur_value = T();
+                this->new_value = T();
             }
 
             dff(T init_value)
             {
+                this->init_value = init_value;
                 this->cur_value = init_value;
                 this->new_value = init_value;
             }

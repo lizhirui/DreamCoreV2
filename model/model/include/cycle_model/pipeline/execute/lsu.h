@@ -10,7 +10,7 @@
 
 #pragma once
 #include "common.h"
-#include "../../component/fifo.h"
+#include "../../component/handshake_dff.h"
 #include "../../component/port.h"
 #include "../../component/bus.h"
 #include "../../component/store_buffer.h"
@@ -26,17 +26,18 @@ namespace pipeline
         {
             private:
                 uint32_t id;
-                component::fifo<readreg_execute_pack_t> *readreg_lsu_fifo;
+                component::handshake_dff<readreg_execute_pack_t> *readreg_lsu_hdff;
                 component::port<execute_wb_pack_t> *lsu_wb_port;
                 component::bus *bus;
                 component::store_buffer *store_buffer;
                 
-                bool busy;
-                readreg_execute_pack_t hold_rev_pack;
+                bool l2_stall;
+                readreg_execute_pack_t l2_rev_pack;
+                uint32_t l2_addr;
                 trace::trace_database tdb;
             
             public:
-                lsu(uint32_t id, component::fifo<readreg_execute_pack_t> *issue_lsu_fifo, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer);
+                lsu(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer);
                 virtual void reset();
                 void run(commit_feedback_pack_t commit_feedback_pack);
         };

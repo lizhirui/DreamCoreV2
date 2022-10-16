@@ -12,7 +12,7 @@
 #include "common.h"
 #include "fifo.h"
 #include "bus.h"
-#include "pipeline/commit.h"
+#include "../pipeline/commit.h"
 #include "slave/memory.h"
 #include "slave/clint.h"
 

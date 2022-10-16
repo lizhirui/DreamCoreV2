@@ -10,7 +10,7 @@
 
 #pragma once
 #include "common.h"
-#include "../../component/fifo.h"
+#include "../../component/handshake_dff.h"
 #include "../../component/port.h"
 #include "../readreg_execute.h"
 #include "../execute_wb.h"
@@ -24,12 +24,12 @@ namespace pipeline
         {
             private:
                 uint32_t id;
-                component::fifo<readreg_execute_pack_t> *readreg_alu_fifo;
+                component::handshake_dff<readreg_execute_pack_t> *readreg_alu_hdff;
                 component::port<execute_wb_pack_t> *alu_wb_port;
                 trace::trace_database tdb;
             
             public:
-                alu(uint32_t id, component::fifo<readreg_execute_pack_t> *readreg_alu_fifo, component::port<execute_wb_pack_t> *alu_wb_port);
+                alu(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port);
                 virtual void reset();
                 void run(commit_feedback_pack_t commit_feedback_pack);
         };
