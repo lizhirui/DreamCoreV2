@@ -11,8 +11,9 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/csr.h"
 #include "cycle_model/component/handshake_dff.h"
-#include "cycle_model/pipeline/readreg_execute.h"
+#include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
+#include "cycle_model/pipeline/execute.h"
 
 namespace pipeline
 {
@@ -32,7 +33,7 @@ namespace pipeline
         
         }
         
-        void csr::run(commit_feedback_pack_t commit_feedback_pack)
+        execute_feedback_channel_t csr::run(commit_feedback_pack_t commit_feedback_pack)
         {
             readreg_execute_pack_t rev_pack;
             execute_wb_pack_t send_pack;
@@ -128,6 +129,12 @@ namespace pipeline
             }
             
             csr_wb_port->set(send_pack);
+    
+            execute_feedback_channel_t feedback_pack;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
+            feedback_pack.phy_id = send_pack.rd_phy;
+            feedback_pack.value = send_pack.rd_value;
+            return feedback_pack;
         }
     }
 }

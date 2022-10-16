@@ -12,8 +12,8 @@
 #include "config.h"
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/rename.h"
-#include "cycle_model/pipeline/issue.h"
-#include "cycle_model/pipeline/rename_issue.h"
+#include "cycle_model/pipeline/integer_issue.h"
+#include "cycle_model/pipeline/rename_dispatch.h"
 
 namespace pipeline
 {

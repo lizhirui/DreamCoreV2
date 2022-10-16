@@ -17,7 +17,7 @@
 namespace component
 {
     template<typename T>
-    class issue_queue : public fifo<T>
+    class ooo_issue_queue : public fifo<T>
     {
         private:
             dff<uint32_t> *age_matrix;
@@ -25,7 +25,7 @@ namespace component
             free_list id_free_list;
             
         public:
-            issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
+            ooo_issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
             {
                 age_matrix = new dff<uint32_t>[size * size];
                 this->reset();

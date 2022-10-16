@@ -69,9 +69,18 @@ namespace pipeline
         }
     }
     
-    void wb::run(commit_feedback_pack_t commit_feedback_pack)
+    wb_feedback_pack_t wb::run(commit_feedback_pack_t commit_feedback_pack)
     {
         wb_commit_pack_t send_pack;
+    
+        wb_feedback_pack_t feedback_pack;
+        
+        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+        {
+            feedback_pack.channel[i].enable = false;
+            feedback_pack.channel[i].phy_id = 0;
+            feedback_pack.channel[i].value = 0;
+        }
         
         if(!commit_feedback_pack.flush)
         {
@@ -119,13 +128,18 @@ namespace pipeline
                 send_pack.op_info[i].op_unit = rev_pack.op_unit;
                 memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
                 
-                if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && rev_pack.rd_enable && rev_pack.need_rename)
+                if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && rev_pack.need_rename)
                 {
                     phy_regfile->write(rev_pack.rd_phy, rev_pack.rd_value, true);
                 }
+                
+                feedback_pack.channel[i].enable = rev_pack.enable && rev_pack.valid && rev_pack.need_rename && !rev_pack.has_exception;
+                feedback_pack.channel[i].phy_id = rev_pack.rd_phy;
+                feedback_pack.channel[i].rd_value = rev_pack.rd_value;
             }
         }
         
         wb_commit_port->set(send_pack);
+        return feedback_pack;
     }
 }

@@ -12,8 +12,9 @@
 #include "common.h"
 #include "../../component/handshake_dff.h"
 #include "../../component/port.h"
-#include "../readreg_execute.h"
+#include "../integer_readreg_execute.h"
 #include "../execute_wb.h"
+#include "../execute.h"
 #include "../commit.h"
 
 namespace pipeline
@@ -31,7 +32,7 @@ namespace pipeline
             public:
                 alu(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port);
                 virtual void reset();
-                void run(commit_feedback_pack_t commit_feedback_pack);
+                execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
         };
     }
 }

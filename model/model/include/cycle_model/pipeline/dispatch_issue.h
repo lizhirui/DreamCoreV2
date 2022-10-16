@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-10-15     lizhirui     the first version
+ * 2022-10-16     lizhirui     the first version
  */
 
 #pragma once
@@ -15,7 +15,7 @@
 
 namespace pipeline
 {
-    typedef struct rename_issue_op_info_t
+    typedef struct dispatch_issue_op_info_t
     {
         bool enable = false;//this item has op
         uint32_t value = 0;
@@ -57,17 +57,17 @@ namespace pipeline
             mul_op_t mul_op;
             csr_op_t csr_op;
         }sub_op;
-    }rename_readreg_op_info_t;
+    }dispatch_issue_op_info_t;
     
-    typedef struct rename_issue_pack_t : public if_print_t
+    typedef struct dispatch_issue_pack_t : public if_print_t
     {
-        rename_issue_op_info_t op_info[RENAME_WIDTH];
+        dispatch_issue_op_info_t op_info[DISPATCH_WIDTH];
         
         virtual void print(std::string indent)
         {
             std::string blank = "  ";
             
-            for(auto i = 0;i < RENAME_WIDTH;i++)
+            for(auto i = 0;i < DISPATCH_WIDTH;i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
                 
@@ -141,7 +141,7 @@ namespace pipeline
         {
             json ret = json::array();
             
-            for(auto i = 0;i < RENAME_WIDTH;i++)
+            for(auto i = 0;i < DISPATCH_WIDTH;i++)
             {
                 json t;
                 t["enable"] = op_info[i].enable;
@@ -206,5 +206,5 @@ namespace pipeline
             
             return ret;
         }
-    }rename_issue_pack_t;
+    }dispatch_issue_pack_t;
 }

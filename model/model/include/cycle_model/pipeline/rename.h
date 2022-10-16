@@ -16,8 +16,8 @@
 #include "../component/rob.h"
 #include "../component/free_list.h"
 #include "decode_rename.h"
-#include "rename_issue.h"
-#include "issue.h"
+#include "rename_dispatch.h"
+#include "dispatch.h"
 #include "commit.h"
 
 namespace pipeline
@@ -29,6 +29,7 @@ namespace pipeline
         virtual json get_json()
         {
             json t;
+            t["idle"] = idle;
             return t;
         }
     }rename_feedback_pack_t;
@@ -47,6 +48,6 @@ namespace pipeline
         public:
             rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_issue_pack_t> *rename_issue_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list);
             virtual void reset();
-            rename_feedback_pack_t run(issue_feedback_pack_t issue_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            rename_feedback_pack_t run(dispatch_feedback_pack_t dispatch_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
     };
 }

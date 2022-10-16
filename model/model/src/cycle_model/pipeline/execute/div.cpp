@@ -11,7 +11,7 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/div.h"
 #include "cycle_model/component/handshake_dff.h"
-#include "cycle_model/pipeline/readreg_execute.h"
+#include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 
 namespace pipeline
@@ -33,8 +33,13 @@ namespace pipeline
             this->progress = 0;
         }
         
-        void div::run(commit_feedback_pack_t commit_feedback_pack)
+        execute_feedback_channel_t div::run(commit_feedback_pack_t commit_feedback_pack)
         {
+            execute_feedback_channel_t feedback_pack;
+            feedback_pack.enable = false;
+            feedback_pack.phy_id = 0;
+            feedback_pack.value = 0;
+            
             if(!commit_feedback_pack.flush)
             {
                 if(!this->busy)
@@ -115,6 +120,9 @@ namespace pipeline
                     {
                         div_wb_port->set(send_pack);
                         this->busy = false;
+                        feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
+                        feedback_pack.phy_id = send_pack.rd_phy;
+                        feedback_pack.value = send_pack.rd_value;
                     }
                     else
                     {
@@ -127,6 +135,8 @@ namespace pipeline
             {
                 div_wb_port->set(execute_wb_pack_t());
             }
+            
+            return feedback_pack;
         }
     }
 }

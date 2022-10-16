@@ -11,8 +11,8 @@
 #include "common.h"
 #include "config.h"
 #include "cycle_model/pipeline/pipeline_common.h"
-#include "cycle_model/pipeline/readreg.h"
-#include "cycle_model/pipeline/issue.h"
+#include "cycle_model/pipeline/integer_readreg.h"
+#include "cycle_model/pipeline/integer_issue.h"
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/handshake_dff.h"
@@ -21,7 +21,7 @@
 
 namespace pipeline
 {
-    readreg::readreg(component::port<issue_readreg_pack_t> *issue_readreg_port, component::handshake_dff<readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile, component::rat *speculative_rat) : tdb(TRACE_READREG)
+    integer_readreg::integer_readreg(component::port<issue_readreg_pack_t> *issue_readreg_port, component::handshake_dff<readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile, component::rat *speculative_rat) : tdb(TRACE_READREG)
     {
         this->issue_readreg_port = issue_readreg_port;
         this->readreg_alu_hdff = readreg_alu_hdff;
@@ -35,12 +35,12 @@ namespace pipeline
         this->reset();
     }
     
-    void readreg::reset()
+    void integer_readreg::reset()
     {
     
     }
     
-    readreg_feedback_pack_t readreg::run(commit_feedback_pack_t commit_feedback_pack)
+    readreg_feedback_pack_t integer_readreg::run(commit_feedback_pack_t commit_feedback_pack)
     {
         issue_readreg_pack_t rev_pack;
         readreg_feedback_pack_t feedback_pack;

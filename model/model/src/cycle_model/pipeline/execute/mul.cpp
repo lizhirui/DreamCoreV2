@@ -11,7 +11,7 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/mul.h"
 #include "cycle_model/component/handshake_dff.h"
-#include "cycle_model/pipeline/readreg_execute.h"
+#include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 
 namespace pipeline
@@ -31,7 +31,7 @@ namespace pipeline
         
         }
         
-        void mul::run(commit_feedback_pack_t commit_feedback_pack)
+        execute_feedback_channel_t mul::run(commit_feedback_pack_t commit_feedback_pack)
         {
             execute_wb_pack_t send_pack;
             
@@ -100,6 +100,12 @@ namespace pipeline
             }
             
             mul_wb_port->set(send_pack);
+    
+            execute_feedback_channel_t feedback_pack;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
+            feedback_pack.phy_id = send_pack.rd_phy;
+            feedback_pack.value = send_pack.rd_value;
+            return feedback_pack;
         }
     }
 }

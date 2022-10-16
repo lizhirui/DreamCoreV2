@@ -15,7 +15,7 @@
 
 namespace pipeline
 {
-    typedef struct issue_readreg_op_info_t
+    typedef struct lsu_issue_readreg_op_info_t
     {
         bool enable = false;//this item has op
         uint32_t value = 0;
@@ -63,15 +63,15 @@ namespace pipeline
         }sub_op;
     }issue_readreg_op_info_t;
     
-    typedef struct issue_readreg_pack_t : public if_print_t
+    typedef struct lsu_issue_readreg_pack_t : public if_print_t
     {
-        issue_readreg_op_info_t op_info[ISSUE_WIDTH];
+        lsu_issue_readreg_op_info_t op_info[LSU_ISSUE_WIDTH];
         
         virtual void print(std::string indent)
         {
             std::string blank = "  ";
             
-            for(auto i = 0;i < ISSUE_WIDTH;i++)
+            for(auto i = 0;i < LSU_ISSUE_WIDTH;i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
                 
@@ -147,7 +147,7 @@ namespace pipeline
         {
             json ret = json::array();
             
-            for(auto i = 0;i < ISSUE_WIDTH;i++)
+            for(auto i = 0;i < LSU_ISSUE_WIDTH;i++)
             {
                 json t;
                 t["enable"] = op_info[i].enable;
@@ -215,5 +215,5 @@ namespace pipeline
             
             return ret;
         }
-    }issue_readreg_pack_t;
+    }lsu_issue_readreg_pack_t;
 }

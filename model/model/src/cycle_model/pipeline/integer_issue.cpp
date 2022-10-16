@@ -10,20 +10,20 @@
 
 #include "common.h"
 #include "config.h"
-#include "cycle_model/pipeline/issue.h"
+#include "cycle_model/pipeline/integer_issue.h"
 #include "cycle_model/component/port.h"
-#include "cycle_model/component/issue_queue.h"
+#include "cycle_model/component/ooo_issue_queue.h"
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/store_buffer.h"
-#include "cycle_model/pipeline/rename_issue.h"
-#include "cycle_model/pipeline/issue_readreg.h"
-#include "cycle_model/pipeline/readreg.h"
+#include "cycle_model/pipeline/rename_dispatch.h"
+#include "cycle_model/pipeline/integer_issue_readreg.h"
+#include "cycle_model/pipeline/integer_readreg.h"
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/pipeline/commit.h"
 
 namespace pipeline
 {
-    issue::issue(component::port<rename_issue_pack_t> *rename_issue_port, component::port<issue_readreg_pack_t> *issue_readreg_port, component::store_buffer *store_buffer) : issue_q(component::issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE)), tdb(TRACE_ISSUE)
+    integer_issue::integer_issue(component::port<rename_issue_pack_t> *rename_issue_port, component::port<issue_readreg_pack_t> *issue_readreg_port, component::store_buffer *store_buffer) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE)), tdb(TRACE_ISSUE)
     {
         this->rename_issue_port = rename_issue_port;
         this->issue_readreg_port = issue_readreg_port;
@@ -31,7 +31,7 @@ namespace pipeline
         this->reset();
     }
     
-    void issue::reset()
+    void integer_issue::reset()
     {
         this->issue_q.reset();
         this->busy = false;
@@ -90,7 +90,7 @@ namespace pipeline
         }
     }
     
-    issue_feedback_pack_t issue::run(readreg_feedback_pack_t readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    issue_feedback_pack_t integer_issue::run(readreg_feedback_pack_t readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         issue_feedback_pack_t feedback_pack;
         
@@ -147,12 +147,12 @@ namespace pipeline
         }
     }
     
-    void issue::print(std::string indent)
+    void integer_issue::print(std::string indent)
     {
         issue_q.print(indent);
     }
     
-    json issue::get_json()
+    json integer_issue::get_json()
     {
         return issue_q.get_json();
     }

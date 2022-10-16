@@ -12,18 +12,18 @@
 #include "common.h"
 #include "config.h"
 #include "../component/port.h"
-#include "../component/issue_queue.h"
+#include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
 #include "../component/store_buffer.h"
-#include "rename_issue.h"
-#include "issue_readreg.h"
-#include "readreg.h"
+#include "dispatch_issue.h"
+#include "integer_issue_readreg.h"
+#include "integer_readreg.h"
 #include "wb.h"
 #include "commit.h"
 
 namespace pipeline
 {
-    typedef struct issue_feedback_pack_t : if_print_t
+    typedef struct integer_issue_feedback_pack_t : if_print_t
     {
         bool stall;
         
@@ -33,9 +33,9 @@ namespace pipeline
             t["stall"] = stall;
             return t;
         }
-    }issue_feedback_pack_t;
+    }integer_issue_feedback_pack_t;
     
-    class issue : public if_print_t, public if_reset_t
+    class integer_issue : public if_print_t, public if_reset_t
     {
         private:
             typedef struct issue_queue_item_t : public if_print_t
@@ -221,50 +221,43 @@ namespace pipeline
                 }
             }issue_queue_item_t;
         
-            component::port<rename_issue_pack_t> *rename_issue_port;
-            component::port<issue_readreg_pack_t> *issue_readreg_port;
+            component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port;
+            component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port;
             
-            component::store_buffer *store_buffer;
-            
-            component::issue_queue<issue_queue_item_t> issue_q;
+            component::ooo_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
-            bool is_inst_waiting = false;
-            uint32_t inst_waiting_rob_id = 0;
-            rename_issue_pack_t hold_rev_pack;
+            dispatch_issue_pack_t hold_rev_pack;
             
             uint32_t alu_index = 0;
             uint32_t bru_index = 0;
             uint32_t csr_index = 0;
             uint32_t div_index = 0;
-            uint32_t lsu_index = 0;
             uint32_t mul_index = 0;
             
             bool alu_busy[ALU_UNIT_NUM];
             bool bru_busy[BRU_UNIT_NUM];
             bool csr_busy[CSR_UNIT_NUM];
             bool div_busy[DIV_UNIT_NUM];
-            bool lsu_busy[LSU_UNIT_NUM];
             bool mul_busy[MUL_UNIT_NUM];
         
             uint32_t alu_busy_countdown[ALU_UNIT_NUM];
             uint32_t bru_busy_countdown[BRU_UNIT_NUM];
             uint32_t csr_busy_countdown[CSR_UNIT_NUM];
             uint32_t div_busy_countdown[DIV_UNIT_NUM];
-            uint32_t lsu_busy_countdown[LSU_UNIT_NUM];
             uint32_t mul_busy_countdown[MUL_UNIT_NUM];
             
-            uint32_t wakeup_countdown_src1[ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src1[ISSUE_QUEUE_SIZE];
+            uint32_t wakeup_countdown_src1[INTEGER_ISSUE_QUEUE_SIZE];
+            bool wakeup_valid_src1[INTEGER_ISSUE_QUEUE_SIZE];
         
-            uint32_t wakeup_countdown_src2[ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src2[ISSUE_QUEUE_SIZE];
+            uint32_t wakeup_countdown_src2[INTEGER_ISSUE_QUEUE_SIZE];
+            bool wakeup_valid_src2[INTEGER_ISSUE_QUEUE_SIZE];
             
             trace::trace_database tdb;
         
         public:
-            issue(component::port<rename_issue_pack_t> *rename_issue_port, component::port<issue_readreg_pack_t> *issue_readreg_port, component::store_buffer *store_buffer);
+            integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port);
             virtual void reset();
-            issue_feedback_pack_t run(readreg_feedback_pack_t readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            integer_issue_feedback_pack_t run(integer_readreg_feedback_pack_t integer_readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };

@@ -11,7 +11,7 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/lsu.h"
 #include "cycle_model/component/handshake_dff.h"
-#include "cycle_model/pipeline/readreg_execute.h"
+#include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/component/bus.h"
 #include "cycle_model/component/store_buffer.h"
@@ -37,7 +37,7 @@ namespace pipeline
             this->l2_addr = 0;
         }
         
-        void lsu::run(commit_feedback_pack_t commit_feedback_pack)
+        execute_feedback_channel_t lsu::run(commit_feedback_pack_t commit_feedback_pack)
         {
             //level 2 pipeline: get memory data/push store_buffer
             execute_wb_pack_t send_pack;
@@ -292,6 +292,12 @@ namespace pipeline
                 l2_addr = 0;
                 l2_rev_pack = readreg_execute_pack_t();
             }
+    
+            execute_feedback_channel_t feedback_pack;
+            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
+            feedback_pack.phy_id = send_pack.rd_phy;
+            feedback_pack.value = send_pack.rd_value;
+            return feedback_pack;
         }
     }
 }
