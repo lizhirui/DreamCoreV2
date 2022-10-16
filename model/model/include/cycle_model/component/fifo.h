@@ -30,6 +30,7 @@ namespace component
             {
                 this->size = size;
                 buffer = new dff<T>[size];
+                this->reset();
             }
 
             ~fifo()
@@ -47,10 +48,7 @@ namespace component
 
             virtual void flush()
             {
-                wptr.set(0);
-                wstage.set(false);
-                rptr.set(0);
-                rstage.set(false);
+                this->reset();
             }
 
             virtual bool push(T element)

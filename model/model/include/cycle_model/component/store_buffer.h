@@ -106,6 +106,7 @@ namespace component
             store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size), tdb(TRACE_STORE_BUFFER)
             {
                 this->bus_if = bus_if;
+                this->reset();
             }
             
             virtual void reset()
@@ -180,7 +181,7 @@ namespace component
             
             void run(pipeline::commit_feedback_pack_t commit_feedback_pack)
             {
-                if(commit_feedback_pack.enable && commit_feedback_pack.flush)
+                if(commit_feedback_pack.flush)
                 {
                     uint32_t cur_id;
                     bool cur_stage;
@@ -200,15 +201,12 @@ namespace component
                             {
                                 bool ready_to_commit = false;
                                 
-                                if(commit_feedback_pack.enable)
+                                for(auto i = 0;i < COMMIT_WIDTH;i++)
                                 {
-                                    for(auto i = 0;i < COMMIT_WIDTH;i++)
+                                    if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
                                     {
-                                        if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
-                                        {
-                                            ready_to_commit = true;
-                                            break;
-                                        }
+                                        ready_to_commit = true;
+                                        break;
                                     }
                                 }
                                 
@@ -261,29 +259,26 @@ namespace component
                 }
                 
                 //handle feedback
-                if(commit_feedback_pack.enable)
+                uint32_t cur_id;
+                
+                if(get_front_id(&cur_id))
                 {
-                    uint32_t cur_id;
+                    auto first_id = cur_id;
                     
-                    if(get_front_id(&cur_id))
+                    do
                     {
-                        auto first_id = cur_id;
+                        auto cur_item = get_item(cur_id);
                         
-                        do
+                        for(auto i = 0;i < COMMIT_WIDTH;i++)
                         {
-                            auto cur_item = get_item(cur_id);
-                            
-                            for(auto i = 0;i < COMMIT_WIDTH;i++)
+                            if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
                             {
-                                if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
-                                {
-                                    cur_item.committed = true;
-                                }
+                                cur_item.committed = true;
                             }
-                            
-                            set_item(cur_id, cur_item);
-                        }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
-                    }
+                        }
+                        
+                        set_item(cur_id, cur_item);
+                    }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
             }
     };

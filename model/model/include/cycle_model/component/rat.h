@@ -11,12 +11,9 @@
 #pragma once
 #include "common.h"
 #include "dff.h"
-#include "regfile.h"
 
 namespace component
 {
-    class regfile;
-    
     class rat : public if_print_t, public if_reset_t
     {
         private:
@@ -35,39 +32,13 @@ namespace component
                 phy_map_table_valid[phy_id].set(v);
             }
             
-            bool producer_get_valid(uint32_t phy_id)
-            {
-                assert(phy_id < phy_reg_num);
-                return phy_map_table_valid[phy_id].get_new();
-            }
-        
-            bool customer_get_valid(uint32_t phy_id)
-            {
-                assert(phy_id < phy_reg_num);
-                return phy_map_table_valid[phy_id].get();
-            }
-            
             void set_visible(uint32_t phy_id, bool v)
             {
                 assert(phy_id < phy_reg_num);
                 phy_map_table_visible[phy_id].set(v);
             }
             
-            bool producer_get_visible(uint32_t phy_id)
-            {
-                assert(phy_id < phy_reg_num);
-                return phy_map_table_visible[phy_id].get_new();
-            }
-        
-            bool customer_get_visible(uint32_t phy_id)
-            {
-                assert(phy_id < phy_reg_num);
-                return phy_map_table_visible[phy_id].get();
-            }
-            
         public:
-            friend class regfile;
-            
             rat(uint32_t phy_reg_num, uint32_t arch_reg_num) : tdb(TRACE_RAT)
             {
                 this->phy_reg_num = phy_reg_num;
@@ -104,7 +75,7 @@ namespace component
             
             virtual void reset()
             {
-            
+                this->reset();
             }
             
             void trace_pre()
@@ -120,6 +91,30 @@ namespace component
             trace::trace_database *get_tdb()
             {
                 return &tdb;
+            }
+        
+            bool producer_get_valid(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return phy_map_table_valid[phy_id].get_new();
+            }
+        
+            bool customer_get_valid(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return phy_map_table_valid[phy_id].get();
+            }
+        
+            bool producer_get_visible(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return phy_map_table_visible[phy_id].get_new();
+            }
+        
+            bool customer_get_visible(uint32_t phy_id)
+            {
+                assert(phy_id < phy_reg_num);
+                return phy_map_table_visible[phy_id].get();
             }
             
             void load(rat *element)

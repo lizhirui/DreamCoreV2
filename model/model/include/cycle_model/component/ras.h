@@ -62,7 +62,7 @@ namespace component
         public:
             ras(uint32_t size) : component::stack<ras_item_t>(size), last_addr(0), tdb(TRACE_RAS)
             {
-
+                this->reset();
             }
 
             virtual void reset()

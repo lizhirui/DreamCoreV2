@@ -23,6 +23,7 @@ namespace pipeline
             this->id = id;
             this->readreg_alu_hdff = readreg_alu_hdff;
             this->alu_wb_port = alu_wb_port;
+            this->reset();
         }
         
         void alu::reset()

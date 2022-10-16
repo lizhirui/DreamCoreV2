@@ -28,6 +28,7 @@ namespace pipeline
         this->mul_wb_port = mul_wb_port;
         this->wb_commit_port = wb_commit_port;
         this->phy_regfile = phy_regfile;
+        this->reset();
     }
     
     void wb::reset()

@@ -24,6 +24,7 @@ namespace pipeline
             this->readreg_csr_hdff = readreg_csr_hdff;
             this->csr_wb_port = csr_wb_port;
             this->csr_file = csr_file;
+            this->reset();
         }
         
         void csr::reset()

@@ -21,6 +21,7 @@ namespace pipeline
     {
         this->fetch2_decode_fifo = fetch2_decode_fifo;
         this->decode_rename_fifo = decode_rename_fifo;
+        this->reset();
     }
     
     void decode::reset()

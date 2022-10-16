@@ -22,10 +22,7 @@ namespace component
         public:
             free_list(uint32_t size) : fifo<if_print_fake<uint32_t>>(size)
             {
-                for(auto i = 0;i < size;i++)
-                {
-                    this->push(i);
-                }
+                this->reset();
             }
             
             virtual void reset()

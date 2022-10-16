@@ -25,21 +25,10 @@ namespace component
             free_list id_free_list;
             
         public:
-            issue_queue(uint32_t size) : fifo<T>(size)
+            issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
             {
                 age_matrix = new dff<uint32_t>[size * size];
-                
-                for(auto i = 0;i < size * size;i++)
-                {
-                    age_matrix[i].set(0);
-                }
-                
-                valid = new dff<bool>[size];
-                
-                for(auto i = 0;i < size;i++)
-                {
-                    valid[i].set(false);
-                }
+                this->reset();
             }
             
             virtual void reset()
@@ -82,7 +71,7 @@ namespace component
                 {
                     uint32_t index = 0;
                     assert(id_free_list.pop(&index));
-                    this->set_item(index, data);
+                    this->producer_set_item(index, data);
                     
                     for(auto i = 0;i < this->size;i++)
                     {

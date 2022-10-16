@@ -33,12 +33,7 @@ namespace component
                 this->size = size;
                 reg_data = new dff<T>[size];
                 reg_data_valid = new dff<bool>[size];
-                
-                for(auto i = 0;i < size;i++)
-                {
-                    reg_data[i].set(0);
-                    reg_data_valid[i].set(false);
-                }
+                this->reset();
             }
         
             ~regfile()

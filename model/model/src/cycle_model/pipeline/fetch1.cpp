@@ -23,8 +23,7 @@ namespace pipeline
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->store_buffer = store_buffer;
         this->init_pc = init_pc;
-        this->pc = init_pc;
-        this->jump_wait = false;
+        this->reset();
     }
     
     void fetch1::reset()

@@ -27,9 +27,7 @@ namespace pipeline
             this->lsu_wb_port = lsu_wb_port;
             this->bus = bus;
             this->store_buffer = store_buffer;
-            this->l2_stall = false;
-            this->l2_rev_pack = readreg_execute_pack_t();
-            this->l2_addr = 0;
+            this->reset();
         }
         
         void lsu::reset()

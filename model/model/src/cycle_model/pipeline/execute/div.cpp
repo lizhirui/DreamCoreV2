@@ -23,9 +23,7 @@ namespace pipeline
             this->id = id;
             this->readreg_div_hdff = readreg_div_hdff;
             this->div_wb_port = div_wb_port;
-            this->send_pack = execute_wb_pack_t();
-            this->busy = false;
-            this->progress = 0;
+            this->reset();
         }
         
         void div::reset()

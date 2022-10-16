@@ -23,6 +23,7 @@ namespace pipeline
             this->id = id;
             this->readreg_mul_hdff = readreg_mul_hdff;
             this->mul_wb_port = mul_wb_port;
+            this->reset();
         }
         
         void mul::reset()

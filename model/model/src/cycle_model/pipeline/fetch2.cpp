@@ -21,8 +21,7 @@ namespace pipeline
     {
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->fetch2_decode_fifo = fetch2_decode_fifo;
-        this->busy = false;
-        this->rev_pack = fetch1_fetch2_pack_t();
+        this->reset();
     }
     
     void fetch2::reset()

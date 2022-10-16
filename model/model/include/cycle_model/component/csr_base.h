@@ -24,7 +24,7 @@ namespace component
 		public:
 			csr_base(std::string name, uint32_t init_value) : name(std::move(name)), init_value(init_value), value(init_value)
 			{
-   
+                this->reset();
 			}
 
 			virtual void reset()

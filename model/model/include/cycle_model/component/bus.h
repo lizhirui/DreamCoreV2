@@ -74,7 +74,7 @@ namespace component
         public:
             bus() : instruction_value_valid(false), data_value_valid(false), tdb(TRACE_BUS)
             {
-            
+                this->reset();
             }
             
             int find_slave_info(uint32_t addr, bool is_fetch)

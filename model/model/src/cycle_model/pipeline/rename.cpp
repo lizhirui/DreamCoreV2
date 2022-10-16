@@ -24,6 +24,7 @@ namespace pipeline
         this->speculative_rat = speculative_rat;
         this->rob = rob;
         this->phy_id_free_list = phy_id_free_list;
+        this->reset();
     }
     
     void rename::reset()

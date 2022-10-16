@@ -24,7 +24,7 @@ namespace component
         public:
             handshake_dff() : has_data(false), data(T())
             {
-            
+                this->reset();
             }
             
             void reset()

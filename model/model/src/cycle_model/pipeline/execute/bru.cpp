@@ -24,6 +24,7 @@ namespace pipeline
             this->readreg_bru_hdff = readreg_bru_hdff;
             this->bru_wb_port = bru_wb_port;
             this->csr_file = csr_file;
+            this->reset();
         }
         
         void bru::reset()

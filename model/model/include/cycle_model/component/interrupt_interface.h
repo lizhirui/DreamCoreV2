@@ -35,6 +35,7 @@ namespace component
             interrupt_interface(csrfile *csr_file) : mei_ack(false), msi_ack(false), mti_ack(false), tdb(TRACE_INTERRUPT_INTERFACE)
             {
                 this->csr_file = csr_file;
+                this->reset();
             }
             
             virtual void reset()

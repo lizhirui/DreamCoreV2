@@ -111,6 +111,7 @@ namespace component
                 test_mode = false;
                 has_error = false;
                 size = 0;
+                this->reset();
             }
             
             virtual void reset()

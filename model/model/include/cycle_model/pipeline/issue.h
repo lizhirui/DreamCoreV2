@@ -12,7 +12,6 @@
 #include "common.h"
 #include "config.h"
 #include "../component/port.h"
-#include "../component/fifo.h"
 #include "../component/issue_queue.h"
 #include "../component/regfile.h"
 #include "../component/store_buffer.h"
@@ -221,17 +220,18 @@ namespace pipeline
                     return t;
                 }
             }issue_queue_item_t;
+        
+            component::port<rename_issue_pack_t> *rename_issue_port;
+            component::port<issue_readreg_pack_t> *issue_readreg_port;
             
-            component::regfile<uint32_t> *phy_regfile;
             component::store_buffer *store_buffer;
-            component::bus *bus;
             
             component::issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
             bool is_inst_waiting = false;
             uint32_t inst_waiting_rob_id = 0;
+            rename_issue_pack_t hold_rev_pack;
             
-            uint32_t last_index = 0;
             uint32_t alu_index = 0;
             uint32_t bru_index = 0;
             uint32_t csr_index = 0;
@@ -239,12 +239,19 @@ namespace pipeline
             uint32_t lsu_index = 0;
             uint32_t mul_index = 0;
             
-            uint32_t alu_fifo_num[ALU_UNIT_NUM];
-            uint32_t bru_fifo_num[BRU_UNIT_NUM];
-            uint32_t csr_fifo_num[CSR_UNIT_NUM];
-            uint32_t div_fifo_num[DIV_UNIT_NUM];
-            uint32_t lsu_fifo_num[LSU_UNIT_NUM];
-            uint32_t mul_fifo_num[MUL_UNIT_NUM];
+            bool alu_busy[ALU_UNIT_NUM];
+            bool bru_busy[BRU_UNIT_NUM];
+            bool csr_busy[CSR_UNIT_NUM];
+            bool div_busy[DIV_UNIT_NUM];
+            bool lsu_busy[LSU_UNIT_NUM];
+            bool mul_busy[MUL_UNIT_NUM];
+        
+            uint32_t alu_busy_countdown[ALU_UNIT_NUM];
+            uint32_t bru_busy_countdown[BRU_UNIT_NUM];
+            uint32_t csr_busy_countdown[CSR_UNIT_NUM];
+            uint32_t div_busy_countdown[DIV_UNIT_NUM];
+            uint32_t lsu_busy_countdown[LSU_UNIT_NUM];
+            uint32_t mul_busy_countdown[MUL_UNIT_NUM];
             
             uint32_t wakeup_countdown_src1[ISSUE_QUEUE_SIZE];
             bool wakeup_valid_src1[ISSUE_QUEUE_SIZE];
@@ -255,7 +262,7 @@ namespace pipeline
             trace::trace_database tdb;
         
         public:
-            issue(component::port<rename_issue_pack_t> *rename_issue_port, component::store_buffer *store_buffer, component::bus *bus);
+            issue(component::port<rename_issue_pack_t> *rename_issue_port, component::port<issue_readreg_pack_t> *issue_readreg_port, component::store_buffer *store_buffer);
             virtual void reset();
             issue_feedback_pack_t run(readreg_feedback_pack_t readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             virtual void print(std::string indent);

@@ -27,6 +27,7 @@ namespace component
             {
                 this->size = size;
                 buffer = new dff<T>[size];
+                this->reset();
             }
 
             ~stack()

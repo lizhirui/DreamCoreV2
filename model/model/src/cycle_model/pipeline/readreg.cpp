@@ -32,6 +32,7 @@ namespace pipeline
         this->readreg_mul_hdff = readreg_mul_hdff;
         this->phy_regfile = phy_regfile;
         this->speculative_rat = speculative_rat;
+        this->reset();
     }
     
     void readreg::reset()

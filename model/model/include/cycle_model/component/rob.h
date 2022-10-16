@@ -93,7 +93,7 @@ namespace component
         public:
             rob(uint32_t size) : fifo<rob_item_t>(size), tdb(TRACE_ROB)
             {
-            
+                this->reset();
             }
             
             virtual void reset()
