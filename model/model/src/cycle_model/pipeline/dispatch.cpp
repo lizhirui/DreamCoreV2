@@ -81,6 +81,7 @@ namespace pipeline
                                 integer_issue_pack.op_info[integer_issue_id].last_uop = rev_pack.op_info[i].last_uop;
                                 
                                 integer_issue_pack.op_info[integer_issue_id].rob_id = rev_pack.op_info[i].rob_id;
+                                integer_issue_pack.op_info[integer_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
                                 integer_issue_pack.op_info[integer_issue_id].pc = rev_pack.op_info[i].pc;
                                 integer_issue_pack.op_info[integer_issue_id].imm = rev_pack.op_info[i].imm;
                                 integer_issue_pack.op_info[integer_issue_id].has_exception = rev_pack.op_info[i].has_exception;
@@ -116,6 +117,7 @@ namespace pipeline
                                 lsu_issue_pack.op_info[lsu_issue_id].last_uop = rev_pack.op_info[i].last_uop;
         
                                 lsu_issue_pack.op_info[lsu_issue_id].rob_id = rev_pack.op_info[i].rob_id;
+                                lsu_issue_pack.op_info[lsu_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
                                 lsu_issue_pack.op_info[lsu_issue_id].pc = rev_pack.op_info[i].pc;
                                 lsu_issue_pack.op_info[lsu_issue_id].imm = rev_pack.op_info[i].imm;
                                 lsu_issue_pack.op_info[lsu_issue_id].has_exception = rev_pack.op_info[i].has_exception;

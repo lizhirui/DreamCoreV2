@@ -14,7 +14,6 @@
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/ooo_issue_queue.h"
 #include "cycle_model/component/regfile.h"
-#include "cycle_model/component/store_buffer.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
 #include "cycle_model/pipeline/integer_issue_readreg.h"
 #include "cycle_model/pipeline/integer_readreg.h"
@@ -23,128 +22,376 @@
 
 namespace pipeline
 {
-    integer_issue::integer_issue(component::port<rename_issue_pack_t> *rename_issue_port, component::port<issue_readreg_pack_t> *issue_readreg_port, component::store_buffer *store_buffer) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(ISSUE_QUEUE_SIZE)), tdb(TRACE_ISSUE)
+    integer_issue::integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(INTEGER_ISSUE_QUEUE_SIZE)), tdb(TRACE_INTEGER_ISSUE)
     {
-        this->rename_issue_port = rename_issue_port;
-        this->issue_readreg_port = issue_readreg_port;
-        this->store_buffer = store_buffer;
-        this->reset();
+        this->dispatch_integer_issue_port = dispatch_integer_issue_port;
+        this->integer_issue_readreg_port = integer_issue_readreg_port;
+        this->phy_regfile = phy_regfile;
+        this->integer_issue::reset();
     }
     
     void integer_issue::reset()
     {
         this->issue_q.reset();
         this->busy = false;
-        this->is_inst_waiting = false;
-        this->inst_waiting_rob_id = 0;
-        this->hold_rev_pack = rename_issue_pack_t();
-        this->alu_index = 0;
-        this->bru_index = 0;
-        this->csr_index = 0;
-        this->div_index = 0;
-        this->lsu_index = 0;
-        this->mul_index = 0;
+        this->hold_rev_pack = dispatch_issue_pack_t();
         
         for(auto i = 0;i < ALU_UNIT_NUM;i++)
         {
-            this->alu_busy[i] = false;
-            this->alu_busy_countdown[i] = 0;
+            this->alu_idle[i] = false;
+            this->alu_idle_shift[i] = 0;
+            this->alu_busy_shift[i] = 0;
         }
         
         for(auto i = 0;i < BRU_UNIT_NUM;i++)
         {
-            this->bru_busy[i] = false;
-            this->bru_busy_countdown[i] = 0;
+            this->bru_idle[i] = false;
+            this->bru_idle_shift[i] = 0;
+            this->bru_busy_shift[i] = 0;
         }
         
         for(auto i = 0;i < CSR_UNIT_NUM;i++)
         {
-            this->csr_busy[i] = false;
-            this->csr_busy_countdown[i] = 0;
+            this->csr_idle[i] = false;
+            this->csr_idle_shift[i] = 0;
+            this->csr_busy_shift[i] = 0;
         }
         
         for(auto i = 0;i < DIV_UNIT_NUM;i++)
         {
-            this->div_busy[i] = false;
-            this->div_busy_countdown[i] = 0;
-        }
-        
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
-        {
-            this->lsu_busy[i] = false;
-            this->lsu_busy_countdown[i] = 0;
+            this->div_idle[i] = false;
+            this->div_idle_shift[i] = 0;
+            this->div_busy_shift[i] = 0;
         }
         
         for(auto i = 0;i < MUL_UNIT_NUM;i++)
         {
-            this->mul_busy[i] = false;
-            this->mul_busy_countdown[i] = 0;
+            this->mul_idle[i] = false;
+            this->mul_idle_shift[i] = 0;
+            this->mul_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < ISSUE_QUEUE_SIZE;i++)
+        for(auto i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
         {
-            wakeup_countdown_src1[i] = 0;
-            wakeup_valid_src1[i] = false;
-            wakeup_countdown_src2[i] = 0;
-            wakeup_valid_src2[i] = false;
+            this->wakeup_shift_src1[i] = 0;
+            this->src1_ready[i] = false;
+            this->wakeup_shift_src2[i] = 0;
+            this->src2_ready[i] = false;
+    
+            this->port_index[i] = 0;
+            this->op_unit_seq[i] = 0;
+            this->rob_id[i] = 0;
+            this->rob_stage[i] = 0;
+            this->wakeup_rd[i] = 0;
+            this->wakeup_rd_valid[i] = false;
+            this->wakeup_shift[i] = 0;
+            this->new_idle_shift[i] = 0;
+            this->new_busy_shift[i] = 0;
+    
+            this->next_port_index = 0;
         }
     }
     
-    issue_feedback_pack_t integer_issue::run(readreg_feedback_pack_t readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    integer_issue_output_feedback_pack_t integer_issue::run_output(const commit_feedback_pack_t &commit_feedback_pack)
     {
-        issue_feedback_pack_t feedback_pack;
-        
-        feedback_pack.stall = false;//cancel stall signal temporarily
+        integer_issue_output_feedback_pack_t feedback_pack;
+        integer_issue_readreg_pack_t send_pack;
+    
+        uint32_t op_unit_seq_mask[INTEGER_ISSUE_WIDTH] = {((alu_idle[0] << ALU_SHIFT) | (mul_idle[0] << MUL_SHIFT) | (csr_idle[0] << CSR_SHIFT) | (bru_idle[0] << BRU_SHIFT)),
+                                                          ((alu_idle[1] << ALU_SHIFT) | (mul_idle[1] << MUL_SHIFT) | (div_idle[0] << DIV_SHIFT))};
         
         if(!commit_feedback_pack.flush)
         {
-            auto inst_waiting_ok = false;
+            uint32_t selected_issue_id[INTEGER_ISSUE_WIDTH] = {0};
+            uint32_t selected_rob_id[INTEGER_ISSUE_WIDTH] = {0};
+            bool selected_rob_stage[INTEGER_ISSUE_WIDTH] = {false};
+            bool selected_valid[INTEGER_ISSUE_WIDTH] = {false};
             
-            for(auto i = 0;i < COMMIT_WIDTH;i++)
+            //select instructions
+            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
-                if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == inst_waiting_rob_id))
+                for(auto j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
                 {
-                    inst_waiting_ok = true;
-                    break;
-                }
-            }
-            
-            //handle output
-            if(issue_q.customer_is_empty())
-            {
-                if(inst_waiting_ok)
-                {
-                    this->is_inst_waiting = false;
-                }
-            }
-            else
-            {
-                if(!this->is_inst_waiting || inst_waiting_ok)
-                {
-                    this->is_inst_waiting = false;
-                    
-                    //get up to 2 items from issue_queue
-                    auto has_lsu_op = false;
-                    auto has_csr_op = false;
-                    auto has_mret_op = false;
-                    auto item_id = 0;
-                    issue_queue_item_t items[ISSUE_WIDTH];
-                    
-                    for(auto i = 0;i < issue_q.get_size();i++)
+                    if(issue_q.is_valid(i) && (op_unit_seq[j] & op_unit_seq_mask[i]) && (!selected_valid[i] ||
+                      ((rob_stage[j] == selected_rob_stage[i]) && (rob_id[j] < selected_rob_id[i])) || ((rob_stage[j] != selected_rob_stage[i]) && (rob_id[j] > selected_rob_id[i]))))
                     {
-                        items[item_id] = issue_q.customer_get_item(i);
-                        
-                        if(issue_q.is_valid(i) &&
-                           (items[item_id].src1_ready || wakeup_valid_src1[item_id]) &&
-                           (items[item_id].src2_ready || wakeup_valid_src2[item_id]) &&
-                           ())
-                        {
-                        
-                        }
+                        selected_issue_id[i] = j;
+                        selected_rob_id[i] = rob_id[j];
+                        selected_rob_stage[i] = rob_stage[j];
+                        selected_valid[i] = true;
                     }
                 }
             }
+            
+            //build send_pack
+            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            {
+                if(selected_valid[i])
+                {
+                    auto rev_pack = issue_q.customer_get_item(selected_issue_id[i]);
+                    issue_q.pop(selected_issue_id[i]);
+                    
+                    send_pack.op_info[i].enable = rev_pack.enable;
+                    send_pack.op_info[i].value = rev_pack.value;
+                    send_pack.op_info[i].valid = rev_pack.valid;
+                    send_pack.op_info[i].last_uop = rev_pack.last_uop;
+                    
+                    send_pack.op_info[i].rob_id = rev_pack.rob_id;
+                    send_pack.op_info[i].pc = rev_pack.pc;
+                    send_pack.op_info[i].imm = rev_pack.imm;
+                    send_pack.op_info[i].has_exception = rev_pack.has_exception;
+                    send_pack.op_info[i].exception_id = rev_pack.exception_id;
+                    send_pack.op_info[i].exception_value = rev_pack.exception_value;
+                    
+                    send_pack.op_info[i].rs1 = rev_pack.rs1;
+                    send_pack.op_info[i].arg1_src = rev_pack.arg1_src;
+                    send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;
+                    send_pack.op_info[i].rs1_phy = rev_pack.rs1_phy;
+    
+                    send_pack.op_info[i].rs2 = rev_pack.rs2;
+                    send_pack.op_info[i].arg2_src = rev_pack.arg2_src;
+                    send_pack.op_info[i].rs2_need_map = rev_pack.rs2_need_map;
+                    send_pack.op_info[i].rs2_phy = rev_pack.rs2_phy;
+                    
+                    send_pack.op_info[i].rd = rev_pack.rd;
+                    send_pack.op_info[i].rd_enable = rev_pack.rd_enable;
+                    send_pack.op_info[i].need_rename = rev_pack.need_rename;
+                    send_pack.op_info[i].rd_phy = rev_pack.rd_phy;
+                    
+                    send_pack.op_info[i].csr = rev_pack.csr;
+                    send_pack.op_info[i].op = rev_pack.op;
+                    send_pack.op_info[i].op_unit = rev_pack.op_unit;
+                    memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                }
+                else
+                {
+                    send_pack.op_info[i] = integer_issue_readreg_op_info_t();
+                }
+            }
+            
+            //build feedback_pack
+            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            {
+                feedback_pack.wakeup_valid[i] = selected_valid[i] && wakeup_rd_valid[selected_issue_id[i]];
+                feedback_pack.wakeup_rd[i] = wakeup_rd_valid[selected_issue_id[i]];
+                feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
+            }
+            
+            //calculate busy
+            for(auto i = 0;i < ALU_UNIT_NUM;i++)
+            {
+                if(alu_idle[i])
+                {
+                    if(alu_busy_shift[i] == 1)
+                    {
+                        alu_idle[i] = false;
+                    }
+                    
+                    if(alu_busy_shift[i] > 0)
+                    {
+                        alu_busy_shift[i]--;
+                    }
+                }
+                else
+                {
+                    if(alu_idle_shift[i] == 1)
+                    {
+                        alu_idle[i] = true;
+                    }
+                    
+                    if(alu_idle_shift[i] > 0)
+                    {
+                        alu_idle_shift[i]--;
+                    }
+                }
+            }
+    
+            for(auto i = 0;i < BRU_UNIT_NUM;i++)
+            {
+                if(bru_idle[i])
+                {
+                    if(bru_busy_shift[i] == 1)
+                    {
+                        bru_idle[i] = false;
+                    }
+            
+                    if(bru_busy_shift[i] > 0)
+                    {
+                        bru_busy_shift[i]--;
+                    }
+                }
+                else
+                {
+                    if(bru_idle_shift[i] == 1)
+                    {
+                        bru_idle[i] = true;
+                    }
+            
+                    if(bru_idle_shift[i] > 0)
+                    {
+                        bru_idle_shift[i]--;
+                    }
+                }
+            }
+    
+            for(auto i = 0;i < CSR_UNIT_NUM;i++)
+            {
+                if(csr_idle[i])
+                {
+                    if(csr_busy_shift[i] == 1)
+                    {
+                        csr_idle[i] = false;
+                    }
+            
+                    if(csr_busy_shift[i] > 0)
+                    {
+                        csr_busy_shift[i]--;
+                    }
+                }
+                else
+                {
+                    if(csr_idle_shift[i] == 1)
+                    {
+                        csr_idle[i] = true;
+                    }
+            
+                    if(csr_idle_shift[i] > 0)
+                    {
+                        csr_idle_shift[i]--;
+                    }
+                }
+            }
+    
+            for(auto i = 0;i < DIV_UNIT_NUM;i++)
+            {
+                if(div_idle[i])
+                {
+                    if(div_busy_shift[i] == 1)
+                    {
+                        div_idle[i] = false;
+                    }
+            
+                    if(div_busy_shift[i] > 0)
+                    {
+                        div_busy_shift[i]--;
+                    }
+                }
+                else
+                {
+                    if(div_idle_shift[i] == 1)
+                    {
+                        div_idle[i] = true;
+                    }
+            
+                    if(div_idle_shift[i] > 0)
+                    {
+                        div_idle_shift[i]--;
+                    }
+                }
+            }
+    
+            for(auto i = 0;i < MUL_UNIT_NUM;i++)
+            {
+                if(mul_idle[i])
+                {
+                    if(mul_busy_shift[i] == 1)
+                    {
+                        mul_idle[i] = false;
+                    }
+            
+                    if(mul_busy_shift[i] > 0)
+                    {
+                        mul_busy_shift[i]--;
+                    }
+                }
+                else
+                {
+                    if(mul_idle_shift[i] == 1)
+                    {
+                        mul_idle[i] = true;
+                    }
+            
+                    if(mul_idle_shift[i] > 0)
+                    {
+                        mul_idle_shift[i]--;
+                    }
+                }
+            }
+            
+            //update idle and busy shift
+            if(selected_valid[0])
+            {
+                switch(op_unit_seq[selected_issue_id[0]])
+                {
+                    case 1 << ALU_SHIFT:
+                        alu_idle_shift[0] = new_idle_shift[0];
+                        alu_busy_shift[0] = new_busy_shift[0];
+                        break;
+                        
+                    case 1 << BRU_SHIFT:
+                        bru_idle_shift[0] = new_idle_shift[0];
+                        bru_busy_shift[0] = new_busy_shift[0];
+                        break;
+                        
+                    case 1 << CSR_SHIFT:
+                        csr_idle_shift[0] = new_idle_shift[0];
+                        csr_busy_shift[0] = new_busy_shift[0];
+                        break;
+    
+                    case 1 << MUL_SHIFT:
+                        mul_idle_shift[0] = new_idle_shift[0];
+                        mul_busy_shift[0] = new_busy_shift[0];
+                        break;
+                        
+                    default:
+                        verify(0);
+                        break;
+                }
+            }
+    
+            if(selected_valid[1])
+            {
+                switch(op_unit_seq[selected_issue_id[1]])
+                {
+                    case 1 << ALU_SHIFT:
+                        alu_idle_shift[1] = new_idle_shift[1];
+                        alu_busy_shift[1] = new_busy_shift[1];
+                        break;
+            
+                    case 1 << DIV_SHIFT:
+                        div_idle_shift[0] = new_idle_shift[1];
+                        div_busy_shift[0] = new_busy_shift[1];
+                        break;
+            
+                    case 1 << MUL_SHIFT:
+                        mul_idle_shift[1] = new_idle_shift[1];
+                        mul_busy_shift[1] = new_busy_shift[1];
+                        break;
+            
+                    default:
+                        verify(0);
+                        break;
+                }
+            }
+            
+            integer_issue_readreg_port->set(send_pack);
         }
+        else
+        {
+            integer_issue_readreg_port->set(integer_issue_readreg_pack_t());
+        }
+        
+        return feedback_pack;
+    }
+    
+    void integer_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    {
+    
+    }
+    
+    integer_issue_feedback_pack_t integer_issue::run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    {
+    
     }
     
     void integer_issue::print(std::string indent)

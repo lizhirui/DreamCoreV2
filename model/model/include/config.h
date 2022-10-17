@@ -29,6 +29,14 @@ const uint32_t MUL_UNIT_NUM = 2;
 
 const uint32_t EXECUTE_UNIT_NUM = ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM;
 
+const uint32_t EXECUTE_UNIT_TYPE_NUM = 6;
+const uint32_t ALU_SHIFT = 0;
+const uint32_t BRU_SHIFT = 1;
+const uint32_t CSR_SHIFT = 2;
+const uint32_t DIV_SHIFT = 3;
+const uint32_t LSU_SHIFT = 4;
+const uint32_t MUL_SHIFT = 5;
+
 const uint32_t DIV_LATENCY = 8;
 
 const uint32_t GSHARE_PC_P1_ADDR_WIDTH = 12;

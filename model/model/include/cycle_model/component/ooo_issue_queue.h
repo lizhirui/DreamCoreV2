@@ -20,14 +20,12 @@ namespace component
     class ooo_issue_queue : public fifo<T>
     {
         private:
-            dff<uint32_t> *age_matrix;
             dff<bool> *valid;
             free_list id_free_list;
             
         public:
             ooo_issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
             {
-                age_matrix = new dff<uint32_t>[size * size];
                 valid = new dff<bool>[size];
                 this->reset();
             }
@@ -35,11 +33,6 @@ namespace component
             virtual void reset()
             {
                 fifo<T>::reset();
-                
-                for(auto i = 0;i < this->size * this->size;i++)
-                {
-                    age_matrix[i].set(0);
-                }
                 
                 for(auto i = 0;i < this->size;i++)
                 {
@@ -52,11 +45,6 @@ namespace component
             virtual void flush()
             {
                 fifo<T>::flush();
-                
-                for(auto i = 0;i < this->size * this->size;i++)
-                {
-                    age_matrix[i].set(0);
-                }
                 
                 for(auto i = 0;i < this->size;i++)
                 {
@@ -73,12 +61,6 @@ namespace component
                     uint32_t index = 0;
                     verify(id_free_list.pop(&index));
                     this->producer_set_item(index, data);
-                    
-                    for(auto i = 0;i < this->size;i++)
-                    {
-                        age_matrix[index * this->size + i].set(valid[i].get_new());
-                    }
-                    
                     valid[index].set(true);
                     return true;
                 }
@@ -95,12 +77,6 @@ namespace component
             {
                 verify(valid[index]);
                 verify(id_free_list.push(index));
-                
-                for(auto i = 0;i < this->size;i++)
-                {
-                    age_matrix[i * this->size + index].set(false);
-                }
-                
                 valid[index].set(false);
                 return true;
             }
@@ -108,18 +84,6 @@ namespace component
             bool is_valid(uint32_t index)
             {
                 return valid[index];
-            }
-            
-            uint32_t get_age(uint32_t index)
-            {
-                uint32_t sum = 0;
-                
-                for(auto i = 0;i < this->size;i++)
-                {
-                    sum += age_matrix[index * this->size + i].get();
-                }
-                
-                return sum;
             }
     };
 }

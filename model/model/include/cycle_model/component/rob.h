@@ -192,6 +192,17 @@ namespace component
                 return true;
             }
             
+            bool get_new_id_stage(bool *new_id_stage)
+            {
+                if(this->producer_is_full())
+                {
+                    return false;
+                }
+                
+                *new_id_stage = this->wptr.get_new();
+                return true;
+            }
+            
             bool get_next_new_id(uint32_t cur_new_id, uint32_t *next_new_id)
             {
                 if(!check_new_id_valid(cur_new_id))

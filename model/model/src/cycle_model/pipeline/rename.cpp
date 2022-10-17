@@ -145,6 +145,7 @@ namespace pipeline
                                 phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 //write to rob
                                 verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
+                                verify(rob->get_new_id_stage(&send_pack.op_info[i].rob_id_stage));
                                 verify(rob->push(rob_item));
                                 
                                 //start to map source registers

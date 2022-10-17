@@ -14,7 +14,6 @@
 #include "../component/port.h"
 #include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
-#include "../component/store_buffer.h"
 #include "dispatch_issue.h"
 #include "integer_issue_readreg.h"
 #include "integer_readreg.h"
@@ -23,9 +22,16 @@
 
 namespace pipeline
 {
+    typedef struct integer_issue_output_feedback_pack_t : if_print_t
+    {
+        bool wakeup_valid[INTEGER_ISSUE_WIDTH] = {false};
+        uint32_t wakeup_rd[INTEGER_ISSUE_WIDTH] = {0};
+        uint32_t wakeup_shift[INTEGER_ISSUE_WIDTH] = {0};
+    }integer_issue_output_feedback_pack_t;
+    
     typedef struct integer_issue_feedback_pack_t : if_print_t
     {
-        bool stall;
+        bool stall = false;
         
         virtual json get_json()
         {
@@ -44,7 +50,6 @@ namespace pipeline
                 uint32_t value = 0;
                 bool valid = false;//this item has valid op
                 bool last_uop = false;//this is the last uop of an ISA instruction
-                bool hide = false;
                 
                 uint32_t rob_id = 0;
                 uint32_t pc = 0;
@@ -76,7 +81,7 @@ namespace pipeline
                 
                 union
                 {
-                    alu_op_t alu_op;
+                    alu_op_t alu_op = alu_op_t::add;
                     bru_op_t bru_op;
                     div_op_t div_op;
                     lsu_op_t lsu_op;
@@ -224,40 +229,56 @@ namespace pipeline
             component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port;
             component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port;
             
+            component::regfile<uint32_t> *phy_regfile;
+            
             component::ooo_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
             dispatch_issue_pack_t hold_rev_pack;
             
-            uint32_t alu_index = 0;
-            uint32_t bru_index = 0;
-            uint32_t csr_index = 0;
-            uint32_t div_index = 0;
-            uint32_t mul_index = 0;
-            
-            bool alu_busy[ALU_UNIT_NUM];
-            bool bru_busy[BRU_UNIT_NUM];
-            bool csr_busy[CSR_UNIT_NUM];
-            bool div_busy[DIV_UNIT_NUM];
-            bool mul_busy[MUL_UNIT_NUM];
+            uint32_t alu_idle[ALU_UNIT_NUM] = {0};
+            uint32_t bru_idle[BRU_UNIT_NUM] = {0};
+            uint32_t csr_idle[CSR_UNIT_NUM] = {0};
+            uint32_t div_idle[DIV_UNIT_NUM] = {0};
+            uint32_t mul_idle[MUL_UNIT_NUM] = {0};
         
-            uint32_t alu_busy_countdown[ALU_UNIT_NUM];
-            uint32_t bru_busy_countdown[BRU_UNIT_NUM];
-            uint32_t csr_busy_countdown[CSR_UNIT_NUM];
-            uint32_t div_busy_countdown[DIV_UNIT_NUM];
-            uint32_t mul_busy_countdown[MUL_UNIT_NUM];
-            
-            uint32_t wakeup_countdown_src1[INTEGER_ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src1[INTEGER_ISSUE_QUEUE_SIZE];
+            uint32_t alu_idle_shift[ALU_UNIT_NUM] = {0};
+            uint32_t bru_idle_shift[BRU_UNIT_NUM] = {0};
+            uint32_t csr_idle_shift[CSR_UNIT_NUM] = {0};
+            uint32_t div_idle_shift[DIV_UNIT_NUM] = {0};
+            uint32_t mul_idle_shift[MUL_UNIT_NUM] = {0};
         
-            uint32_t wakeup_countdown_src2[INTEGER_ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src2[INTEGER_ISSUE_QUEUE_SIZE];
+            uint32_t alu_busy_shift[ALU_UNIT_NUM] = {0};
+            uint32_t bru_busy_shift[BRU_UNIT_NUM] = {0};
+            uint32_t csr_busy_shift[CSR_UNIT_NUM] = {0};
+            uint32_t div_busy_shift[DIV_UNIT_NUM] = {0};
+            uint32_t mul_busy_shift[MUL_UNIT_NUM] = {0};
+            
+            uint32_t wakeup_shift_src1[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            bool src1_ready[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+        
+            uint32_t wakeup_shift_src2[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            bool src2_ready[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            
+            uint32_t port_index[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t op_unit_seq[INTEGER_ISSUE_QUEUE_SIZE] = {0};//one-hot
+            uint32_t rob_id[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t rob_stage[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t new_busy_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            
+            uint32_t next_port_index = 0;
             
             trace::trace_database tdb;
         
         public:
-            integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port);
+            integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            integer_issue_feedback_pack_t run(integer_readreg_feedback_pack_t integer_readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            integer_issue_output_feedback_pack_t run_output(const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            integer_issue_feedback_pack_t run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };
