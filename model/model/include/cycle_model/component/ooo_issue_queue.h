@@ -28,6 +28,7 @@ namespace component
             ooo_issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
             {
                 age_matrix = new dff<uint32_t>[size * size];
+                valid = new dff<bool>[size];
                 this->reset();
             }
             
@@ -70,7 +71,7 @@ namespace component
                 if(!id_free_list.customer_is_empty())
                 {
                     uint32_t index = 0;
-                    assert(id_free_list.pop(&index));
+                    verify(id_free_list.pop(&index));
                     this->producer_set_item(index, data);
                     
                     for(auto i = 0;i < this->size;i++)
@@ -92,8 +93,8 @@ namespace component
             
             virtual bool pop(uint32_t index)
             {
-                assert(valid[index]);
-                assert(id_free_list.push(index));
+                verify(valid[index]);
+                verify(id_free_list.push(index));
                 
                 for(auto i = 0;i < this->size;i++)
                 {

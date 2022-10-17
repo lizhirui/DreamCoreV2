@@ -22,7 +22,7 @@ namespace component
         public:
             free_list(uint32_t size) : fifo<if_print_fake<uint32_t>>(size)
             {
-                this->reset();
+                this->free_list::reset();
             }
             
             virtual void reset()
@@ -47,8 +47,8 @@ namespace component
             
             virtual bool push(if_print_fake<uint32_t> data)
             {
-                assert(data.get() < size);
-                assert(free_list_set.find(data.get()) == free_list_set.end());
+                verify(data.get() < size);
+                verify(free_list_set.find(data.get()) == free_list_set.end());
                 return fifo<if_print_fake<uint32_t>>::push(data);
             }
             
@@ -63,9 +63,9 @@ namespace component
                 
                 if(ret)
                 {
-                    assert(data->get() < size);
+                    verify(data->get() < size);
                     auto iter = free_list_set.find(data->get());
-                    assert(iter != free_list_set.end());
+                    verify(iter != free_list_set.end());
                     free_list_set.erase(iter);
                 }
                 
@@ -93,7 +93,7 @@ namespace component
             
             void restore(uint32_t rptr, bool rstage)
             {
-                assert(rptr < this->size);
+                verify(rptr < this->size);
                 this->rptr.set(rptr);
                 this->rstage.set(rstage);
                 
@@ -102,7 +102,7 @@ namespace component
     
                 while((cur_rptr != this->rptr.get()) || (cur_rstage != this->rstage.get()))
                 {
-                    assert(this->free_list_set.find(cur_rptr) == this->free_list_set.end());
+                    verify(this->free_list_set.find(cur_rptr) == this->free_list_set.end());
                     this->free_list_set.insert(cur_rptr);
                     cur_rptr++;
                     
@@ -111,7 +111,7 @@ namespace component
                         cur_rptr = 0;
                         cur_rstage = !cur_rstage;
                     }
-                };
+                }
             }
     };
 }

@@ -126,37 +126,37 @@ namespace pipeline
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:
-                                assert(rev_pack.op_info[i].unit_id < ALU_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < ALU_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_alu_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
     
                             case op_unit_t::bru:
-                                assert(rev_pack.op_info[i].unit_id < BRU_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < BRU_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_bru_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
                             
                             case op_unit_t::csr:
-                                assert(rev_pack.op_info[i].unit_id < CSR_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < CSR_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_csr_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
                             
                             case op_unit_t::div:
-                                assert(rev_pack.op_info[i].unit_id < DIV_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < DIV_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_div_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
                             
                             case op_unit_t::lsu:
-                                assert(rev_pack.op_info[i].unit_id < LSU_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < LSU_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_lsu_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
                             
                             case op_unit_t::mul:
-                                assert(rev_pack.op_info[i].unit_id < MUL_UNIT_NUM);
+                                verify(rev_pack.op_info[i].unit_id < MUL_UNIT_NUM);
                                 need_replay_execute_unit = !this->readreg_mul_hdff[rev_pack.op_info[i].unit_id]->push(send_pack);
                                 break;
                             
                             default:
-                                assert(0);
+                                verify(0);
                                 break;
                         }
                     }
@@ -172,7 +172,7 @@ namespace pipeline
                 }
                 else
                 {
-                    assert(!need_replay);
+                    verify(!need_replay);
                     feedback_pack.issue_id_valid[i] = false;
                     feedback_pack.remove[i] = false;
                     feedback_pack.issue_id[i] = 0;

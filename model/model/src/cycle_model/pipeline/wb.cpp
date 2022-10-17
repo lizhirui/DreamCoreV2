@@ -135,7 +135,7 @@ namespace pipeline
                 
                 feedback_pack.channel[i].enable = rev_pack.enable && rev_pack.valid && rev_pack.need_rename && !rev_pack.has_exception;
                 feedback_pack.channel[i].phy_id = rev_pack.rd_phy;
-                feedback_pack.channel[i].rd_value = rev_pack.rd_value;
+                feedback_pack.channel[i].value = rev_pack.rd_value;
             }
         }
         

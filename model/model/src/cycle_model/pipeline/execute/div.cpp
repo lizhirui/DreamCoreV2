@@ -47,7 +47,7 @@ namespace pipeline
                     if(!readreg_div_hdff->is_empty())
                     {
                         readreg_execute_pack_t rev_pack;
-                        assert(readreg_div_hdff->pop(&rev_pack));
+                        verify(readreg_div_hdff->pop(&rev_pack));
                         
                         send_pack.enable = rev_pack.enable;
                         send_pack.value = rev_pack.value;
@@ -85,8 +85,8 @@ namespace pipeline
                         
                         if(rev_pack.enable)
                         {
-                            assert(rev_pack.valid);
-                            assert(rev_pack.op_unit == op_unit_t::div);
+                            verify(rev_pack.valid);
+                            verify(rev_pack.op_unit == op_unit_t::div);
                             
                             switch(rev_pack.sub_op.div_op)
                             {

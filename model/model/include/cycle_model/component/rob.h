@@ -93,7 +93,7 @@ namespace component
         public:
             rob(uint32_t size) : fifo<rob_item_t>(size), tdb(TRACE_ROB)
             {
-                this->reset();
+                this->rob::reset();
             }
             
             virtual void reset()
@@ -119,7 +119,7 @@ namespace component
                 return &tdb;
             }
             
-            bool get_committed()
+            bool get_committed() const
             {
                 return committed;
             }
@@ -135,12 +135,12 @@ namespace component
                 global_commit_num += add_num;
             }
             
-            uint64_t get_global_commit_num()
+            uint64_t get_global_commit_num() const
             {
                 return global_commit_num;
             }
             
-            uint32_t get_commit_num()
+            uint32_t get_commit_num() const
             {
                 return commit_num;
             }
@@ -215,14 +215,14 @@ namespace component
             
             bool get_prev_id(uint32_t id, uint32_t *prev_id)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 *prev_id = (id + this->size - 1) % this->size;
                 return customer_check_id_valid(*prev_id);
             }
             
             bool get_next_id(uint32_t id, uint32_t *next_id)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 return customer_check_id_valid(*next_id);
             }
@@ -248,7 +248,7 @@ namespace component
                     auto cur = rptr.get();
                     auto cur_stage = rstage.get();
                     
-                    while(1)
+                    while(true)
                     {
                         if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
                         json item = if_print->get_json();

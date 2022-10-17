@@ -21,7 +21,7 @@ namespace pipeline
     {
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->fetch2_decode_fifo = fetch2_decode_fifo;
-        this->reset();
+        this->fetch2::reset();
     }
     
     void fetch2::reset()
@@ -30,12 +30,13 @@ namespace pipeline
         this->rev_pack = fetch1_fetch2_pack_t();
     }
     
-    fetch2_feedback_pack_t fetch2::run(commit_feedback_pack_t commit_feedback_pack)
+    fetch2_feedback_pack_t fetch2::run(const commit_feedback_pack_t &commit_feedback_pack)
     {
         fetch2_decode_pack_t send_pack;
         fetch2_feedback_pack_t feedback_pack;
     
         feedback_pack.idle = true;//set idle state temporarily
+        feedback_pack.stall = this->busy;//if busy state is asserted, stall signal must be asserted too
         
         if(!commit_feedback_pack.flush)
         {
@@ -84,8 +85,7 @@ namespace pipeline
             this->busy = false;
             fetch2_decode_fifo->flush();
         }
-    
-        feedback_pack.stall = this->busy;//if busy state is asserted, stall signal must be asserted too
+        
         return feedback_pack;
     }
 }

@@ -21,6 +21,7 @@ namespace component
 
         protected:
             virtual void sync() = 0;
+            virtual void reset() = 0;
 
         public:
             dff_base()

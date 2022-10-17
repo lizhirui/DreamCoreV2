@@ -25,13 +25,14 @@ namespace pipeline
         this->dispatch_integer_issue_port = dispatch_integer_issue_port;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;
         this->store_buffer = store_buffer;
-        this->reset();
+        this->dispatch::reset();
     }
     
     void dispatch::reset()
     {
         this->integer_busy = false;
         this->lsu_busy = false;
+        this->busy = false;
         this->hold_integer_issue_pack = dispatch_issue_pack_t();
         this->hold_lsu_issue_pack = dispatch_issue_pack_t();
         this->is_inst_waiting = false;
@@ -39,11 +40,13 @@ namespace pipeline
         this->is_stbuf_empty_waiting = false;
     }
     
-    dispatch_feedback_pack_t dispatch::run(integer_issue_feedback_pack_t integer_issue_feedback_pack, lsu_issue_feedback_pack_t lsu_issue_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    dispatch_feedback_pack_t dispatch::run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         dispatch_issue_pack_t integer_issue_pack;
         dispatch_issue_pack_t lsu_issue_pack;
-        bool retry = false;
+    
+        dispatch_feedback_pack_t feedback_pack;
+        feedback_pack.stall = this->integer_busy || this->lsu_busy || this->busy;
         
         if(!commit_feedback_pack.flush)
         {
@@ -51,12 +54,20 @@ namespace pipeline
             {
                 if(!(this->integer_busy || this->lsu_busy))
                 {
-                    auto rev_pack = rename_dispatch_port->get();
-                    auto integer_issue_id = 0;
-                    auto lsu_issue_id = 0;
+                    if(!this->busy)
+                    {
+                        rev_pack = rename_dispatch_port->get();
+                    }
+                    else
+                    {
+                        this->busy = false;
+                    }
+    
+                    uint32_t integer_issue_id = 0;
+                    uint32_t lsu_issue_id = 0;
                     auto found_inst_waiting = false;
                     auto found_fence = false;
-                    auto found_rob_id = 0;
+                    uint32_t found_rob_id = 0;
                     
                     for(auto i = 0;i < RENAME_WIDTH;i++)
                     {
@@ -138,13 +149,13 @@ namespace pipeline
                                 if(rev_pack.op_info[i].op_unit == op_unit_t::csr || rev_pack.op_info[i].op == op_t::mret)
                                 {
                                     found_inst_waiting = true;
-                                    found_rob_id = rev_pack.op_info[i].rob_id;
+                                    found_rob_id = this->rev_pack.op_info[i].rob_id;
                                     break;
                                 }
                                 else if(rev_pack.op_info[i].op == op_t::fence)
                                 {
                                     found_fence = true;
-                                    found_rob_id = rev_pack.op_info[i].rob_id;
+                                    found_rob_id = this->rev_pack.op_info[i].rob_id;
                                 }
                             }
                         }
@@ -152,21 +163,26 @@ namespace pipeline
         
                     if(found_inst_waiting)
                     {
-                        if(!(!integer_issue_feedback_pack.stall && commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == rev_pack.op_info[0].rob_id)))
+                        if(!(!integer_issue_feedback_pack.stall && commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == found_rob_id)))
                         {
-                            retry = true;
+                            this->busy = true;
+                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                         }
                         else
                         {
                             dispatch_integer_issue_port->set(integer_issue_pack);
+                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = found_rob_id;
-                            assert(found_rob_id == 0);
+                            verify(found_rob_id == 0);
                         }
                     }
                     else if(found_fence && (((integer_issue_id > 0) && integer_issue_feedback_pack.stall) || ((lsu_issue_id > 0) && lsu_issue_feedback_pack.stall)))
                     {
-                        retry = true;
+                        this->busy = true;
+                        dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                        dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                     }
                     else
                     {
@@ -189,6 +205,10 @@ namespace pipeline
                                 dispatch_integer_issue_port->set(integer_issue_pack);
                             }
                         }
+                        else
+                        {
+                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                        }
                         
                         if(lsu_issue_id > 0)
                         {
@@ -202,6 +222,10 @@ namespace pipeline
                                 dispatch_lsu_issue_port->set(lsu_issue_pack);
                             }
                         }
+                        else
+                        {
+                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                        }
                     }
                 }
                 else
@@ -211,16 +235,27 @@ namespace pipeline
                         dispatch_integer_issue_port->set(this->hold_integer_issue_pack);
                         this->integer_busy = false;
                     }
+                    else
+                    {
+                        dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                    }
                     
                     if(this->lsu_busy && !lsu_issue_feedback_pack.stall)
                     {
                         dispatch_lsu_issue_port->set(this->hold_lsu_issue_pack);
                         this->lsu_busy = false;
                     }
+                    else
+                    {
+                        dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                    }
                 }
             }
             else if(is_inst_waiting)
             {
+                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                
                 if(commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))
                 {
                     this->is_inst_waiting = false;
@@ -234,22 +269,31 @@ namespace pipeline
             }
             else if(is_stbuf_empty_waiting && store_buffer->customer_is_empty())
             {
+                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                 this->is_stbuf_empty_waiting = false;
+            }
+            else
+            {
+                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
             }
         }
         else
         {
+            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
             this->integer_busy = false;
             this->lsu_busy = false;
+            this->busy = false;
             this->hold_integer_issue_pack = dispatch_issue_pack_t();
             this->hold_lsu_issue_pack = dispatch_issue_pack_t();
+            this->rev_pack = rename_dispatch_pack_t();
             this->is_inst_waiting = false;
             this->inst_waiting_rob_id = 0;
             this->is_stbuf_empty_waiting = false;
         }
         
-        dispatch_feedback_pack_t feedback_pack;
-        feedback_pack.stall = this->integer_busy || this->lsu_busy || retry;
         return feedback_pack;
     }
 }

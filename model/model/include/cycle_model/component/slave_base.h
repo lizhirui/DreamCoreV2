@@ -23,24 +23,13 @@ namespace component
             {
                 if(!test_mode)
                 {
-                    assert(!(addr & (access_size - 1)));//align check
-                    assert(addr < size);//boundary check
-                    assert((size - addr) >= access_size);//boundary check
+                    verify(!(addr & (access_size - 1)));//align check
+                    verify(addr < size);//boundary check
+                    verify((size - addr) >= access_size);//boundary check
                 }
                 else
                 {
-                    if(addr & (access_size - 1))
-                    {
-                        has_error = true;
-                    }
-                    else if(!(addr < size))
-                    {
-                        has_error = true;
-                    }
-                    else if(!((size - addr) >= access_size))
-                    {
-                        has_error = true;
-                    }
+                    has_error = ((addr & (access_size - 1)) || (addr >= size) || ((size - addr) < access_size));
                 }
                 
                 return !has_error;
@@ -111,7 +100,7 @@ namespace component
                 test_mode = false;
                 has_error = false;
                 size = 0;
-                this->reset();
+                this->slave_base::reset();
             }
             
             virtual void reset()
@@ -119,12 +108,12 @@ namespace component
                 _reset();
             }
             
-            bool check_align(uint32_t addr, uint32_t access_size)
+            static bool check_align(uint32_t addr, uint32_t access_size)
             {
                 return !(addr & (access_size - 1));
             }
             
-            bool check_boundary(uint32_t addr, uint32_t access_size)
+            bool check_boundary(uint32_t addr, uint32_t access_size) const
             {
                 return (addr < size) && ((size - addr) >= access_size);
             }
@@ -135,7 +124,7 @@ namespace component
                 has_error = false;
             }
             
-            bool get_error()
+            bool get_error() const
             {
                 return has_error;
             }

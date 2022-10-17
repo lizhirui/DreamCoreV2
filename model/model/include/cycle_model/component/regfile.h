@@ -23,7 +23,7 @@ namespace component
         private:
             dff<T> *reg_data;
             dff<bool> *reg_data_valid;
-            uint32_t size;
+            uint32_t size = 0;
         
             trace::trace_database tdb;
             
@@ -68,20 +68,20 @@ namespace component
         
             void write(uint32_t addr, T value, bool valid)
             {
-                assert(addr < size);
+                verify(addr < size);
                 reg_data[addr].set(value);
                 reg_data_valid[addr].set(value);
             }
         
             T read(uint32_t addr)
             {
-                assert(addr < size);
+                verify(addr < size);
                 return reg_data[addr];
             }
         
             bool read_data_valid(uint32_t addr)
             {
-                assert(addr < size);
+                verify(addr < size);
                 return reg_data_valid[addr];
             }
             

@@ -17,14 +17,14 @@
 
 namespace pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_issue_pack_t> *rename_issue_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
+    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
     {
         this->decode_rename_fifo = decode_rename_fifo;
-        this->rename_issue_port = rename_issue_port;
+        this->rename_dispatch_port = rename_dispatch_port;
         this->speculative_rat = speculative_rat;
         this->rob = rob;
         this->phy_id_free_list = phy_id_free_list;
-        this->reset();
+        this->rename::reset();
     }
     
     void rename::reset()
@@ -32,15 +32,17 @@ namespace pipeline
         phy_id_free_list->reset();
     }
     
-    rename_feedback_pack_t rename::run(issue_feedback_pack_t issue_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    rename_feedback_pack_t rename::run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         rename_feedback_pack_t feedback_pack;
-        rename_issue_pack_t send_pack;
+        rename_dispatch_pack_t send_pack;
+        bool ready_to_stop_rename = false;
+        bool found_fence = false;
         feedback_pack.idle = decode_rename_fifo->customer_is_empty();
         
         if(!commit_feedback_pack.flush)
         {
-            if(!issue_feedback_pack.stall)
+            if(!dispatch_feedback_pack.stall)
             {
                 //generate base send_pack
                 for(uint32_t i = 0;i < RENAME_WIDTH;i++)
@@ -53,7 +55,32 @@ namespace pipeline
                         if(!phy_id_free_list->customer_is_empty() && !rob->customer_is_full())
                         {
                             decode_rename_pack_t rev_pack;
-                            assert(decode_rename_fifo->pop(&rev_pack));
+                            verify(decode_rename_fifo->customer_get_front(&rev_pack));
+                            
+                            if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception)
+                            {
+                                if((rev_pack.op_unit == op_unit_t::csr) || (rev_pack.op == op_t::mret))
+                                {
+                                    if(i == 0)
+                                    {
+                                        ready_to_stop_rename = true;
+                                    }
+                                    else
+                                    {
+                                        break;//stop rename immediately
+                                    }
+                                }
+                                else if(rev_pack.op == op_t::fence)
+                                {
+                                    found_fence = true;
+                                }
+                                else if(found_fence && (rev_pack.op_unit == op_unit_t::lsu))
+                                {
+                                    break;//stop rename immediately
+                                }
+                            }
+                            
+                            verify(decode_rename_fifo->pop(&rev_pack));
                             
                             send_pack.op_info[i].enable = rev_pack.enable;
                             send_pack.op_info[i].value = rev_pack.value;
@@ -89,8 +116,8 @@ namespace pipeline
                                     if(rev_pack.need_rename)
                                     {
                                         rob_item.old_phy_reg_id_valid = true;
-                                        assert(speculative_rat->producer_get_phy_id(rev_pack.rd, &rob_item.old_phy_reg_id));
-                                        assert(phy_id_free_list->pop(&send_pack.op_info[i].rd_phy));
+                                        verify(speculative_rat->producer_get_phy_id(rev_pack.rd, &rob_item.old_phy_reg_id));
+                                        verify(phy_id_free_list->pop(&send_pack.op_info[i].rd_phy));
                                         speculative_rat->set_map(rev_pack.rd, send_pack.op_info[i].rd_phy);
                                     }
                                     else
@@ -117,19 +144,24 @@ namespace pipeline
                                 rob_item.csr_newvalue_valid = false;
                                 phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 //write to rob
-                                assert(rob->get_new_id(&send_pack.op_info[i].rob_id));
-                                assert(rob->push(rob_item));
+                                verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
+                                verify(rob->push(rob_item));
                                 
                                 //start to map source registers
                                 if(rev_pack.rs1_need_map)
                                 {
-                                    assert(speculative_rat->producer_get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
+                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
                                 }
                                 
                                 if(rev_pack.rs2_need_map)
                                 {
-                                    assert(speculative_rat->producer_get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
+                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
                                 }
+                            }
+                            
+                            if(ready_to_stop_rename)
+                            {
+                                break;
                             }
                         }
                         else if(phy_id_free_list->customer_is_empty())
@@ -156,12 +188,37 @@ namespace pipeline
                     }
                 }
                 
-                rename_issue_port->set(send_pack);
+                rename_dispatch_port->set(send_pack);
             }
         }
         else
         {
-            rename_issue_port->set(send_pack);
+            rename_dispatch_port->set(send_pack);
+        }
+        
+        //assertion
+        if(send_pack.op_info[0].enable && send_pack.op_info[0].valid && !send_pack.op_info[0].has_exception && (send_pack.op_info[0].op_unit == op_unit_t::csr))
+        {
+            for(auto i = 1;i < RENAME_WIDTH;i++)
+            {
+                verify(!send_pack.op_info[i].enable);
+            }
+        }
+        
+        auto assertion_found_fence = false;
+        
+        for(auto i = 0;i < RENAME_WIDTH;i++)
+        {
+            if(send_pack.op_info[i].enable && send_pack.op_info[i].valid && !send_pack.op_info[i].has_exception)
+            {
+                verify((i == 0) || (send_pack.op_info[i].op_unit != op_unit_t::csr));
+                verify(!assertion_found_fence || (send_pack.op_info[i].op_unit != op_unit_t::lsu));
+                
+                if(send_pack.op_info[i].op == op_t::fence)
+                {
+                    assertion_found_fence = true;
+                }
+            }
         }
         
         return feedback_pack;

@@ -16,9 +16,9 @@ namespace pipeline
 {
     typedef struct execute_feedback_channel_t : if_print_t
     {
-        bool enable;
-        uint32_t phy_id;
-        uint32_t value;
+        bool enable = false;
+        uint32_t phy_id = 0;
+        uint32_t value = 0;
         
         virtual json get_json()
         {

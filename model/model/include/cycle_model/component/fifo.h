@@ -19,7 +19,7 @@ namespace component
     {
         protected:
             dff<T> *buffer;
-            uint32_t size;
+            uint32_t size = 0;
             dff<uint32_t> wptr;
             dff<bool> wstage;
             dff<uint32_t> rptr;
@@ -209,45 +209,45 @@ namespace component
 
             bool producer_get_next_id(uint32_t id, uint32_t *next_id)
             {
-                assert(producer_check_id_valid(id));
+                verify(producer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 return producer_check_id_valid(*next_id);
             }
 
             bool customer_get_next_id(uint32_t id, uint32_t *next_id)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 return customer_check_id_valid(*next_id);
             }
 
             T producer_get_item(uint32_t id)
             {
-                assert(producer_check_id_valid(id));
+                verify(producer_check_id_valid(id));
                 return this->buffer[id].get();
             }
 
             T customer_get_item(uint32_t id)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 return this->buffer[id].get();
             }
 
             void producer_set_item(uint32_t id, T value)
             {
-                assert(producer_check_id_valid(id));
+                verify(producer_check_id_valid(id));
                 buffer[id].set(value);
             }
 
             void customer_set_item(uint32_t id, T value)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 buffer[id].set(value);
             }
 
             bool producer_get_next_id_stage(uint32_t id, bool stage, uint32_t *next_id, bool *next_stage)
             {
-                assert(producer_check_id_valid(id));
+                verify(producer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 *next_stage = ((id + 1) >= this->size) != stage;
                 return producer_check_id_valid(*next_id);
@@ -255,7 +255,7 @@ namespace component
 
             bool customer_get_next_id_stage(uint32_t id, bool stage, uint32_t *next_id, bool *next_stage)
             {
-                assert(customer_check_id_valid(id));
+                verify(customer_check_id_valid(id));
                 *next_id = (id + 1) % this->size;
                 *next_stage = ((id + 1) >= this->size) != stage;
                 return customer_check_id_valid(*next_id);
@@ -346,7 +346,7 @@ namespace component
                     auto cur = rptr.get();
                     auto cur_stage = rstage.get();
 
-                    while(1)
+                    while(true)
                     {
                         if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
                         ret.push_back(if_print->get_json());

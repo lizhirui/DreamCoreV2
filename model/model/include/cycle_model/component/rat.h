@@ -28,13 +28,13 @@ namespace component
             
             void set_valid(uint32_t phy_id, bool v)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 phy_map_table_valid[phy_id].set(v);
             }
             
             void set_visible(uint32_t phy_id, bool v)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 phy_map_table_visible[phy_id].set(v);
             }
             
@@ -47,6 +47,7 @@ namespace component
                 phy_map_table_valid = new dff<bool>[phy_reg_num];
                 phy_map_table_visible = new dff<bool>[phy_reg_num];
                 init_rat = false;
+                this->rat::reset();
             }
             
             ~rat()
@@ -60,7 +61,7 @@ namespace component
             {
                 for(auto i = 0;i < phy_reg_num;i++)
                 {
-                    phy_map_table[i].set(i);
+                    phy_map_table[i].set(0);
                     phy_map_table_valid[i].set(false);
                     phy_map_table_visible[i].set(false);
                 }
@@ -75,7 +76,12 @@ namespace component
             
             virtual void reset()
             {
-                this->reset();
+                for(auto i = 0;i < phy_reg_num;i++)
+                {
+                    phy_map_table[i].set(0);
+                    phy_map_table_valid[i].set(false);
+                    phy_map_table_visible[i].set(false);
+                }
             }
             
             void trace_pre()
@@ -95,25 +101,25 @@ namespace component
         
             bool producer_get_valid(uint32_t phy_id)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 return phy_map_table_valid[phy_id].get_new();
             }
         
             bool customer_get_valid(uint32_t phy_id)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 return phy_map_table_valid[phy_id].get();
             }
         
             bool producer_get_visible(uint32_t phy_id)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 return phy_map_table_visible[phy_id].get_new();
             }
         
             bool customer_get_visible(uint32_t phy_id)
             {
-                assert(phy_id < phy_reg_num);
+                verify(phy_id < phy_reg_num);
                 return phy_map_table_visible[phy_id].get();
             }
             
@@ -130,7 +136,7 @@ namespace component
             bool producer_get_phy_id(uint32_t arch_id, uint32_t *phy_id)
             {
                 int cnt = 0;
-                assert((arch_id > 0) && (arch_id < arch_reg_num));
+                verify((arch_id > 0) && (arch_id < arch_reg_num));
                 
                 for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
@@ -141,14 +147,14 @@ namespace component
                     }
                 }
                 
-                assert(cnt <= 1);
+                verify(cnt <= 1);
                 return cnt == 1;
             }
         
             bool customer_get_phy_id(uint32_t arch_id, uint32_t *phy_id)
             {
                 int cnt = 0;
-                assert((arch_id > 0) && (arch_id < arch_reg_num));
+                verify((arch_id > 0) && (arch_id < arch_reg_num));
             
                 for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
@@ -159,22 +165,22 @@ namespace component
                     }
                 }
             
-                assert(cnt <= 1);
+                verify(cnt <= 1);
                 return cnt == 1;
             }
             
             uint32_t set_map(uint32_t arch_id, uint32_t phy_id)
             {
                 uint32_t old_phy_id;
-                assert(phy_id < phy_reg_num);
-                assert((arch_id > 0) && (arch_id < arch_reg_num));
-                assert(!producer_get_valid(phy_id));
+                verify(phy_id < phy_reg_num);
+                verify((arch_id > 0) && (arch_id < arch_reg_num));
+                verify(!producer_get_valid(phy_id));
                 bool ret = producer_get_phy_id(arch_id, &old_phy_id);
                 
                 if(!init_rat)
                 {
-                    assert(ret);
-                    assert(producer_get_valid(old_phy_id));
+                    verify(ret);
+                    verify(producer_get_valid(old_phy_id));
                 }
                 
                 phy_map_table[phy_id].set(arch_id);
@@ -192,12 +198,12 @@ namespace component
             void commit_map(uint32_t arch_id, uint32_t phy_id)
             {
                 uint32_t old_phy_id;
-                assert(phy_id < phy_reg_num);
-                assert((arch_id > 0) && (arch_id < arch_reg_num));
-                assert(!producer_get_valid(phy_id));
+                verify(phy_id < phy_reg_num);
+                verify((arch_id > 0) && (arch_id < arch_reg_num));
+                verify(!producer_get_valid(phy_id));
                 bool ret = producer_get_phy_id(arch_id, &old_phy_id);
-                assert(ret);
-                assert(producer_get_valid(old_phy_id));
+                verify(ret);
+                verify(producer_get_valid(old_phy_id));
                 
                 phy_map_table[phy_id].set(arch_id);
                 set_valid(phy_id, true);
@@ -206,21 +212,21 @@ namespace component
             
             void release_map(uint32_t phy_id)
             {
-                assert(phy_id < phy_reg_num);
-                assert(producer_get_valid(phy_id));
-                assert(!producer_get_visible(phy_id));
+                verify(phy_id < phy_reg_num);
+                verify(producer_get_valid(phy_id));
+                verify(!producer_get_visible(phy_id));
                 phy_map_table[phy_id].set(0);
                 set_valid(phy_id, false);
             }
             
             void restore_map(uint32_t new_phy_id, uint32_t old_phy_id)
             {
-                assert(new_phy_id < phy_reg_num);
-                assert(old_phy_id < phy_reg_num);
-                assert(producer_get_valid(new_phy_id));
-                assert(producer_get_valid(old_phy_id));
-                assert(producer_get_visible(new_phy_id));
-                assert(!producer_get_visible(old_phy_id));
+                verify(new_phy_id < phy_reg_num);
+                verify(old_phy_id < phy_reg_num);
+                verify(producer_get_valid(new_phy_id));
+                verify(producer_get_valid(old_phy_id));
+                verify(producer_get_visible(new_phy_id));
+                verify(!producer_get_visible(old_phy_id));
                 phy_map_table[new_phy_id] = 0;
                 set_valid(new_phy_id, false);
                 set_visible(new_phy_id, false);

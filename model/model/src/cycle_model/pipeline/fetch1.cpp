@@ -23,7 +23,7 @@ namespace pipeline
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->store_buffer = store_buffer;
         this->init_pc = init_pc;
-        this->reset();
+        this->fetch1::reset();
     }
     
     void fetch1::reset()
@@ -32,7 +32,7 @@ namespace pipeline
         this->jump_wait = false;
     }
     
-    void fetch1::run(fetch2_feedback_pack_t fetch2_feedback_pack, decode_feedback_pack_t decode_feedback_pack, rename_feedback_pack_t rename_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    void fetch1::run(const fetch2_feedback_pack_t &fetch2_feedback_pack, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         fetch1_fetch2_pack_t send_pack;
         
@@ -60,7 +60,7 @@ namespace pipeline
                     for(auto i = 0;i < FETCH_WIDTH;i++)
                     {
                         uint32_t cur_pc = old_pc + i * 4;
-                        bool has_exception = !bus->check_align(cur_pc, 4);
+                        bool has_exception = !component::bus::check_align(cur_pc, 4);
                         uint32_t opcode = has_exception ? 0 : instruction_value[i];
                         bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
                         bool fence_i = ((opcode & 0x7f) == 0x0f) && (((opcode >> 12) & 0x07) == 0x01);
@@ -86,7 +86,7 @@ namespace pipeline
                         send_pack.op_info[i].value = opcode;
                         send_pack.op_info[i].pc = cur_pc;
                         send_pack.op_info[i].has_exception = has_exception;
-                        send_pack.op_info[i].exception_id = !bus->check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
+                        send_pack.op_info[i].exception_id = !component::bus::check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
                         send_pack.op_info[i].exception_value = cur_pc;
                         
                         if(jump)
@@ -107,6 +107,7 @@ namespace pipeline
             }
             else if(commit_feedback_pack.jump_enable)
             {
+                verify(commit_feedback_pack.jump);
                 this->pc = commit_feedback_pack.next_pc;
             }
         }
@@ -115,7 +116,7 @@ namespace pipeline
         this->bus->read_instruction(this->pc);
     }
     
-    uint32_t fetch1::get_pc()
+    uint32_t fetch1::get_pc() const
     {
         return this->pc;
     }

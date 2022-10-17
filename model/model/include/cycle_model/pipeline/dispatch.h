@@ -40,21 +40,23 @@ namespace pipeline
             component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port;
             component::store_buffer *store_buffer;
             
-            bool integer_busy;
-            bool lsu_busy;
+            bool integer_busy = false;
+            bool lsu_busy = false;
+            bool busy = false;
             dispatch_issue_pack_t hold_integer_issue_pack;
             dispatch_issue_pack_t hold_lsu_issue_pack;
+            rename_dispatch_pack_t rev_pack;
             
-            bool is_inst_waiting;
-            uint32_t inst_waiting_rob_id;
+            bool is_inst_waiting = false;
+            uint32_t inst_waiting_rob_id = 0;
             
-            bool is_stbuf_empty_waiting;
+            bool is_stbuf_empty_waiting = false;
             
             trace::trace_database tdb;
         
         public:
             dispatch(component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer);
             virtual void reset();
-            dispatch_feedback_pack_t run(integer_issue_feedback_pack_t integer_issue_feedback_pack, lsu_issue_feedback_pack_t lsu_issue_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

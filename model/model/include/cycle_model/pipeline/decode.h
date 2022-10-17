@@ -38,6 +38,6 @@ namespace pipeline
         public:
             decode(component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
             virtual void reset();
-            decode_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);
+            decode_feedback_pack_t run(const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

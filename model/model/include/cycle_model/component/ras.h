@@ -17,8 +17,8 @@ namespace component
 {
     typedef struct ras_item_t : public if_print_t
     {
-        uint32_t addr;
-        uint32_t cnt;
+        uint32_t addr = 0;
+        uint32_t cnt = 0;
     }ras_item_t;
 
     class ras : component::stack<ras_item_t>
@@ -62,7 +62,7 @@ namespace component
         public:
             ras(uint32_t size) : component::stack<ras_item_t>(size), last_addr(0), tdb(TRACE_RAS)
             {
-                this->reset();
+                this->ras::reset();
             }
 
             virtual void reset()
@@ -79,7 +79,7 @@ namespace component
                 {
                     t_item.cnt++;
                     uint32_t item_id = 0;
-                    assert(get_top_id(&item_id));
+                    verify(get_top_id(&item_id));
                     set_item(item_id, t_item);
                 }
                 else
@@ -114,7 +114,7 @@ namespace component
                     {
                         t_item.cnt--;
                         uint32_t item_id = 0;
-                        assert(get_top_id(&item_id));
+                        verify(get_top_id(&item_id));
                         set_item(item_id, t_item);
                     }
 

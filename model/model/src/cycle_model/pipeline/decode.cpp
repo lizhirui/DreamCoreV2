@@ -21,7 +21,7 @@ namespace pipeline
     {
         this->fetch2_decode_fifo = fetch2_decode_fifo;
         this->decode_rename_fifo = decode_rename_fifo;
-        this->reset();
+        this->decode::reset();
     }
     
     void decode::reset()
@@ -29,7 +29,7 @@ namespace pipeline
     
     }
     
-    decode_feedback_pack_t decode::run(commit_feedback_pack_t commit_feedback_pack)
+    decode_feedback_pack_t decode::run(const commit_feedback_pack_t &commit_feedback_pack)
     {
         decode_feedback_pack_t feedback_pack;
         
@@ -43,7 +43,7 @@ namespace pipeline
                 {
                     fetch2_decode_pack_t rev_pack;
                     decode_rename_pack_t send_pack;
-                    assert(this->fetch2_decode_fifo->pop(&rev_pack));
+                    verify(this->fetch2_decode_fifo->pop(&rev_pack));
                     
                     if(rev_pack.enable)
                     {
@@ -710,7 +710,7 @@ namespace pipeline
                         send_pack = op_info;
                     }
                     
-                    assert(decode_rename_fifo->push(send_pack));
+                    verify(decode_rename_fifo->push(send_pack));
                 }
                 else if(!this->fetch2_decode_fifo->customer_is_empty() && this->decode_rename_fifo->producer_is_full())
                 {

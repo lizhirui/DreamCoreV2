@@ -24,18 +24,18 @@ namespace pipeline
 {
     typedef struct commit_feedback_pack_t : public if_print_t
     {
-        bool idle;
-        bool next_handle_rob_id_valid;
-        uint32_t next_handle_rob_id;
-        bool has_exception;
-        uint32_t exception_pc;
-        bool flush;
-        uint32_t committed_rob_id[COMMIT_WIDTH];
-        bool committed_rob_id_valid[COMMIT_WIDTH];
+        bool idle = false;
+        bool next_handle_rob_id_valid = false;
+        uint32_t next_handle_rob_id = 0;
+        bool has_exception = false;
+        uint32_t exception_pc = 0;
+        bool flush = false;
+        uint32_t committed_rob_id[COMMIT_WIDTH] = {0};
+        bool committed_rob_id_valid[COMMIT_WIDTH] = {false};
         
-        bool jump_enable;
-        bool jump;
-        uint32_t next_pc;
+        bool jump_enable = false;
+        bool jump = false;
+        uint32_t next_pc = 0;
         
         virtual json get_json()
         {

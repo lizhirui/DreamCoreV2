@@ -19,7 +19,7 @@ namespace component
     {
         protected:
             dff<T> *buffer;
-            uint32_t size;
+            uint32_t size = 0;
             dff<uint32_t> top_ptr;
 
         public:
@@ -27,7 +27,7 @@ namespace component
             {
                 this->size = size;
                 buffer = new dff<T>[size];
-                this->reset();
+                this->stack::reset();
             }
 
             ~stack()

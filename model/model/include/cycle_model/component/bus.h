@@ -20,10 +20,10 @@ namespace component
     
     typedef struct slave_info_t
     {
-        uint32_t base;
-        uint32_t size;
+        uint32_t base = 0;
+        uint32_t size = 0;
         std::shared_ptr<slave_base> slave;
-        bool support_fetch;
+        bool support_fetch = false;
     }slave_info_t;
     
     class bus : public if_reset_t
@@ -74,7 +74,7 @@ namespace component
         public:
             bus() : instruction_value_valid(false), data_value_valid(false), tdb(TRACE_BUS)
             {
-                this->reset();
+                this->bus::reset();
             }
             
             int find_slave_info(uint32_t addr, bool is_fetch)
@@ -93,16 +93,16 @@ namespace component
                 return -1;
             }
             
-            slave_base *get_slave_obj(uint32_t addr)
+            slave_base *get_slave_obj(uint32_t addr, bool is_fetch)
             {
-                int slave_id = find_slave_info(addr);
+                int slave_id = find_slave_info(addr, is_fetch);
                 
                 if(slave_id >= 0)
                 {
                     return slave_info_list[slave_id].slave.get();
                 }
                 
-                return NULL;
+                return nullptr;
             }
             
             uint32_t convert_to_slave_addr(uint32_t addr, bool is_fetch)
@@ -118,9 +118,9 @@ namespace component
                 return result;
             }
             
-            void map(uint32_t base, uint32_t size, std::shared_ptr<slave_base> slave)
+            void map(uint32_t base, uint32_t size, const std::shared_ptr<slave_base> &slave)
             {
-                assert(!check_addr_override(base, size));
+                verify(!check_addr_override(base, size));
                 slave_info_t slave_info;
                 slave_info.base = base;
                 slave_info.size = size;
@@ -149,7 +149,7 @@ namespace component
                 return &tdb;
             }
             
-            bool check_align(uint32_t addr, uint32_t access_size)
+            static bool check_align(uint32_t addr, uint32_t access_size)
             {
                 return !(addr & (access_size - 1));
             }
@@ -266,7 +266,7 @@ namespace component
                 return false;
             }
             
-            void set_instruction_value(uint32_t *value)
+            void set_instruction_value(const uint32_t *value)
             {
                 instruction_value_valid.set(true);
                 

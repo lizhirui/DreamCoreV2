@@ -38,7 +38,7 @@ namespace pipeline
     {
         private:
             component::fifo<decode_rename_pack_t> *decode_rename_fifo;
-            component::port<rename_issue_pack_t> *rename_issue_port;
+            component::port<rename_dispatch_pack_t> *rename_dispatch_port;
             component::rat *speculative_rat;
             component::rob *rob;
             component::free_list *phy_id_free_list;
@@ -46,8 +46,8 @@ namespace pipeline
             trace::trace_database tdb;
         
         public:
-            rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_issue_pack_t> *rename_issue_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list);
+            rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list);
             virtual void reset();
-            rename_feedback_pack_t run(dispatch_feedback_pack_t dispatch_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            rename_feedback_pack_t run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

@@ -38,7 +38,7 @@ namespace pipeline
             if(!readreg_mul_hdff->is_empty() && !commit_feedback_pack.flush)
             {
                 readreg_execute_pack_t rev_pack;
-                assert(readreg_mul_hdff->pop(&rev_pack));
+                verify(readreg_mul_hdff->pop(&rev_pack));
                 
                 send_pack.enable = rev_pack.enable;
                 send_pack.value = rev_pack.value;
@@ -75,8 +75,8 @@ namespace pipeline
                 
                 if(rev_pack.enable)
                 {
-                    assert(rev_pack.valid);
-                    assert(rev_pack.op_unit == op_unit_t::mul);
+                    verify(rev_pack.valid);
+                    verify(rev_pack.op_unit == op_unit_t::mul);
                     
                     switch(rev_pack.sub_op.mul_op)
                     {

@@ -46,7 +46,7 @@ namespace pipeline
             
             if(l2_rev_pack.enable && !commit_feedback_pack.flush)
             {
-                assert(l2_rev_pack.valid);
+                verify(l2_rev_pack.valid);
                 send_pack.enable = l2_rev_pack.enable;
                 send_pack.value = l2_rev_pack.value;
                 send_pack.valid = l2_rev_pack.valid;
@@ -237,8 +237,8 @@ namespace pipeline
                     
                     if(rev_pack.enable)
                     {
-                        assert(rev_pack.valid);
-                        assert(rev_pack.op_unit == op_unit_t::lsu);
+                        verify(rev_pack.valid);
+                        verify(rev_pack.op_unit == op_unit_t::lsu);
                         
                         if(!rev_pack.has_exception)
                         {
@@ -280,7 +280,7 @@ namespace pipeline
                                     break;
                                     
                                 default:
-                                    assert(0);
+                                    verify(0);
                                     break;
                             }
                         }

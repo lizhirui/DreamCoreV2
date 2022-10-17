@@ -49,7 +49,7 @@ namespace pipeline
         if(!rob->customer_is_empty())
         {
             uint32_t rob_item_id = 0;
-            assert(rob->get_front_id(&rob_item_id));
+            verify(rob->get_front_id(&rob_item_id));
             feedback_pack.next_handle_rob_id = rob_item_id;
             feedback_pack.next_handle_rob_id_valid = true;
             auto first_id = rob_item_id;

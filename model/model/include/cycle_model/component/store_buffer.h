@@ -20,13 +20,13 @@ namespace component
 {
     typedef struct store_buffer_item_t : public if_print_t
     {
-        bool enable;
-        bool committed;
-        uint32_t rob_id;
-        uint32_t pc;
-        uint32_t addr;
-        uint32_t data;
-        uint32_t size;
+        bool enable = false;
+        bool committed = false;
+        uint32_t rob_id = 0;
+        uint32_t pc = 0;
+        uint32_t addr = 0;
+        uint32_t data = 0;
+        uint32_t size = 0;
     }store_buffer_item_t;
     
     typedef struct store_buffer_state_pack_t
@@ -60,13 +60,13 @@ namespace component
             
             store_buffer_item_t get_item(uint32_t id)
             {
-                assert(check_id_valid(id));
+                verify(check_id_valid(id));
                 return this->buffer[id].get();
             }
             
             void set_item(uint32_t id, store_buffer_item_t value)
             {
-                assert(check_id_valid(id));
+                verify(check_id_valid(id));
                 this->buffer[id].set(value);
             }
             
@@ -106,7 +106,7 @@ namespace component
             store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size), tdb(TRACE_STORE_BUFFER)
             {
                 this->bus_if = bus_if;
-                this->reset();
+                this->store_buffer::reset();
             }
             
             virtual void reset()
@@ -238,7 +238,7 @@ namespace component
                         {
                             store_buffer_item_t t_item;
                             pop(&t_item);
-                            assert((item.size == 1) || (item.size == 2) || (item.size == 4));
+                            verify((item.size == 1) || (item.size == 2) || (item.size == 4));
                             
                             switch(item.size)
                             {

@@ -43,7 +43,7 @@ namespace pipeline
             {
                 if(!readreg_csr_hdff->is_empty())
                 {
-                    assert(readreg_csr_hdff->pop(&rev_pack));
+                    verify(readreg_csr_hdff->pop(&rev_pack));
                     
                     send_pack.enable = rev_pack.enable;
                     send_pack.value = rev_pack.value;
@@ -80,8 +80,8 @@ namespace pipeline
                     
                     if(rev_pack.enable)
                     {
-                        assert(rev_pack.valid);
-                        assert(rev_pack.op_unit == op_unit_t::csr);
+                        verify(rev_pack.valid);
+                        verify(rev_pack.op_unit == op_unit_t::csr);
                         
                         if(rev_pack.need_rename && !csr_file->read(rev_pack.csr, &csr_value))
                         {

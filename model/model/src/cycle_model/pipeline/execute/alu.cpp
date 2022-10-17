@@ -39,7 +39,7 @@ namespace pipeline
             if(!readreg_alu_hdff->is_empty() && !commit_feedback_pack.flush)
             {
                 readreg_execute_pack_t rev_pack;
-                assert(readreg_alu_hdff->pop(&rev_pack));
+                verify(readreg_alu_hdff->pop(&rev_pack));
                 
                 send_pack.enable = rev_pack.enable;
                 send_pack.value = rev_pack.value;
@@ -76,7 +76,7 @@ namespace pipeline
                 
                 if(rev_pack.enable)
                 {
-                    assert(rev_pack.op_unit == op_unit_t::alu);
+                    verify(rev_pack.op_unit == op_unit_t::alu);
                 }
                 
                 if(rev_pack.enable && (!rev_pack.has_exception))

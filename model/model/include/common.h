@@ -3,13 +3,6 @@
 //import header files
 #include <cstddef>
 #include <cstdint>
-/*#ifdef NDEBUG
-    #undef NDEBUG
-    #include <cassert>
-    #define NDEBUG 1
-#else
-    #include <cassert>
-#endif*/
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -40,12 +33,15 @@
 using json = nlohmann::json;
 
 #undef assert
-#define assert(cond)\
-    if(!(cond)) \
+#define verify(cond) \
+    do \
     { \
-        printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
-        abort();\
-    }
+        if(!(cond)) \
+        { \
+            printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+            abort();\
+        } \
+    }while(0) \
 
 //machine types
 using size_t = std::size_t;
@@ -113,7 +109,7 @@ inline bool is_align(uint32_t x, uint32_t access_size)
 
 inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
 {
-    assert((imm_length > 0) && (imm_length < 32));
+    verify((imm_length > 0) && (imm_length < 32));
     auto sign_bit = (imm >> (imm_length - 1));
     auto extended_imm = ((sign_bit == 0) ? 0 : (((sign_bit << (32 - imm_length)) - 1) << imm_length)) | imm;
     return extended_imm;

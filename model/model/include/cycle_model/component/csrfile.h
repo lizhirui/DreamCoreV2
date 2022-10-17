@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "common.h"
 #include "config.h"
 #include "csr_base.h"
@@ -11,7 +13,7 @@ namespace component
 		private:
 			typedef struct csr_item_t
 			{
-				bool readonly;
+				bool readonly = false;
 				std::shared_ptr<csr_base> csr;
 			}csr_item_t;
 
@@ -109,7 +111,7 @@ namespace component
 
 			void map(uint32_t addr, bool readonly, std::shared_ptr<csr_base> csr)
 			{
-				assert(csr_map_table.find(addr) == csr_map_table.end());
+				verify(csr_map_table.find(addr) == csr_map_table.end());
 				csr_item_t t_item;
 				t_item.readonly = readonly;
 				t_item.csr = csr;
@@ -118,19 +120,19 @@ namespace component
 
 			void write_sys(uint32_t addr, uint32_t value)
 			{
-				assert(!(csr_map_table.find(addr) == csr_map_table.end()));
+				verify(!(csr_map_table.find(addr) == csr_map_table.end()));
 				csr_map_table[addr].csr->write(value);
 			}
 
 			uint32_t read_sys(uint32_t addr)
 			{
-				assert(!(csr_map_table.find(addr) == csr_map_table.end()));
+				verify(!(csr_map_table.find(addr) == csr_map_table.end()));
 				return csr_map_table[addr].csr->read();
 			}
             
             uint32_t read_sys_new(uint32_t addr)
             {
-                assert(!(csr_map_table.find(addr) == csr_map_table.end()));
+                verify(!(csr_map_table.find(addr) == csr_map_table.end()));
                 return csr_map_table[addr].csr->read_new();
             }
 
@@ -180,7 +182,7 @@ namespace component
 				{
 					std::ostringstream stream;
 					stream << indent << std::setw(15) << iter->second.csr->get_name() << "\t[0x" << fillzero(3) << outhex(iter->first) << ", " << (iter->second.readonly ? "RO" : "RW") << "] = 0x" << fillzero(8) << outhex(iter->second.csr->read()) << std::endl;
-					out_list.push_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
+					out_list.emplace_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
 				}
 
 				std::sort(out_list.begin(), out_list.end(), csr_out_list_cmp);
@@ -201,7 +203,7 @@ namespace component
 				{
 					std::ostringstream stream;
 					stream << outhex(iter->second.csr->read());
-					out_list.push_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
+					out_list.emplace_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
 				}
 
 				std::sort(out_list.begin(), out_list.end(), csr_out_list_cmp);

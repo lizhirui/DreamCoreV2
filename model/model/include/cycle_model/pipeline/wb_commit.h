@@ -58,7 +58,7 @@ namespace pipeline
         
         union
         {
-            alu_op_t alu_op;
+            alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
             div_op_t div_op;
             lsu_op_t lsu_op;
@@ -85,14 +85,12 @@ namespace pipeline
             std::cout << blank << "rs1_need_map = " << outbool(rs1_need_map);
             std::cout << blank << "rs1_phy = " << rs1_phy;
             std::cout << blank << "src1_value = 0x" << fillzero(8) << outhex(src1_value);
-            std::cout << blank << "src1_loaded = " << outbool(src1_loaded) << std::endl;
             
             std::cout << indent << "\trs2 = " << rs2;
             std::cout << blank << "arg2_src = " << outenum(arg2_src);
             std::cout << blank << "rs2_need_map = " << outbool(rs2_need_map);
             std::cout << blank << "rs2_phy = " << rs2_phy;
             std::cout << blank << "src2_value = 0x" << fillzero(8) << outhex(src2_value);
-            std::cout << blank << "src2_loaded = " << outbool(src2_loaded);
             
             std::cout << blank << "rd = " << rd;
             std::cout << blank << "rd_enable = " << outbool(rd_enable);
