@@ -156,6 +156,8 @@
 * 计算每条指令的wakeup_shift，公式为(LATENCY == 1) ? 0 : (1 << (LATENCY - 1))
 * 计算执行单元的繁忙延迟（即在几个周期后繁忙，公式为(LATENCY == 1) ? 0 : (1 << 1)）和空闲延迟（即在几个周期后繁忙，公式为(LATENCY == 1) ? 0 : (1 << (LATENCY - 1))），避免仲裁时从反馈网络获得该信息造成过大的组合逻辑延迟
 
+若从commit流水级收到了flush信号，则会重置所有的状态变量到复位值，同时对发射队列执行flush操作
+
 反馈信号产生：若当前状态为繁忙状态，则产生stall信号
 
 公式推导：
@@ -209,6 +211,10 @@
 ## Readreg级
 
 ### Integer Readreg级
+
+该流水级首先从integer_issue_readreg_port中读入指令包（该指令包的几条指令分别对应相应的发射端口，顺序不可错），负责从Physical Register File/execute feedback/wb feedback读入源操作数，然后发送到相应的执行单元端口（根据指令在指令包中的位置以及指令类型）
+
+如果收到了来自commit流水级的flush请求，则对全部执行单元的handshake_dff执行flush操作
 
 ### LSU Readreg级
 
