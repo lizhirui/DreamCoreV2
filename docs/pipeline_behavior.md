@@ -259,6 +259,13 @@
 
 ### LSU Readreg级
 
+该流水级按照以下流程执行：
+* 若当前流水级处于繁忙状态，则直接获取上一个周期的保存的指令包，然后解除流水线的繁忙状态，否则从lsu_issue_readreg_port中读入指令包
+* 从Physical Register File/execute feedback/wb feedback读入源操作数
+* 发送到LSU端口，若LSU端口堵塞，则置流水线状态为繁忙状态
+
+如果收到了来自commit流水级的flush请求，则对LSU的handshake_dff执行flush操作
+
 ## Execute级
 
 ### ALU

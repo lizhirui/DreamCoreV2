@@ -15,7 +15,7 @@
 
 namespace pipeline
 {
-    typedef struct readreg_execute_pack_t : public if_print_t
+    typedef struct lsu_readreg_execute_pack_t : public if_print_t
     {
         bool enable = false;//this item has op
         uint32_t value = 0;
@@ -52,7 +52,7 @@ namespace pipeline
     
         union
         {
-            alu_op_t alu_op;
+            alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
             div_op_t div_op;
             lsu_op_t lsu_op;
@@ -195,5 +195,5 @@ namespace pipeline
             
             return t;
         }
-    }readreg_execute_pack_t;
+    }lsu_readreg_execute_pack_t;
 }

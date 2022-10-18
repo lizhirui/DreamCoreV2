@@ -15,7 +15,7 @@
 
 namespace pipeline
 {
-    typedef struct readreg_execute_pack_t : public if_print_t
+    typedef struct integer_readreg_execute_pack_t : public if_print_t
     {
         bool enable = false;//this item has op
         uint32_t value = 0;
@@ -195,5 +195,5 @@ namespace pipeline
             
             return t;
         }
-    }readreg_execute_pack_t;
+    }integer_readreg_execute_pack_t;
 }

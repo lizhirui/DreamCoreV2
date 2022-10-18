@@ -216,6 +216,7 @@ namespace pipeline
             if(this->busy)
             {
                 rev_pack = this->hold_rev_pack;
+                this->busy = false;
             }
             else
             {

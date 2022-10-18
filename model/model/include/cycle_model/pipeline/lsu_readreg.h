@@ -13,10 +13,10 @@
 #include "../component/port.h"
 #include "../component/handshake_dff.h"
 #include "../component/regfile.h"
-#include "../component/rat.h"
-#include "integer_issue_readreg.h"
-#include "integer_readreg_execute.h"
-#include "integer_issue.h"
+#include "lsu_issue_readreg.h"
+#include "lsu_readreg_execute.h"
+#include "execute.h"
+#include "wb.h"
 #include "commit.h"
 
 namespace pipeline
@@ -37,13 +37,17 @@ namespace pipeline
     {
         private:
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
-            component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff;
+            component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff;
             component::regfile<uint32_t> *phy_regfile;
+            
+            bool busy = false;
+            lsu_issue_readreg_pack_t hold_rev_pack;
+            
             trace::trace_database tdb;
         
         public:
-            lsu_readreg(component::port<lsu_issue_readreg_pack_t> *issue_readreg_port, component::handshake_dff<readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile);
+            lsu_readreg(component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            lsu_readreg_feedback_pack_t run(execute_feedback_pack_t execute_feedback_pack, wb_feedback_pack_t wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            lsu_readreg_feedback_pack_t run(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

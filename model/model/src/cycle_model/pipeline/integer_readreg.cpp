@@ -13,15 +13,16 @@
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/integer_readreg.h"
 #include "cycle_model/pipeline/integer_issue_readreg.h"
-#include "cycle_model/pipeline/integer_issue.h"
+#include "cycle_model/pipeline/execute.h"
 #include "cycle_model/pipeline/wb.h"
+#include "cycle_model/pipeline/commit.h"
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/handshake_dff.h"
 #include "cycle_model/component/regfile.h"
 
 namespace pipeline
 {
-    integer_readreg::integer_readreg(component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::handshake_dff<readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_INTEGER_READREG)
+    integer_readreg::integer_readreg(component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_INTEGER_READREG)
     {
         this->integer_issue_readreg_port = integer_issue_readreg_port;
         this->readreg_alu_hdff = readreg_alu_hdff;
@@ -46,7 +47,7 @@ namespace pipeline
             
             for(auto i = 0;i < INTEGER_READREG_WIDTH;i++)
             {
-                readreg_execute_pack_t send_pack;
+                integer_readreg_execute_pack_t send_pack;
                 send_pack.enable = rev_pack.op_info[i].enable;
                 send_pack.value = rev_pack.op_info[i].value;
                 send_pack.valid = rev_pack.op_info[i].valid;
