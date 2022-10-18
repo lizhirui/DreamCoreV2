@@ -14,7 +14,7 @@
 #include "dff.h"
 #include "slave_base.h"
 
-namespace component
+namespace cycle_model::component
 {
     class slave_base;
     
@@ -118,13 +118,14 @@ namespace component
                 return result;
             }
             
-            void map(uint32_t base, uint32_t size, const std::shared_ptr<slave_base> &slave)
+            void map(uint32_t base, uint32_t size, const std::shared_ptr<slave_base> &slave, bool support_fetch)
             {
                 verify(!check_addr_override(base, size));
                 slave_info_t slave_info;
                 slave_info.base = base;
                 slave_info.size = size;
                 slave_info.slave = slave;
+                slave_info.support_fetch = support_fetch;
                 slave->init(size);
                 slave_info_list.push_back(slave_info);
             }

@@ -13,7 +13,7 @@
 #include "config.h"
 #include "stack.h"
 
-namespace component
+namespace cycle_model::component
 {
     typedef struct ras_item_t : public if_print_t
     {

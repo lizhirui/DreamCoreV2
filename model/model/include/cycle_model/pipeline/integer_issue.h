@@ -20,7 +20,7 @@
 #include "wb.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct integer_issue_output_feedback_pack_t : if_print_t
     {

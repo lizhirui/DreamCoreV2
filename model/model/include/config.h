@@ -24,24 +24,32 @@ const uint32_t ALU_UNIT_NUM = 2;
 const uint32_t BRU_UNIT_NUM = 1;
 const uint32_t CSR_UNIT_NUM = 1;
 const uint32_t DIV_UNIT_NUM = 1;
-const uint32_t LSU_UNIT_NUM = 1;
 const uint32_t MUL_UNIT_NUM = 2;
+const uint32_t LSU_UNIT_NUM = 1;
 
-const uint32_t EXECUTE_UNIT_NUM = ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM;
+const uint32_t EXECUTE_UNIT_NUM = ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + MUL_UNIT_NUM + LSU_UNIT_NUM;
 
 const uint32_t EXECUTE_UNIT_TYPE_NUM = 6;
 const uint32_t ALU_SHIFT = 0;
 const uint32_t BRU_SHIFT = 1;
 const uint32_t CSR_SHIFT = 2;
 const uint32_t DIV_SHIFT = 3;
-const uint32_t LSU_SHIFT = 4;
-const uint32_t MUL_SHIFT = 5;
+const uint32_t MUL_SHIFT = 4;
+const uint32_t LSU_SHIFT = 5;
 
 const uint32_t ALU_LATENCY = 1;
 const uint32_t BRU_LATENCY = 1;
 const uint32_t CSR_LATENCY = 1;
 const uint32_t DIV_LATENCY = 8;
 const uint32_t MUL_LATENCY = 1;
+
+const uint32_t INIT_PC = 0x80000000;
+
+const uint32_t MEMORY_BASE = 0x80000000;
+const uint32_t MEMORY_SIZE = 1048576;
+
+const uint32_t CLINT_BASE = 0x20000000;
+const uint32_t CLINT_SIZE = 0x10000;
 
 const uint32_t GSHARE_PC_P1_ADDR_WIDTH = 12;
 const uint32_t GSHARE_PC_P2_ADDR_WIDTH = 0;
@@ -53,6 +61,9 @@ const uint32_t GSHARE_PC_P2_ADDR_MASK = (1U << GSHARE_PC_P2_ADDR_WIDTH) - 1U;
 const uint32_t GSHARE_GLOBAL_HISTORY_MASK = (1U << GSHARE_GLOBAL_HISTORY_WIDTH) - 1U;
 
 const uint32_t RAS_SIZE = 256;
+
+const uint32_t CHARFIFO_SEND_FIFO_SIZE = 1024;
+const uint32_t CHARFIFO_REV_FIFO_SIZE = 1024;
 
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 

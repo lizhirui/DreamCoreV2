@@ -12,7 +12,7 @@
 #include "common.h"
 #include "fifo.h"
 
-namespace component
+namespace cycle_model::component
 {
     template<typename T>
     class io_issue_queue : public fifo<T>

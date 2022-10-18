@@ -10,9 +10,8 @@
 
 #pragma once
 #include "common.h"
-#include "bus.h"
 
-namespace component
+namespace cycle_model::component
 {
     class bus;
     
@@ -72,6 +71,21 @@ namespace component
             
             }
             
+            virtual uint8_t _read8_sys(uint32_t addr)
+            {
+                return 0;
+            }
+            
+            virtual uint16_t _read16_sys(uint32_t addr)
+            {
+                return 0;
+            }
+            
+            virtual uint32_t _read32_sys(uint32_t addr)
+            {
+                return 0;
+            }
+            
             virtual void _read_instruction(uint32_t addr)
             {
             
@@ -101,6 +115,11 @@ namespace component
                 has_error = false;
                 size = 0;
                 this->slave_base::reset();
+            }
+            
+            virtual ~slave_base()
+            {
+            
             }
             
             virtual void reset()
@@ -180,6 +199,36 @@ namespace component
                 {
                     _read32(addr);
                 }
+            }
+            
+            uint8_t read8_sys(uint32_t addr)
+            {
+                if(check(addr, 1))
+                {
+                    return _read8_sys(addr);
+                }
+                
+                return 0;
+            }
+            
+            uint16_t read16_sys(uint32_t addr)
+            {
+                if(check(addr, 2))
+                {
+                    return _read16_sys(addr);
+                }
+                
+                return 0;
+            }
+            
+            uint32_t read32_sys(uint32_t addr)
+            {
+                if(check(addr, 4))
+                {
+                    return _read32_sys(addr);
+                }
+                
+                return 0;
             }
             
             void read_instruction(uint32_t addr)

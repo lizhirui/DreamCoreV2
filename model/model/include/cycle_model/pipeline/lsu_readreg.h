@@ -19,7 +19,7 @@
 #include "wb.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct lsu_readreg_feedback_pack_t
     {

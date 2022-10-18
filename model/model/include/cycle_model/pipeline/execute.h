@@ -12,7 +12,7 @@
 #include "common.h"
 #include "config.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct execute_feedback_channel_t : if_print_t
     {

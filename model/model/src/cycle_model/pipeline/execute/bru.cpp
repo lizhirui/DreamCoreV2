@@ -15,7 +15,7 @@
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/execute.h"
 
-namespace pipeline::execute
+namespace cycle_model::pipeline::execute
 {
     bru::bru(uint32_t id,component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file) : tdb(TRACE_EXECUTE_BRU)
     {

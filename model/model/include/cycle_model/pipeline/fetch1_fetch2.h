@@ -12,7 +12,7 @@
 #include "common.h"
 #include "config.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct fetch1_fetch2_op_info_t
     {

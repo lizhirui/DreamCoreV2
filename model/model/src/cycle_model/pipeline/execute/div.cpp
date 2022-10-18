@@ -14,7 +14,7 @@
 #include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 
-namespace pipeline::execute
+namespace cycle_model::pipeline::execute
 {
     div::div(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_div_hdff, component::port<execute_wb_pack_t> *div_wb_port) : tdb(TRACE_EXECUTE_DIV)
     {

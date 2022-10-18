@@ -12,7 +12,7 @@
 #include "common.h"
 #include "fifo.h"
 
-namespace component
+namespace cycle_model::component
 {
     class free_list : public fifo<if_print_fake<uint32_t>>
     {

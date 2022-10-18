@@ -20,7 +20,7 @@
 #include "cycle_model/pipeline/wb_commit.h"
 #include "cycle_model/component/csr_all.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface) : tdb(TRACE_COMMIT)
     {

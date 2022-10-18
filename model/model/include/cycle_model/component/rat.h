@@ -12,7 +12,7 @@
 #include "common.h"
 #include "dff.h"
 
-namespace component
+namespace cycle_model::component
 {
     class rat : public if_print_t, public if_reset_t
     {

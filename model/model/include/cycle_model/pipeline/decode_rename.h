@@ -13,7 +13,7 @@
 #include "config.h"
 #include "pipeline_common.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct decode_rename_pack_t : public if_print_t
     {

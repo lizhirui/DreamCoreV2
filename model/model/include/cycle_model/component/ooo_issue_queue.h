@@ -14,7 +14,7 @@
 #include "free_list.h"
 #include "dff.h"
 
-namespace component
+namespace cycle_model::component
 {
     template<typename T>
     class ooo_issue_queue : public fifo<T>
@@ -52,6 +52,11 @@ namespace component
                 }
                 
                 id_free_list.flush();
+            }
+            
+            virtual bool push(T data)
+            {
+                return false;
             }
             
             virtual bool push(T data, uint32_t *index)

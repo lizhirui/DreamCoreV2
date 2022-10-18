@@ -13,7 +13,7 @@
 #include "config.h"
 #include "pipeline_common.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct lsu_issue_readreg_op_info_t
     {

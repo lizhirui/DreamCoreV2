@@ -16,7 +16,7 @@
 #include "slave/memory.h"
 #include "slave/clint.h"
 
-namespace component
+namespace cycle_model::component
 {
     typedef struct store_buffer_item_t : public if_print_t
     {
@@ -64,7 +64,7 @@ namespace component
                 return this->buffer[id].get();
             }
             
-            void set_item(uint32_t id, store_buffer_item_t value)
+            virtual void set_item(uint32_t id, store_buffer_item_t value)
             {
                 verify(check_id_valid(id));
                 this->buffer[id].set(value);

@@ -19,7 +19,7 @@
 #include "wb.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     class integer_readreg : public if_reset_t
     {

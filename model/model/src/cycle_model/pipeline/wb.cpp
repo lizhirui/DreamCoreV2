@@ -16,16 +16,16 @@
 #include "cycle_model/pipeline/wb_commit.h"
 #include "cycle_model/pipeline/commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
-    wb::wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
+    wb::wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
     {
         this->alu_wb_port = alu_wb_port;
         this->bru_wb_port = bru_wb_port;
         this->csr_wb_port = csr_wb_port;
         this->div_wb_port = div_wb_port;
-        this->lsu_wb_port = lsu_wb_port;
         this->mul_wb_port = mul_wb_port;
+        this->lsu_wb_port = lsu_wb_port;
         this->wb_commit_port = wb_commit_port;
         this->phy_regfile = phy_regfile;
         this->wb::reset();
@@ -58,14 +58,14 @@ namespace pipeline
             this->execute_wb_port.push_back(div_wb_port[i]);
         }
         
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
-        {
-            this->execute_wb_port.push_back(lsu_wb_port[i]);
-        }
-        
         for(auto i = 0;i < MUL_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(mul_wb_port[i]);
+        }
+    
+        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        {
+            this->execute_wb_port.push_back(lsu_wb_port[i]);
         }
     }
     

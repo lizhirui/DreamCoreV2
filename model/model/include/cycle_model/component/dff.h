@@ -12,7 +12,7 @@
 #include "common.h"
 #include "config.h"
 
-namespace component
+namespace cycle_model::component
 {
     class dff_base
     {

@@ -15,7 +15,7 @@
 #include "cycle_model/pipeline/fetch1_fetch2.h"
 #include "cycle_model/pipeline/fetch2_decode.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     fetch2::fetch2(component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo) : tdb(TRACE_FETCH2)
     {

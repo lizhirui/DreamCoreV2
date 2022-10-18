@@ -12,7 +12,7 @@
 #include "common.h"
 #include "config.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct fetch2_decode_pack_t : public if_print_t
     {
@@ -46,5 +46,5 @@ namespace pipeline
             t["exception_value"] = exception_value;
             return t;
         }
-    }fetch1_fetch2_pack_t;
+    }fetch2_decode_pack_t;
 }

@@ -17,7 +17,7 @@
 #include "cycle_model/pipeline/lsu_issue.h"
 #include "cycle_model/pipeline/commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     dispatch::dispatch(component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer) : tdb(TRACE_DISPATCH)
     {

@@ -19,7 +19,7 @@
 #include "rename.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     class fetch1 : public if_print_t, public if_reset_t
     {

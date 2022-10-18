@@ -20,7 +20,7 @@
 #include "cycle_model/component/handshake_dff.h"
 #include "cycle_model/component/regfile.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     integer_readreg::integer_readreg(component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_INTEGER_READREG)
     {

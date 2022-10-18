@@ -1,53 +1,60 @@
+/*
+ * Copyright lizhirui
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-10-14     lizhirui     the first version
+ */
+
 #pragma once
 #include "common.h"
 #include "../csr_base.h"
 
-namespace component
+namespace cycle_model::component::csr
 {
-	namespace csr
-	{
-		class mip : public csr_base
-		{
-			public:
-				mip() : csr_base("mip", 0x00000000)
-				{
-			
-				}
+    class mip : public csr_base
+    {
+        public:
+            mip() : csr_base("mip", 0x00000000)
+            {
+        
+            }
 
-				virtual uint32_t filter(uint32_t value)
-				{
-					return value & 0x888;
-				}
+            virtual uint32_t filter(uint32_t value)
+            {
+                return value & 0x888;
+            }
 
-				void set_msip(bool value)
-				{
-					this->setbit(3, value);
-				}
+            void set_msip(bool value)
+            {
+                this->setbit(3, value);
+            }
 
-				bool get_msip()
-				{
-					return this->getbit(3);
-				}
+            bool get_msip()
+            {
+                return this->getbit(3);
+            }
 
-				void set_mtip(bool value)
-				{
-					this->setbit(7, value);
-				}
+            void set_mtip(bool value)
+            {
+                this->setbit(7, value);
+            }
 
-				bool get_mtip()
-				{
-					return this->getbit(7);
-				}
+            bool get_mtip()
+            {
+                return this->getbit(7);
+            }
 
-				void set_meip(bool value)
-				{
-					this->setbit(11, value);
-				}
+            void set_meip(bool value)
+            {
+                this->setbit(11, value);
+            }
 
-				bool get_meip()
-				{
-					return this->getbit(11);
-				}
-		};
-	}
+            bool get_meip()
+            {
+                return this->getbit(11);
+            }
+    };
 }

@@ -18,7 +18,7 @@
 #include "lsu_issue.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct dispatch_feedback_pack_t : public if_print_t
     {

@@ -20,7 +20,7 @@
 #include "../component/interrupt_interface.h"
 #include "wb_commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct commit_feedback_pack_t : public if_print_t
     {

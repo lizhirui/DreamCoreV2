@@ -21,7 +21,7 @@
 #include "wb.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct lsu_issue_feedback_pack_t : if_print_t
     {

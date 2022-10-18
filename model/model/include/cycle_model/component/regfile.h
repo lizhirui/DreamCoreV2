@@ -13,7 +13,7 @@
 #include "dff.h"
 #include "rat.h"
 
-namespace component
+namespace cycle_model::component
 {
     class rat;
     

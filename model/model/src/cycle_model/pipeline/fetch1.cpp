@@ -15,7 +15,7 @@
 #include "cycle_model/component/slave/memory.h"
 #include "cycle_model/pipeline/fetch1_fetch2.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     fetch1::fetch1(component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, uint32_t init_pc) : tdb(TRACE_FETCH1)
     {

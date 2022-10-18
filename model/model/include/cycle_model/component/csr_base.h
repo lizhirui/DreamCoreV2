@@ -1,8 +1,18 @@
+/*
+ * Copyright lizhirui
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-10-14     lizhirui     the first version
+ */
+
 #pragma once
 #include "common.h"
 #include "dff.h"
 
-namespace component
+namespace cycle_model::component
 {
 	class csr_base : public if_reset_t
 	{
@@ -26,6 +36,11 @@ namespace component
 			{
                 this->csr_base::reset();
 			}
+            
+            virtual ~csr_base()
+            {
+            
+            }
 
 			virtual void reset()
 			{

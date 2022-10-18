@@ -22,7 +22,7 @@
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/pipeline/commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     lsu_issue::lsu_issue(component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
     {

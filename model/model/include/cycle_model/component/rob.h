@@ -12,7 +12,7 @@
 #include "common.h"
 #include "fifo.h"
 
-namespace component
+namespace cycle_model::component
 {
     typedef struct rob_item_t : public if_print_t
     {
@@ -158,11 +158,6 @@ namespace component
             rob_item_t get_item(uint32_t item_id)
             {
                 return this->buffer[item_id].get();
-            }
-            
-            void set_item(uint32_t item_id, rob_item_t item)
-            {
-                this->buffer[item_id].set(item);
             }
         
             bool check_new_id_valid(uint32_t id)

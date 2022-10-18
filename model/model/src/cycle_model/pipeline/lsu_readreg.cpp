@@ -20,7 +20,7 @@
 #include "cycle_model/component/handshake_dff.h"
 #include "cycle_model/component/regfile.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     lsu_readreg::lsu_readreg(component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_LSU_READREG)
     {

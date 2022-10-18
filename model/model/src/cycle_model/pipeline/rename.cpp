@@ -15,7 +15,7 @@
 #include "cycle_model/pipeline/integer_issue.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
     {

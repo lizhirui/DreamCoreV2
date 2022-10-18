@@ -12,7 +12,7 @@
 #include "common.h"
 #include "dff.h"
 
-namespace component
+namespace cycle_model::component
 {
     template<typename T>
     class fifo : public if_print_t, public if_reset_t
@@ -231,7 +231,7 @@ namespace component
                 return this->buffer[id].get();
             }
 
-            void set_item(uint32_t id, T value)
+            virtual void set_item(uint32_t id, T value)
             {
                 buffer[id].set(value);
             }

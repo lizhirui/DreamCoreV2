@@ -17,7 +17,7 @@
 #include "../execute.h"
 #include "../commit.h"
 
-namespace pipeline::execute
+namespace cycle_model::pipeline::execute
 {
     class mul : public if_reset_t
     {

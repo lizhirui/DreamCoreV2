@@ -11,16 +11,16 @@
 #pragma once
 #include "common.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     enum class op_unit_t
     {
         alu,
-        mul,
-        div,
-        lsu,
         bru,
-        csr
+        csr,
+        div,
+        mul,
+        lsu
     };
     
     enum class arg_src_t

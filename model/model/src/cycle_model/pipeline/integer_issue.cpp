@@ -21,7 +21,7 @@
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/pipeline/commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     integer_issue::integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(INTEGER_ISSUE_QUEUE_SIZE)), tdb(TRACE_INTEGER_ISSUE)
     {

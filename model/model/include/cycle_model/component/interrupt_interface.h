@@ -15,7 +15,7 @@
 #include "csrfile.h"
 #include "csr_all.h"
 
-namespace component
+namespace cycle_model::component
 {
     class interrupt_interface : public if_reset_t
     {

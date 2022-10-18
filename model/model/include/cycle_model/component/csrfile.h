@@ -1,3 +1,13 @@
+/*
+ * Copyright lizhirui
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-10-14     lizhirui     the first version
+ */
+
 #pragma once
 #include <utility>
 
@@ -6,7 +16,7 @@
 #include "csr_base.h"
 #include "csr_all.h"
 
-namespace component
+namespace cycle_model::component
 {
 	class csrfile : public if_print_t, public if_reset_t
 	{

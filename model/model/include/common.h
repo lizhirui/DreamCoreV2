@@ -117,6 +117,8 @@ inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
 
 typedef struct if_print_t
 {
+    virtual ~if_print_t() = default;
+    
     virtual void print(std::string indent)
     {
         std::cout << "<Not Implemented Method>" << std::endl;
@@ -155,6 +157,7 @@ template<typename T> class if_print_fake : public if_print_t
 
 typedef struct if_reset_t
 {
+    virtual ~if_reset_t() = default;
     virtual void reset() = 0;
 }if_reset_t;
 

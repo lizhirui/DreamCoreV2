@@ -16,7 +16,7 @@
 #include "wb_commit.h"
 #include "commit.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     typedef struct wb_feedback_channel_t : if_print_t
     {
@@ -58,8 +58,8 @@ namespace pipeline
             component::port<execute_wb_pack_t> **bru_wb_port;
             component::port<execute_wb_pack_t> **csr_wb_port;
             component::port<execute_wb_pack_t> **div_wb_port;
-            component::port<execute_wb_pack_t> **lsu_wb_port;
             component::port<execute_wb_pack_t> **mul_wb_port;
+            component::port<execute_wb_pack_t> **lsu_wb_port;
             
             std::vector<component::port<execute_wb_pack_t> *> execute_wb_port;
             
@@ -69,7 +69,7 @@ namespace pipeline
             trace::trace_database tdb;
         
         public:
-            wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile);
+            wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile);
             void init();
             virtual void reset();
             wb_feedback_pack_t run(commit_feedback_pack_t commit_feedback_pack);

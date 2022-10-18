@@ -12,7 +12,7 @@
 #include "common.h"
 #include "dff.h"
 
-namespace component
+namespace cycle_model::component
 {
     template<typename T>
     class handshake_dff

@@ -16,7 +16,7 @@
 #include "cycle_model/component/bus.h"
 #include "cycle_model/component/store_buffer.h"
 
-namespace pipeline::execute
+namespace cycle_model::pipeline::execute
 {
     lsu::lsu(uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer) : tdb(TRACE_EXECUTE_LSU)
     {

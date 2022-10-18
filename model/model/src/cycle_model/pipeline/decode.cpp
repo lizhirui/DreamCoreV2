@@ -15,7 +15,7 @@
 #include "cycle_model/pipeline/fetch2_decode.h"
 #include "cycle_model/pipeline/decode_rename.h"
 
-namespace pipeline
+namespace cycle_model::pipeline
 {
     decode::decode(component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo) : tdb(TRACE_DECODE)
     {
