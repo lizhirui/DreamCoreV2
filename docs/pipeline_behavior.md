@@ -354,4 +354,10 @@
 
 ## WB级
 
+该流水级负责Physical Register File的写回与反馈，步骤如下：
+
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包到wb_commit_port
+* 从每一个execute_wb_port读入一条指令，若指令的有效、没有产生异常且需要重命名，则执行Physical Register File的写回操作，并将写回的数据送到反馈通道上
+* 将指令送到wb_commit_port
+
 ## Commit级
