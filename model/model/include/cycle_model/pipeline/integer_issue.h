@@ -62,13 +62,11 @@ namespace pipeline
                 arg_src_t arg1_src = arg_src_t::reg;
                 bool rs1_need_map = false;
                 uint32_t rs1_phy = 0;
-                bool src1_ready = false;
                 
                 uint32_t rs2 = 0;
                 arg_src_t arg2_src = arg_src_t::reg;
                 bool rs2_need_map = false;
                 uint32_t rs2_phy = 0;
-                bool src2_ready = false;
                 
                 uint32_t rd = 0;
                 bool rd_enable = false;
@@ -108,13 +106,11 @@ namespace pipeline
                     std::cout << blank << "arg1_src = " << outenum(arg1_src);
                     std::cout << blank << "rs1_need_map = " << outbool(rs1_need_map);
                     std::cout << blank << "rs1_phy = " << rs1_phy;
-                    std::cout << blank << "src1_ready = " << outbool(src1_ready);
                     
                     std::cout << indent << "\trs2 = " << rs2;
                     std::cout << blank << "arg2_src = " << outenum(arg2_src);
                     std::cout << blank << "rs2_need_map = " << outbool(rs2_need_map);
                     std::cout << blank << "rs2_phy = " << rs2_phy;
-                    std::cout << blank << "src2_ready = " << outbool(src2_ready);
                     
                     std::cout << blank << "rd = " << rd;
                     std::cout << blank << "rd_enable = " << outbool(rd_enable);
@@ -177,12 +173,10 @@ namespace pipeline
                     t["arg1_src"] = arg1_src;
                     t["rs1_need_map"] = rs1_need_map;
                     t["rs1_phy"] = rs1_phy;
-                    t["src1_ready"] = src1_ready;
                     t["rs2"] = rs2;
                     t["arg2_src"] = outenum(arg2_src);
                     t["rs2_need_map"] = rs2_need_map;
                     t["rs2_phy"] = rs2_phy;
-                    t["src2_ready"] = src2_ready;
                     t["rd"] = rd;
                     t["rd_enable"] = rd_enable;
                     t["need_rename"] = need_rename;
@@ -235,11 +229,11 @@ namespace pipeline
             bool busy = false;
             dispatch_issue_pack_t hold_rev_pack;
             
-            uint32_t alu_idle[ALU_UNIT_NUM] = {0};
-            uint32_t bru_idle[BRU_UNIT_NUM] = {0};
-            uint32_t csr_idle[CSR_UNIT_NUM] = {0};
-            uint32_t div_idle[DIV_UNIT_NUM] = {0};
-            uint32_t mul_idle[MUL_UNIT_NUM] = {0};
+            uint32_t alu_idle[ALU_UNIT_NUM] = {1};
+            uint32_t bru_idle[BRU_UNIT_NUM] = {1};
+            uint32_t csr_idle[CSR_UNIT_NUM] = {1};
+            uint32_t div_idle[DIV_UNIT_NUM] = {1};
+            uint32_t mul_idle[MUL_UNIT_NUM] = {1};
         
             uint32_t alu_idle_shift[ALU_UNIT_NUM] = {0};
             uint32_t bru_idle_shift[BRU_UNIT_NUM] = {0};
@@ -262,7 +256,7 @@ namespace pipeline
             uint32_t port_index[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t op_unit_seq[INTEGER_ISSUE_QUEUE_SIZE] = {0};//one-hot
             uint32_t rob_id[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            uint32_t rob_stage[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t rob_id_stage[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
             uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
@@ -272,6 +266,9 @@ namespace pipeline
             uint32_t next_port_index = 0;
             
             trace::trace_database tdb;
+            
+            static uint32_t latency_to_wakeup_shift(uint32_t latency);
+            static void latency_to_idle_busy_shift(uint32_t latency, uint32_t &idle_shift, uint32_t &busy_shift);
         
         public:
             integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);

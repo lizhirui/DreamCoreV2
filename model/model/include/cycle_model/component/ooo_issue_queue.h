@@ -60,7 +60,7 @@ namespace component
                 {
                     uint32_t index = 0;
                     verify(id_free_list.pop(&index));
-                    this->producer_set_item(index, data);
+                    this->set_item(index, data);
                     valid[index].set(true);
                     return true;
                 }

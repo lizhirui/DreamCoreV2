@@ -37,7 +37,11 @@ const uint32_t DIV_SHIFT = 3;
 const uint32_t LSU_SHIFT = 4;
 const uint32_t MUL_SHIFT = 5;
 
+const uint32_t ALU_LATENCY = 1;
+const uint32_t BRU_LATENCY = 1;
+const uint32_t CSR_LATENCY = 1;
 const uint32_t DIV_LATENCY = 8;
+const uint32_t MUL_LATENCY = 1;
 
 const uint32_t GSHARE_PC_P1_ADDR_WIDTH = 12;
 const uint32_t GSHARE_PC_P2_ADDR_WIDTH = 0;

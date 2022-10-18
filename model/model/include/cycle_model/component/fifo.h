@@ -223,25 +223,16 @@ namespace component
 
             T producer_get_item(uint32_t id)
             {
-                verify(producer_check_id_valid(id));
-                return this->buffer[id].get();
+                return this->buffer[id].get_new();
             }
 
             T customer_get_item(uint32_t id)
             {
-                verify(customer_check_id_valid(id));
                 return this->buffer[id].get();
             }
 
-            void producer_set_item(uint32_t id, T value)
+            void set_item(uint32_t id, T value)
             {
-                verify(producer_check_id_valid(id));
-                buffer[id].set(value);
-            }
-
-            void customer_set_item(uint32_t id, T value)
-            {
-                verify(customer_check_id_valid(id));
                 buffer[id].set(value);
             }
 

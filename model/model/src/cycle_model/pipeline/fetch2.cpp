@@ -74,10 +74,16 @@ namespace pipeline
             }
             
             //let remain instructions keep right alignment
-            for(auto i = fail_index;i < FETCH_WIDTH;i++)
+            for(auto i = 0;i < FETCH_WIDTH;i++)
             {
-                this->rev_pack.op_info[i - fail_index] = this->rev_pack.op_info[i];
-                this->rev_pack.op_info[i].enable = false;
+                if((i + fail_index) < FETCH_WIDTH)
+                {
+                    this->rev_pack.op_info[i] = this->rev_pack.op_info[i + fail_index];
+                }
+                else
+                {
+                    this->rev_pack.op_info[i].enable = false;
+                }
             }
         }
         else
