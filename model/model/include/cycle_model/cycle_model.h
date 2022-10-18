@@ -141,24 +141,8 @@ namespace cycle_model
             pipeline::wb_feedback_pack_t wb_feedback_pack;
             pipeline::commit_feedback_pack_t commit_feedback_pack;
             
-            static cycle_model *create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo)
-            {
-                if(instance == nullptr)
-                {
-                    instance = new cycle_model(charfifo_send_fifo, charfifo_rev_fifo);
-                }
-                
-                return instance;
-            }
-            
-            static void destroy()
-            {
-                if(instance != nullptr)
-                {
-                    delete instance;
-                    instance = nullptr;
-                }
-            }
+            static cycle_model *create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo);
+            static void destroy();
             
             void load(void *mem, size_t size);
             void reset();

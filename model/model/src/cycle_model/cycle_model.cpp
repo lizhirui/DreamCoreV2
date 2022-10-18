@@ -61,6 +61,25 @@ namespace cycle_model
 {
     cycle_model *cycle_model::instance = nullptr;
     
+    cycle_model *cycle_model::create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo)
+    {
+        if(instance == nullptr)
+        {
+            instance = new cycle_model(charfifo_send_fifo, charfifo_rev_fifo);
+        }
+        
+        return instance;
+    }
+    
+    void cycle_model::destroy()
+    {
+        if(instance != nullptr)
+        {
+            delete instance;
+            instance = nullptr;
+        }
+    }
+    
     cycle_model::cycle_model(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo) :
     charfifo_send_fifo(charfifo_send_fifo),
     charfifo_rev_fifo(charfifo_rev_fifo),
@@ -198,7 +217,7 @@ namespace cycle_model
         }
     
         wb_stage.init();
-        this->cycle_model::reset();
+        this->reset();
     }
     
     cycle_model::~cycle_model()
@@ -349,7 +368,7 @@ namespace cycle_model
         cpu_clock_cycle = 0;
         committed_instruction_num = 0;
         
-        branch_num = 0;
+        branch_num = 1;
         branch_predicted = 0;
         branch_hit = 0;
         branch_miss = 0;
@@ -360,6 +379,7 @@ namespace cycle_model
     void cycle_model::run()
     {
         rob.set_committed(false);
+        clint.run_pre();
         commit_feedback_pack = commit_stage.run();
         wb_feedback_pack = wb_stage.run(commit_feedback_pack);
         
@@ -409,8 +429,9 @@ namespace cycle_model
         fetch2_feedback_pack = fetch2_stage.run(commit_feedback_pack);
         fetch1_stage.run(fetch2_feedback_pack, decode_feedback_pack, rename_feedback_pack, commit_feedback_pack);
         interrupt_interface.run();
-        clint.run();
+        clint.run_post();
         store_buffer.run(commit_feedback_pack);
+        bus.run();
         bus.sync();
         cpu_clock_cycle++;
         committed_instruction_num = rob.get_global_commit_num();

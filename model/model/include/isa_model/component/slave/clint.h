@@ -5,143 +5,127 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-10-14     lizhirui     the first version
+ * 2022-10-18     lizhirui     the first version
  */
 
 #pragma once
 #include "common.h"
-#include "../dff.h"
 #include "../slave_base.h"
 #include "../bus.h"
 #include "../interrupt_interface.h"
 
-namespace cycle_model::component::slave
+namespace isa_model::component::slave
 {
     class clint : public slave_base
     {
         private:
-            dff<bool> msip;
-            dff<uint64_t> mtimecmp;
-            dff<uint64_t> mtime;
+            bool msip = false;
+            uint64_t mtimecmp = 0;
+            uint64_t mtime = 0;
+            bool mtime_changed = false;
             
             static const uint32_t MSIP_ADDR = 0x0;
             static const uint32_t MTIMECMP_ADDR = 0x4000;
             static const uint32_t MTIME_ADDR = 0xBFF8;
             
             component::interrupt_interface *interrupt_interface;
-    
-            trace::trace_database tdb;
-    
+            
             virtual void _reset()
             {
-                msip.set(false);
-                mtimecmp.set(0);
-                mtime.set(0);
+                msip = false;
+                mtimecmp = 0;
+                mtime = 0;
+                mtime_changed = false;
             }
-            
+        
         public:
-            clint(component::bus *bus_if, component::interrupt_interface *interrupt_interface) : slave_base(bus_if), msip(false), mtimecmp(0), mtime(0), tdb(TRACE_CLINT)
+            clint(component::bus *bus_if, component::interrupt_interface *interrupt_interface) : slave_base(bus_if)
             {
                 this->interrupt_interface = interrupt_interface;
                 this->clint::_reset();
             }
-    
-            void trace_pre()
-            {
             
-            }
-    
-            void trace_post()
-            {
-            
-            }
-    
-            trace::trace_database *get_tdb()
-            {
-                return &tdb;
-            }
-    
             virtual void _write8(uint32_t addr, uint8_t value)
             {
-        
+            
             }
-    
+            
             virtual void _write16(uint32_t addr, uint16_t value)
             {
-        
+            
             }
-    
+            
             virtual void _write32(uint32_t addr, uint32_t value)
             {
                 switch(addr)
                 {
                     case MSIP_ADDR:
-                        msip.set((value & 0x01) != 0);
+                        msip = (value & 0x01) != 0;
                         break;
-            
+                    
                     case MTIMECMP_ADDR:
-                        mtimecmp.set((mtimecmp.get() & 0xFFFFFFFF00000000ULL) | value);
+                        mtimecmp = (mtimecmp & 0xFFFFFFFF00000000ULL) | value;
                         break;
-            
+                    
                     case MTIMECMP_ADDR + 4:
-                        mtimecmp.set((mtimecmp.get() & 0xFFFFFFFFULL) | (((uint64_t)value) << 32));
+                        mtimecmp = (mtimecmp & 0xFFFFFFFFULL) | (((uint64_t)value) << 32);
                         break;
-            
+                    
                     case MTIME_ADDR:
-                        mtime.set((mtime.get() & 0xFFFFFFFF00000000ULL) | value);
+                        mtime = (mtime & 0xFFFFFFFF00000000ULL) | value;
                         break;
-            
+                    
                     case MTIME_ADDR + 4:
-                        mtime.set((mtime.get() & 0xFFFFFFFFULL) | (((uint64_t)value) << 32));
+                        mtime = (mtime & 0xFFFFFFFFULL) | (((uint64_t)value) << 32);
                         break;
-                        
+                    
                     default:
                         break;
                 }
             }
-    
-            virtual void _read8(uint32_t addr)
-            {
             
-            }
-    
-            virtual void _read16(uint32_t addr)
+            virtual uint8_t _read8(uint32_t addr)
             {
-            
+                return 0;
             }
-    
-            virtual void _read32(uint32_t addr)
+            
+            virtual uint16_t _read16(uint32_t addr)
+            {
+                return 0;
+            }
+            
+            virtual uint32_t _read32(uint32_t addr)
             {
                 uint32_t value = 0;
                 
                 switch(addr)
                 {
                     case MSIP_ADDR:
-                        value = msip.get() ? 1 : 0;
+                        value = msip ? 1 : 0;
                         break;
-            
+                    
                     case MTIMECMP_ADDR:
-                        value = (uint32_t)(mtimecmp.get() & 0xFFFFFFFFULL);
+                        value = (uint32_t)(mtimecmp & 0xFFFFFFFFULL);
                         break;
-            
+                    
                     case MTIMECMP_ADDR + 4:
-                        value = (uint32_t)(mtimecmp.get() >> 32);
+                        value = (uint32_t)(mtimecmp >> 32);
                         break;
-            
+                    
                     case MTIME_ADDR:
-                        value = (uint32_t)(mtime.get() & 0xFFFFFFFFULL);
+                        value = (uint32_t)(mtime & 0xFFFFFFFFULL);
                         break;
-            
+                    
                     case MTIME_ADDR + 4:
-                        value = (uint32_t)(mtime.get() >> 32);
+                        value = (uint32_t)(mtime >> 32);
                         break;
-                        
+                    
                     default:
                         value = 0;
                         break;
                 }
-
-                bus_if->set_data_value(value);
+                
+                return value;
             }
             
             void run_pre()
@@ -149,12 +133,13 @@ namespace cycle_model::component::slave
                 interrupt_interface->set_pending(riscv_interrupt_t::machine_timer, mtime >= mtimecmp);
                 interrupt_interface->set_pending(riscv_interrupt_t::machine_software, msip);
             }
-    
+            
             void run_post()
             {
-                if(!mtime.is_changed())
+                if(!mtime_changed)
                 {
-                    mtime.set(mtime.get() + 1);
+                    mtime++;
+                    mtime_changed = false;
                 }
             }
     };
