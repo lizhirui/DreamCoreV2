@@ -54,14 +54,13 @@ namespace component
                 id_free_list.flush();
             }
             
-            virtual bool push(T data)
+            virtual bool push(T data, uint32_t *index)
             {
                 if(!id_free_list.customer_is_empty())
                 {
-                    uint32_t index = 0;
-                    verify(id_free_list.pop(&index));
-                    this->set_item(index, data);
-                    valid[index].set(true);
+                    verify(id_free_list.pop(index));
+                    this->set_item(*index, data);
+                    valid[*index].set(true);
                     return true;
                 }
                 

@@ -23,9 +23,14 @@ namespace pipeline
 {
     typedef struct lsu_readreg_feedback_pack_t
     {
-        bool issue_id_valid[LSU_READREG_WIDTH];
-        bool remove[LSU_READREG_WIDTH];//if true, instruction will be removed from issue_queue, otherwise instruction will be replayed
-        uint32_t issue_id[LSU_READREG_WIDTH];
+        bool stall = false;
+    
+        virtual json get_json()
+        {
+            json t;
+            t["stall"] = stall;
+            return t;
+        }
     }lsu_readreg_feedback_pack_t;
     
     class lsu_readreg : public if_reset_t

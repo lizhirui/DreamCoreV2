@@ -21,8 +21,6 @@ namespace pipeline
         uint32_t value = 0;
         bool valid = false;//this item has valid op
         bool last_uop = false;//this is the last uop of an ISA instruction
-        uint32_t issue_id = 0;
-        bool support_replay;
     
         uint32_t rob_id = 0;
         uint32_t pc = 0;
@@ -54,7 +52,7 @@ namespace pipeline
     
         union
         {
-            alu_op_t alu_op;
+            alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
             div_op_t div_op;
             lsu_op_t lsu_op;
@@ -79,8 +77,6 @@ namespace pipeline
                 std::cout << blank << "value = 0x" << fillzero(8) << outhex(op_info[i].value);
                 std::cout << blank << "valid = " << outbool(op_info[i].valid);
                 std::cout << blank << "last_uop = " << outbool(op_info[i].last_uop);
-                std::cout << blank << "issue_id = " << op_info[i].issue_id;
-                std::cout << blank << "support_replay = " << outbool(op_info[i].support_replay);
                 std::cout << blank << "rob_id = " << op_info[i].rob_id;
                 std::cout << blank << "pc = 0x" << fillzero(8) << outhex(op_info[i].pc);
                 std::cout << blank << "imm = 0x" << fillzero(8) << outhex(op_info[i].imm);
@@ -154,8 +150,6 @@ namespace pipeline
                 t["value"] = op_info[i].value;
                 t["valid"] = op_info[i].valid;
                 t["last_uop"] = op_info[i].last_uop;
-                t["issue_id"] = op_info[i].issue_id;
-                t["support_replay"] = op_info[i].support_replay;
                 t["rob_id"] = op_info[i].rob_id;
                 t["pc"] = op_info[i].pc;
                 t["imm"] = op_info[i].imm;

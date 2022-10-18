@@ -14,9 +14,9 @@
 #include "../component/port.h"
 #include "../component/io_issue_queue.h"
 #include "../component/regfile.h"
-#include "../component/store_buffer.h"
 #include "dispatch_issue.h"
 #include "lsu_issue_readreg.h"
+#include "integer_issue.h"
 #include "lsu_readreg.h"
 #include "wb.h"
 #include "commit.h"
@@ -25,7 +25,7 @@ namespace pipeline
 {
     typedef struct lsu_issue_feedback_pack_t : if_print_t
     {
-        bool stall;
+        bool stall = false;
         
         virtual json get_json()
         {
@@ -44,7 +44,6 @@ namespace pipeline
                 uint32_t value = 0;
                 bool valid = false;//this item has valid op
                 bool last_uop = false;//this is the last uop of an ISA instruction
-                bool hide = false;
                 
                 uint32_t rob_id = 0;
                 uint32_t pc = 0;
@@ -57,13 +56,11 @@ namespace pipeline
                 arg_src_t arg1_src = arg_src_t::reg;
                 bool rs1_need_map = false;
                 uint32_t rs1_phy = 0;
-                bool src1_ready = false;
                 
                 uint32_t rs2 = 0;
                 arg_src_t arg2_src = arg_src_t::reg;
                 bool rs2_need_map = false;
                 uint32_t rs2_phy = 0;
-                bool src2_ready = false;
                 
                 uint32_t rd = 0;
                 bool rd_enable = false;
@@ -76,7 +73,7 @@ namespace pipeline
                 
                 union
                 {
-                    alu_op_t alu_op;
+                    alu_op_t alu_op = alu_op_t::add;
                     bru_op_t bru_op;
                     div_op_t div_op;
                     lsu_op_t lsu_op;
@@ -103,13 +100,11 @@ namespace pipeline
                     std::cout << blank << "arg1_src = " << outenum(arg1_src);
                     std::cout << blank << "rs1_need_map = " << outbool(rs1_need_map);
                     std::cout << blank << "rs1_phy = " << rs1_phy;
-                    std::cout << blank << "src1_ready = " << outbool(src1_ready);
                     
                     std::cout << indent << "\trs2 = " << rs2;
                     std::cout << blank << "arg2_src = " << outenum(arg2_src);
                     std::cout << blank << "rs2_need_map = " << outbool(rs2_need_map);
                     std::cout << blank << "rs2_phy = " << rs2_phy;
-                    std::cout << blank << "src2_ready = " << outbool(src2_ready);
                     
                     std::cout << blank << "rd = " << rd;
                     std::cout << blank << "rd_enable = " << outbool(rd_enable);
@@ -172,12 +167,10 @@ namespace pipeline
                     t["arg1_src"] = arg1_src;
                     t["rs1_need_map"] = rs1_need_map;
                     t["rs1_phy"] = rs1_phy;
-                    t["src1_ready"] = src1_ready;
                     t["rs2"] = rs2;
                     t["arg2_src"] = outenum(arg2_src);
                     t["rs2_need_map"] = rs2_need_map;
                     t["rs2_phy"] = rs2_phy;
-                    t["src2_ready"] = src2_ready;
                     t["rd"] = rd;
                     t["rd_enable"] = rd_enable;
                     t["need_rename"] = need_rename;
@@ -224,28 +217,26 @@ namespace pipeline
             component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port;
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
             
-            component::store_buffer *store_buffer;
+            component::regfile<uint32_t> *phy_regfile;
             
             component::io_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
             dispatch_issue_pack_t hold_rev_pack;
-            
-            bool lsu_busy;
-            
-            uint32_t lsu_busy_countdown;
-            
-            uint32_t wakeup_countdown_src1[LSU_ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src1[LSU_ISSUE_QUEUE_SIZE];
         
-            uint32_t wakeup_countdown_src2[LSU_ISSUE_QUEUE_SIZE];
-            bool wakeup_valid_src2[LSU_ISSUE_QUEUE_SIZE];
+            uint32_t wakeup_shift_src1[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool src1_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
+            
+            uint32_t wakeup_shift_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool src2_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
             
             trace::trace_database tdb;
         
         public:
-            lsu_issue(component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::store_buffer *store_buffer);
+            lsu_issue(component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            lsu_issue_feedback_pack_t run(lsu_readreg_feedback_pack_t lsu_readreg_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            void run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            lsu_issue_feedback_pack_t run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };

@@ -113,7 +113,7 @@ namespace pipeline
             {
                 for(auto j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
                 {
-                    if(issue_q.is_valid(i) && (op_unit_seq[j] & op_unit_seq_mask[i]) && (!selected_valid[i] ||
+                    if(issue_q.is_valid(i) && (op_unit_seq[j] & op_unit_seq_mask[i]) && src1_ready[i] && src2_ready[i] && (!selected_valid[i] ||
                       ((rob_id_stage[j] == selected_rob_id_stage[i]) && (rob_id[j] < selected_rob_id[i])) || ((rob_id_stage[j] != selected_rob_id_stage[i]) && (rob_id[j] > selected_rob_id[i]))))
                     {
                         selected_issue_id[i] = j;
@@ -482,7 +482,7 @@ namespace pipeline
             
             if(this->busy)
             {
-                rev_pack = hold_rev_pack;
+                rev_pack = this->hold_rev_pack;
             }
             else
             {
@@ -493,46 +493,47 @@ namespace pipeline
             {
                 if(rev_pack.op_info[i].enable)
                 {
-                    if(!issue_q.producer_is_full())
+                    issue_queue_item_t item;
+                    
+                    item.enable = rev_pack.op_info[i].enable;
+                    item.value = rev_pack.op_info[i].value;
+                    item.valid = rev_pack.op_info[i].valid;
+                    item.last_uop = rev_pack.op_info[i].last_uop;
+                    
+                    item.rob_id = rev_pack.op_info[i].rob_id;
+                    item.pc = rev_pack.op_info[i].pc;
+                    item.imm = rev_pack.op_info[i].imm;
+                    item.has_exception = rev_pack.op_info[i].has_exception;
+                    item.exception_id = rev_pack.op_info[i].exception_id;
+                    item.exception_value = rev_pack.op_info[i].exception_value;
+                    
+                    item.rs1 = rev_pack.op_info[i].rs1;
+                    item.arg1_src = rev_pack.op_info[i].arg1_src;
+                    item.rs1_need_map = rev_pack.op_info[i].rs1_need_map;
+                    item.rs1_phy = rev_pack.op_info[i].rs1_phy;
+                    
+                    item.rs2 = rev_pack.op_info[i].rs2;
+                    item.arg2_src = rev_pack.op_info[i].arg2_src;
+                    item.rs2_need_map = rev_pack.op_info[i].rs2_need_map;
+                    item.rs2_phy = rev_pack.op_info[i].rs2_phy;
+                    
+                    item.rd = rev_pack.op_info[i].rd;
+                    item.rd_enable = rev_pack.op_info[i].rd_enable;
+                    item.need_rename = rev_pack.op_info[i].need_rename;
+                    item.rd_phy = rev_pack.op_info[i].rd_phy;
+                    
+                    item.csr = rev_pack.op_info[i].csr;
+                    item.op = rev_pack.op_info[i].op;
+                    item.op_unit = rev_pack.op_info[i].op_unit;
+                    memcpy(&item.sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                    uint32_t issue_id = 0;
+                    
+                    if(issue_q.push(item, &issue_id))
                     {
-                        issue_queue_item_t item;
-                        
-                        item.enable = rev_pack.op_info[i].enable;
-                        item.value = rev_pack.op_info[i].value;
-                        item.valid = rev_pack.op_info[i].valid;
-                        item.last_uop = rev_pack.op_info[i].last_uop;
-                        
-                        item.rob_id = rev_pack.op_info[i].rob_id;
-                        item.pc = rev_pack.op_info[i].pc;
-                        item.imm = rev_pack.op_info[i].imm;
-                        item.has_exception = rev_pack.op_info[i].has_exception;
-                        item.exception_id = rev_pack.op_info[i].exception_id;
-                        item.exception_value = rev_pack.op_info[i].exception_value;
-                        
-                        item.rs1 = rev_pack.op_info[i].rs1;
-                        item.arg1_src = rev_pack.op_info[i].arg1_src;
-                        item.rs1_need_map = rev_pack.op_info[i].rs1_need_map;
-                        item.rs1_phy = rev_pack.op_info[i].rs1_phy;
-                        
-                        item.rs2 = rev_pack.op_info[i].rs2;
-                        item.arg2_src = rev_pack.op_info[i].arg2_src;
-                        item.rs2_need_map = rev_pack.op_info[i].rs2_need_map;
-                        item.rs2_phy = rev_pack.op_info[i].rs2_phy;
-                        
-                        item.rd = rev_pack.op_info[i].rd;
-                        item.rd_enable = rev_pack.op_info[i].rd_enable;
-                        item.need_rename = rev_pack.op_info[i].need_rename;
-                        item.rd_phy = rev_pack.op_info[i].rd_phy;
-                        
-                        item.csr = rev_pack.op_info[i].csr;
-                        item.op = rev_pack.op_info[i].op;
-                        item.op_unit = rev_pack.op_info[i].op_unit;
-                        memcpy(&item.sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
-                        
-                        wakeup_shift_src1[i] = 0;
-                        src1_ready[i] = false;
-                        wakeup_shift_src2[i] = 0;
-                        src2_ready[i] = false;
+                        wakeup_shift_src1[issue_id] = 0;
+                        src1_ready[issue_id] = false;
+                        wakeup_shift_src2[issue_id] = 0;
+                        src2_ready[issue_id] = false;
                         
                         //execute and wb feedback and physical register file check
                         if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
@@ -543,36 +544,36 @@ namespace pipeline
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
-                                        src1_ready[i] = true;
+                                        src1_ready[issue_id] = true;
                                         break;
                                     }
                                 }
                                 
-                                if(!src1_ready[i])
+                                if(!src1_ready[issue_id])
                                 {
                                     for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
-                                            src1_ready[i] = true;
+                                            src1_ready[issue_id] = true;
                                             break;
                                         }
                                     }
                                 }
                                 
-                                if(!src1_ready[i])
+                                if(!src1_ready[issue_id])
                                 {
-                                    src1_ready[i] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy);
+                                    src1_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy);
                                 }
                             }
                             else
                             {
-                                src1_ready[i] = true;
+                                src1_ready[issue_id] = true;
                             }
                         }
                         else
                         {
-                            src1_ready[i] = true;
+                            src1_ready[issue_id] = true;
                         }
                         
                         if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
@@ -583,31 +584,31 @@ namespace pipeline
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
-                                        src2_ready[i] = true;
+                                        src2_ready[issue_id] = true;
                                         break;
                                     }
                                 }
                                 
-                                if(!src2_ready[i])
+                                if(!src2_ready[issue_id])
                                 {
                                     for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {
-                                            src2_ready[i] = true;
+                                            src2_ready[issue_id] = true;
                                             break;
                                         }
                                     }
                                 }
                                 
-                                if(!src2_ready[i])
+                                if(!src2_ready[issue_id])
                                 {
-                                    src2_ready[i] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy);
+                                    src2_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy);
                                 }
                             }
                             else
                             {
-                                src2_ready[i] = true;
+                                src2_ready[issue_id] = true;
                             }
                         }
                         else
@@ -618,35 +619,35 @@ namespace pipeline
                         //port assignment
                         if(rev_pack.op_info[i].op_unit == op_unit_t::alu || rev_pack.op_info[i].op_unit == op_unit_t::mul)
                         {
-                            port_index[i] = next_port_index;
+                            port_index[issue_id] = next_port_index;
                             next_port_index = (next_port_index + 1) % INTEGER_ISSUE_WIDTH;
                         }
                         else
                         {
-                            port_index[i] = 0;
+                            port_index[issue_id] = 0;
                         }
                         
                         //op_unit_seq generation
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:
-                                op_unit_seq[i] = 1 << ALU_SHIFT;
+                                op_unit_seq[issue_id] = 1 << ALU_SHIFT;
                                 break;
                                 
                             case op_unit_t::bru:
-                                op_unit_seq[i] = 1 << BRU_SHIFT;
+                                op_unit_seq[issue_id] = 1 << BRU_SHIFT;
                                 break;
                                 
                             case op_unit_t::csr:
-                                op_unit_seq[i] = 1 << CSR_SHIFT;
+                                op_unit_seq[issue_id] = 1 << CSR_SHIFT;
                                 break;
                                 
                             case op_unit_t::div:
-                                op_unit_seq[i] = 1 << DIV_SHIFT;
+                                op_unit_seq[issue_id] = 1 << DIV_SHIFT;
                                 break;
                                 
                             case op_unit_t::mul:
-                                op_unit_seq[i] = 1 << MUL_SHIFT;
+                                op_unit_seq[issue_id] = 1 << MUL_SHIFT;
                                 break;
                                 
                             default:
@@ -655,33 +656,33 @@ namespace pipeline
                         }
                         
                         //set age information
-                        rob_id[i] = rev_pack.op_info[i].rob_id;
-                        rob_id_stage[i] = rev_pack.op_info[i].rob_id_stage;
+                        rob_id[issue_id] = rev_pack.op_info[i].rob_id;
+                        rob_id_stage[issue_id] = rev_pack.op_info[i].rob_id_stage;
                         
                         //set wakeup information
-                        wakeup_rd[i] = rev_pack.op_info[i].rd_phy;
-                        wakeup_rd_valid[i] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
+                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
+                        wakeup_rd_valid[issue_id] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
     
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:
-                                wakeup_shift[i] = integer_issue::latency_to_wakeup_shift(ALU_LATENCY);
+                                wakeup_shift[issue_id] = integer_issue::latency_to_wakeup_shift(ALU_LATENCY);
                                 break;
         
                             case op_unit_t::bru:
-                                op_unit_seq[i] = integer_issue::latency_to_wakeup_shift(BRU_LATENCY);
+                                wakeup_shift[issue_id] = integer_issue::latency_to_wakeup_shift(BRU_LATENCY);
                                 break;
         
                             case op_unit_t::csr:
-                                op_unit_seq[i] = integer_issue::latency_to_wakeup_shift(CSR_LATENCY);
+                                wakeup_shift[issue_id] = integer_issue::latency_to_wakeup_shift(CSR_LATENCY);
                                 break;
         
                             case op_unit_t::div:
-                                op_unit_seq[i] = integer_issue::latency_to_wakeup_shift(DIV_LATENCY);
+                                wakeup_shift[issue_id] = integer_issue::latency_to_wakeup_shift(DIV_LATENCY);
                                 break;
         
                             case op_unit_t::mul:
-                                op_unit_seq[i] = integer_issue::latency_to_wakeup_shift(MUL_LATENCY);
+                                wakeup_shift[issue_id] = integer_issue::latency_to_wakeup_shift(MUL_LATENCY);
                                 break;
         
                             default:
@@ -693,23 +694,23 @@ namespace pipeline
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:
-                                latency_to_idle_busy_shift(ALU_LATENCY, new_idle_shift[i], new_busy_shift[i]);
+                                latency_to_idle_busy_shift(ALU_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
                                 break;
         
                             case op_unit_t::bru:
-                                latency_to_idle_busy_shift(BRU_LATENCY, new_idle_shift[i], new_busy_shift[i]);
+                                latency_to_idle_busy_shift(BRU_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
                                 break;
         
                             case op_unit_t::csr:
-                                latency_to_idle_busy_shift(CSR_LATENCY, new_idle_shift[i], new_busy_shift[i]);
+                                latency_to_idle_busy_shift(CSR_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
                                 break;
         
                             case op_unit_t::div:
-                                latency_to_idle_busy_shift(DIV_LATENCY, new_idle_shift[i], new_busy_shift[i]);
+                                latency_to_idle_busy_shift(DIV_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
                                 break;
         
                             case op_unit_t::mul:
-                                latency_to_idle_busy_shift(MUL_LATENCY, new_idle_shift[i], new_busy_shift[i]);
+                                latency_to_idle_busy_shift(MUL_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
                                 break;
         
                             default:
@@ -723,7 +724,7 @@ namespace pipeline
                         this->busy = true;
     
                         //let remain instructions keep right alignment
-                        for(auto j = 0;i < DISPATCH_WIDTH;i++)
+                        for(auto j = 0;j < DISPATCH_WIDTH;j++)
                         {
                             if(j + i < DISPATCH_WIDTH)
                             {
@@ -734,7 +735,6 @@ namespace pipeline
                                 hold_rev_pack.op_info[j].enable = false;
                             }
                         }
-                        
                     }
                 }
             }
