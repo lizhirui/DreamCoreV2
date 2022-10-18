@@ -32,7 +32,7 @@ namespace pipeline
         this->phy_regfile = phy_regfile;
         this->phy_id_free_list = phy_id_free_list;
         this->interrupt_interface = interrupt_interface;
-        this->reset();
+        this->commit::reset();
     }
     
     void commit::reset()

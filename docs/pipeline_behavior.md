@@ -146,7 +146,7 @@
 
 * 若当前处于繁忙状态，则直接使用之前暂存的指令包，否则从dispatch_integer_issue_port接收新的指令包
 * 判断当前发射队列是否已满或空间不足，若已满或空间不足则置繁忙标志有效，同时右对齐保存无法处理的项，留置之后处理，否则置繁忙标志无效
-* 从Physical Register File中读取寄存器的有效状态，同时分析来自execute/wb流水级的反馈包，若其中有一个寄存器匹配某个源寄存器，或该指令符合下述条件，则该源操作数标记为ready状态，否则为not ready状态：
+* 从phy_regfile中读取寄存器的有效状态，同时分析来自execute/wb流水级的反馈包，若其中有一个寄存器匹配某个源寄存器，或该指令符合下述条件，则该源操作数标记为ready状态，否则为not ready状态：
   * 指令无效
   * 指令发生了异常
   * 源操作数不需要映射（为x0或立即数或不存在该源操作数）
@@ -216,7 +216,7 @@
 
 * 若当前处于繁忙状态，则直接使用之前暂存的指令包，否则从dispatch_lsu_issue_port接收新的指令包
 * 判断当前发射队列是否已满或空间不足，若已满或空间不足则置繁忙标志有效，同时右对齐保存无法处理的项，留置之后处理，否则置繁忙标志无效
-* 从Physical Register File中读取寄存器的有效状态，同时分析来自execute/wb流水级的反馈包，若其中有一个寄存器匹配某个源寄存器，或该指令符合下述条件，则该源操作数标记为ready状态，否则为not ready状态：
+* 从phy_regfile中读取寄存器的有效状态，同时分析来自execute/wb流水级的反馈包，若其中有一个寄存器匹配某个源寄存器，或该指令符合下述条件，则该源操作数标记为ready状态，否则为not ready状态：
   * 指令无效
   * 指令发生了异常
   * 源操作数不需要映射（为x0或立即数或不存在该源操作数）
@@ -253,7 +253,7 @@
 
 ### Integer Readreg级
 
-该流水级首先从integer_issue_readreg_port中读入指令包（该指令包的几条指令分别对应相应的发射端口，顺序不可错），负责从Physical Register File/execute feedback/wb feedback读入源操作数，然后发送到相应的执行单元端口（根据指令在指令包中的位置以及指令类型）
+该流水级首先从integer_issue_readreg_port中读入指令包（该指令包的几条指令分别对应相应的发射端口，顺序不可错），负责从phy_regfile/execute feedback/wb feedback读入源操作数，然后发送到相应的执行单元端口（根据指令在指令包中的位置以及指令类型）
 
 如果收到了来自commit流水级的flush请求，则对全部执行单元的handshake_dff执行flush操作
 
@@ -261,7 +261,7 @@
 
 该流水级按照以下流程执行：
 * 若当前流水级处于繁忙状态，则直接获取上一个周期的保存的指令包，然后解除流水线的繁忙状态，否则从lsu_issue_readreg_port中读入指令包
-* 从Physical Register File/execute feedback/wb feedback读入源操作数
+* 从phy_regfile/execute feedback/wb feedback读入源操作数
 * 发送到LSU端口，若LSU端口堵塞，则置流水线状态为繁忙状态
 
 如果收到了来自commit流水级的flush请求，则对LSU的handshake_dff执行flush操作
@@ -354,10 +354,56 @@
 
 ## WB级
 
-该流水级负责Physical Register File的写回与反馈，步骤如下：
+该流水级负责phy_regfile的写回与反馈，步骤如下：
 
 * 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包到wb_commit_port
-* 从每一个execute_wb_port读入一条指令，若指令的有效、没有产生异常且需要重命名，则执行Physical Register File的写回操作，并将写回的数据送到反馈通道上
+* 从每一个execute_wb_port读入一条指令，若指令的有效、没有产生异常且需要重命名，则执行phy_regfile的写回操作，并将写回的数据送到反馈通道上
 * 将指令送到wb_commit_port
 
 ## Commit级
+
+该流水级负责指令的完成、退休和中断异常处理，分为输入级和输出级
+
+输入级步骤如下：
+* 若输出级产生了flush请求，则输入级什么都不做，否则执行如下流程
+* 从wb_commit_port读入一个指令包
+* 遍历其中的每一条指令，凡是有效项，都在ROB中标记为完成
+
+输出级步骤如下：
+
+* 若rob为空，则什么都不做，否则按照如下流程走
+* 从rob顶端读出一项，置为rob_item，并在反馈包中标记下一个待处理ROB为该项
+* 若检测到中断发生，则执行如下序列：
+  * 将rob_item.pc写入CSR_MEPC
+  * 将0写入CSR_MTVAL
+  * 将中断ID与0x80000000的或写入CSR_MCAUSE
+  * 将CSR_MSTATUS的MIE标志位复制到MPIE标志位，并将MIE标志位置0
+  * 向中断接口传递ACK信号，表示中断已处理
+  * 产生flush反馈，跳转地址设为CSR_MTVEC
+  * 将Retire RAT整体复制到Speculative RAT
+  * 对ROB执行flush操作
+  * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
+  * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+* 若未检测到中断发生，则执行如下序列：
+  * 准备退休最多COMMIT_WIDTH指令，开始从ROB顶端遍历
+  * 从ROB顶端读入一项，置为rob_item
+  * 若rob_item.finish为真，表明指令已完成执行，准备退休，否则终止下述流程
+  * 在反馈包标记待处理ROB为下一项（如果存在，若不存在，则标记为不存在下一项）
+  * 在反馈包中标记该项已退休
+  * 若该指令发生异常，则执行如下流程
+    * 产生flush反馈，跳转地址设为CSR_MTVEC
+    * 将Retire RAT整体复制到Speculative RAT
+    * 对ROB执行flush操作
+    * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
+    * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+    * 标记一条指令已完成提交
+    * 终止后续的指令处理
+  * 若该指令未发生异常，则执行如下流程
+    * 将ROB的顶端项弹出
+    * 若该指令发生了重命名，则从Speculative RAT中释放旧物理寄存器，并在Retire RAT中提交新的物理寄存器映射，同时在Retire RAT中移除旧的物理寄存器映射，并在phy_regfile中标记旧的物理寄存器无效
+    * 标记一条指令已完成提交
+    * 若该指令需要对CSR执行写操作，则向csr_file发出写请求
+    * 若该指令是BRU指令，则执行如下流程
+      * 若该指令是mret指令，则将CSR_MSTATUS寄存器的MPIE位覆盖到MIE位上
+      * 产生jump反馈请求，跳转地址为该指令的跳转目标
+    * 终止后续的指令处理
