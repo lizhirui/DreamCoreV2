@@ -22,13 +22,13 @@ namespace pipeline::execute
     class mul : public if_reset_t
     {
         private:
-            uint32_t id;
-            component::handshake_dff<readreg_execute_pack_t> *readreg_mul_hdff;
+            uint32_t id = 0;
+            component::handshake_dff<integer_readreg_execute_pack_t> *readreg_mul_hdff;
             component::port<execute_wb_pack_t> *mul_wb_port;
             trace::trace_database tdb;
         
         public:
-            mul(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_mul_hdff, component::port<execute_wb_pack_t> *mul_wb_port);
+            mul(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_mul_hdff, component::port<execute_wb_pack_t> *mul_wb_port);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
     };

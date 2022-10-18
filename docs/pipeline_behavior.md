@@ -270,15 +270,87 @@
 
 ### ALU
 
+该流水级负责处理ALU类指令，包括add/and/auipc/ebreak/ecall/fence/fence.i/lui/or/sll/slt/sltu/sra/srl/sub/xor指令及其可能存在的立即数版本
+
+步骤如下：
+* 若readreg_alu_hdff不为空且没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 从readreg_alu_hdff读入一条指令
+* 根据指令类型计算相应的结果，送入alu_wb_port
+
+反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+
 ### BRU
+
+该流水级负责处理BRU类指令，包括beq/bge/bgeu/blt/bltu/bne/jal/jalr/mret指令
+
+步骤如下：
+* 若readreg_bru_hdff不为空且没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 从readreg_bru_hdff读入一条指令
+* 根据指令类型计算相应的结果，送入bru_wb_port
+
+反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
 
 ### CSR
 
+该流水级负责处理CSR类指令，包括csrrc/csrrs/csrrw指令
+
+步骤如下：
+* 若readreg_csr_hdff不为空且没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 从readreg_csr_hdff读入一条指令
+* 检查目标寄存器是否需要重命名，若需要重命名，则对csrfile执行读取操作，若读取失败，则会产生illegal_instruction异常
+* 若源操作数不为x0寄存器，则表明需要执行写操作，但是为了保证乱序处理器的一致性，写操作将会推迟到指令退休时进行，这里仅做写权限检查，若写权限检查不通过，同样会产生illegal_instruction异常
+* 根据指令类型计算相应的结果，送入csr_wb_port
+
+反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+
 ### DIV
+
+该流水级负责处理DIV类指令，包括div/divu/rem/remu指令
+
+步骤如下：
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 从readreg_div_hdff读入一条指令
+* 若流水级当前处于繁忙状态，则继续等待，直到完整的DIV_LATENCY周期结束为止输出结果到div_wb_port
+* 若流水级当前不处于繁忙状态，则若readreg_div_hdff为空，直接返回空包，否则初始化除法器开始计算
+
+反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
 
 ### LSU
 
+该流水级负责处理LSU类指令，包括lb/lbu/lh/lhu/lw/sb/sh/sw指令，且实际分为两个流水级
+
+第一个流水级的行为如下：
+
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则清零l2_addr与l2_rev_pack（即送到第二级流水线的数据）
+* 若第二级流水级处于堵塞状态，则什么都不做，否则按照如下流程走
+* 若readreg_lsu_hdff为空，则清零l2_addr与l2_rev_pack，否则按照如下流程走
+* 从readreg_lsu_hdff读入一条指令
+* 计算有效地址
+* 检查地址的对齐情况，若地址不对齐，则产生load_address_misaligned异常
+* 将地址送到总线
+* 将指令送到下一流水级
+
+第二个流水级的行为如下：
+
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 分析l2_rev_pack的指令，若没有产生异常，则按如下流程走，否则将数据包直接发送到lsu_wb_port
+* 若为Load类指令且总线未返回数据，则发送stall信号，在本周期流水线暂停什么都不做，否则继续如下流程
+* 若为Store类指令且Store Buffer空间不足，则发送stall信号，在本周期流水线暂停什么都不做，否则继续如下流程
+* 若为Load类指令，从总线取得结果，并送入Store Buffer进行反馈处理，将结果填入send_pack并发送到lsu_wb_port
+* 若为Store类指令，将请求压入Store Buffer
+
+反馈信号生成：若第二级流水线的指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+
 ### MUL
+
+该流水级负责处理MUL类指令，包括mul/mulh/mulhsu/mulhu指令
+
+步骤如下：
+* 若readreg_mul_hdff不为空且没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 从readreg_mul_hdff读入一条指令
+* 根据指令类型计算相应的结果，送入mul_wb_port
+
+反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
 
 ## WB级
 

@@ -22,13 +22,13 @@ namespace pipeline::execute
     class alu : public if_reset_t
     {
         private:
-            uint32_t id;
-            component::handshake_dff<readreg_execute_pack_t> *readreg_alu_hdff;
+            uint32_t id = 0;
+            component::handshake_dff<integer_readreg_execute_pack_t> *readreg_alu_hdff;
             component::port<execute_wb_pack_t> *alu_wb_port;
             trace::trace_database tdb;
         
         public:
-            alu(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port);
+            alu(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
     };

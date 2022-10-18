@@ -11,195 +11,190 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/lsu.h"
 #include "cycle_model/component/handshake_dff.h"
-#include "cycle_model/pipeline/integer_readreg_execute.h"
+#include "cycle_model/pipeline/lsu_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/component/bus.h"
 #include "cycle_model/component/store_buffer.h"
 
-namespace pipeline
+namespace pipeline::execute
 {
-    namespace execute
+    lsu::lsu(uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer) : tdb(TRACE_EXECUTE_LSU)
     {
-        lsu::lsu(uint32_t id, component::handshake_dff<readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer) : tdb(TRACE_EXECUTE_LSU)
-        {
-            this->id = id;
-            this->readreg_lsu_hdff = readreg_lsu_hdff;
-            this->lsu_wb_port = lsu_wb_port;
-            this->bus = bus;
-            this->store_buffer = store_buffer;
-            this->reset();
-        }
+        this->id = id;
+        this->readreg_lsu_hdff = readreg_lsu_hdff;
+        this->lsu_wb_port = lsu_wb_port;
+        this->bus = bus;
+        this->store_buffer = store_buffer;
+        this->lsu::reset();
+    }
+    
+    void lsu::reset()
+    {
+        this->l2_stall = false;
+        this->l2_rev_pack = lsu_readreg_execute_pack_t();
+        this->l2_addr = 0;
+    }
+    
+    execute_feedback_channel_t lsu::run(commit_feedback_pack_t commit_feedback_pack)
+    {
+        //level 2 pipeline: get memory data/push store_buffer
+        execute_wb_pack_t send_pack;
         
-        void lsu::reset()
-        {
-            this->l2_stall = false;
-            this->l2_rev_pack = readreg_execute_pack_t();
-            this->l2_addr = 0;
-        }
+        this->l2_stall = false;//cancel l2_stall signal temporarily
         
-        execute_feedback_channel_t lsu::run(commit_feedback_pack_t commit_feedback_pack)
+        if(l2_rev_pack.enable && !commit_feedback_pack.flush)
         {
-            //level 2 pipeline: get memory data/push store_buffer
-            execute_wb_pack_t send_pack;
+            verify(l2_rev_pack.valid);
+            send_pack.enable = l2_rev_pack.enable;
+            send_pack.value = l2_rev_pack.value;
+            send_pack.valid = l2_rev_pack.valid;
+            send_pack.last_uop = l2_rev_pack.last_uop;
+            send_pack.rob_id = l2_rev_pack.rob_id;
+            send_pack.pc = l2_rev_pack.pc;
+            send_pack.imm = l2_rev_pack.imm;
+            send_pack.has_exception = l2_rev_pack.has_exception;
+            send_pack.exception_id = l2_rev_pack.exception_id;
+            send_pack.exception_value = l2_rev_pack.exception_value;
             
-            this->l2_stall = false;//cancel l2_stall signal temporarily
+            send_pack.rs1 = l2_rev_pack.rs1;
+            send_pack.arg1_src = l2_rev_pack.arg1_src;
+            send_pack.rs1_need_map = l2_rev_pack.rs1_need_map;
+            send_pack.rs1_phy = l2_rev_pack.rs1_phy;
+            send_pack.src1_value = l2_rev_pack.src1_value;
             
-            if(l2_rev_pack.enable && !commit_feedback_pack.flush)
+            send_pack.rs2 = l2_rev_pack.rs2;
+            send_pack.arg2_src = l2_rev_pack.arg2_src;
+            send_pack.rs2_need_map = l2_rev_pack.rs2_need_map;
+            send_pack.rs2_phy = l2_rev_pack.rs2_phy;
+            send_pack.src2_value = l2_rev_pack.src2_value;
+            
+            send_pack.rd = l2_rev_pack.rd;
+            send_pack.rd_enable = l2_rev_pack.rd_enable;
+            send_pack.need_rename = l2_rev_pack.need_rename;
+            send_pack.rd_phy = l2_rev_pack.rd_phy;
+            
+            send_pack.csr = l2_rev_pack.csr;
+            send_pack.op = l2_rev_pack.op;
+            send_pack.op_unit = l2_rev_pack.op_unit;
+            memcpy(&send_pack.sub_op, &l2_rev_pack.sub_op, sizeof(l2_rev_pack.sub_op));
+            
+            if(!l2_rev_pack.has_exception)
             {
-                verify(l2_rev_pack.valid);
-                send_pack.enable = l2_rev_pack.enable;
-                send_pack.value = l2_rev_pack.value;
-                send_pack.valid = l2_rev_pack.valid;
-                send_pack.last_uop = l2_rev_pack.last_uop;
-                send_pack.rob_id = l2_rev_pack.rob_id;
-                send_pack.pc = l2_rev_pack.pc;
-                send_pack.imm = l2_rev_pack.imm;
-                send_pack.has_exception = l2_rev_pack.has_exception;
-                send_pack.exception_id = l2_rev_pack.exception_id;
-                send_pack.exception_value = l2_rev_pack.exception_value;
+                component::store_buffer_item_t item;
+                uint32_t bus_value = 0;
+                uint32_t feedback_value = 0;
+                bool load_stall = false;
+                bool store_stall = false;
                 
-                send_pack.rs1 = l2_rev_pack.rs1;
-                send_pack.arg1_src = l2_rev_pack.arg1_src;
-                send_pack.rs1_need_map = l2_rev_pack.rs1_need_map;
-                send_pack.rs1_phy = l2_rev_pack.rs1_phy;
-                send_pack.src1_value = l2_rev_pack.src1_value;
-                
-                send_pack.rs2 = l2_rev_pack.rs2;
-                send_pack.arg2_src = l2_rev_pack.arg2_src;
-                send_pack.rs2_need_map = l2_rev_pack.rs2_need_map;
-                send_pack.rs2_phy = l2_rev_pack.rs2_phy;
-                send_pack.src2_value = l2_rev_pack.src2_value;
-                
-                send_pack.rd = l2_rev_pack.rd;
-                send_pack.rd_enable = l2_rev_pack.rd_enable;
-                send_pack.need_rename = l2_rev_pack.need_rename;
-                send_pack.rd_phy = l2_rev_pack.rd_phy;
-                
-                send_pack.csr = l2_rev_pack.csr;
-                send_pack.op = l2_rev_pack.op;
-                send_pack.op_unit = l2_rev_pack.op_unit;
-                memcpy(&send_pack.sub_op, &l2_rev_pack.sub_op, sizeof(l2_rev_pack.sub_op));
-                
-                if(!l2_rev_pack.has_exception)
+                switch(l2_rev_pack.sub_op.lsu_op)
                 {
-                    component::store_buffer_item_t item;
-                    uint32_t bus_value = 0;
-                    uint32_t feedback_value = 0;
-                    bool load_stall = false;
-                    bool store_stall = false;
+                    case lsu_op_t::lb:
+                        load_stall = bus->get_data_value(&bus_value);
+                        feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
+                        send_pack.rd_value = sign_extend(feedback_value, 8);
+                        break;
                     
-                    switch(l2_rev_pack.sub_op.lsu_op)
-                    {
-                        case lsu_op_t::lb:
-                            load_stall = bus->get_data_value(&bus_value);
-                            feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
-                            send_pack.rd_value = sign_extend(feedback_value, 8);
-                            break;
-                        
-                        case lsu_op_t::lbu:
-                            load_stall = bus->get_data_value(&bus_value);
-                            feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
-                            send_pack.rd_value = feedback_value;
-                            break;
-                        
-                        case lsu_op_t::lh:
-                            load_stall = bus->get_data_value(&bus_value);
-                            feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
-                            send_pack.rd_value = sign_extend(feedback_value, 16);
-                            break;
-                        
-                        case lsu_op_t::lhu:
-                            load_stall = bus->get_data_value(&bus_value);
-                            feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
-                            send_pack.rd_value = feedback_value;
-                            break;
-                        
-                        case lsu_op_t::lw:
-                            load_stall = bus->get_data_value(&bus_value);
-                            feedback_value = store_buffer->get_feedback_value(l2_addr, 4, bus_value);
-                            send_pack.rd_value = feedback_value;
-                            break;
-                        
-                        case lsu_op_t::sb:
-                            if(store_buffer->producer_is_full())
-                            {
-                                store_stall = true;
-                            }
-                            else
-                            {
-                                item.enable = true;
-                                item.addr = l2_addr;
-                                item.size = 1;
-                                item.data = l2_rev_pack.src2_value & 0xff;
-                                item.committed = false;
-                                item.pc = l2_rev_pack.pc;
-                                item.rob_id = l2_rev_pack.rob_id;
-                                store_buffer->push(item);
-                            }
-                            
-                            break;
-                        
-                        case lsu_op_t::sh:
-                            if(store_buffer->producer_is_full())
-                            {
-                                store_stall = true;
-                            }
-                            else
-                            {
-                                item.enable = true;
-                                item.addr = l2_addr;
-                                item.size = 2;
-                                item.data = l2_rev_pack.src2_value & 0xffff;
-                                item.committed = false;
-                                item.pc = l2_rev_pack.pc;
-                                item.rob_id = l2_rev_pack.rob_id;
-                                store_buffer->push(item);
-                            }
-                            
-                            break;
-                        
-                        case lsu_op_t::sw:
-                            if(store_buffer->producer_is_full())
-                            {
-                                store_stall = true;
-                            }
-                            else
-                            {
-                                item.enable = true;
-                                item.addr = l2_addr;
-                                item.size = 4;
-                                item.data = l2_rev_pack.src2_value;
-                                item.committed = false;
-                                item.pc = l2_rev_pack.pc;
-                                item.rob_id = l2_rev_pack.rob_id;
-                                store_buffer->push(item);
-                            }
-                            
-                            break;
-                    }
+                    case lsu_op_t::lbu:
+                        load_stall = bus->get_data_value(&bus_value);
+                        feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
+                        send_pack.rd_value = feedback_value;
+                        break;
                     
-                    this->l2_stall = load_stall || store_stall;//generate l2_stall signal
+                    case lsu_op_t::lh:
+                        load_stall = bus->get_data_value(&bus_value);
+                        feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
+                        send_pack.rd_value = sign_extend(feedback_value, 16);
+                        break;
                     
-                    if(load_stall || store_stall)
-                    {
-                        send_pack = execute_wb_pack_t();
-                    }
+                    case lsu_op_t::lhu:
+                        load_stall = bus->get_data_value(&bus_value);
+                        feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
+                        send_pack.rd_value = feedback_value;
+                        break;
+                    
+                    case lsu_op_t::lw:
+                        load_stall = bus->get_data_value(&bus_value);
+                        feedback_value = store_buffer->get_feedback_value(l2_addr, 4, bus_value);
+                        send_pack.rd_value = feedback_value;
+                        break;
+                    
+                    case lsu_op_t::sb:
+                        if(store_buffer->producer_is_full())
+                        {
+                            store_stall = true;
+                        }
+                        else
+                        {
+                            item.enable = true;
+                            item.addr = l2_addr;
+                            item.size = 1;
+                            item.data = l2_rev_pack.src2_value & 0xff;
+                            item.committed = false;
+                            item.pc = l2_rev_pack.pc;
+                            item.rob_id = l2_rev_pack.rob_id;
+                            store_buffer->push(item);
+                        }
+                        
+                        break;
+                    
+                    case lsu_op_t::sh:
+                        if(store_buffer->producer_is_full())
+                        {
+                            store_stall = true;
+                        }
+                        else
+                        {
+                            item.enable = true;
+                            item.addr = l2_addr;
+                            item.size = 2;
+                            item.data = l2_rev_pack.src2_value & 0xffff;
+                            item.committed = false;
+                            item.pc = l2_rev_pack.pc;
+                            item.rob_id = l2_rev_pack.rob_id;
+                            store_buffer->push(item);
+                        }
+                        
+                        break;
+                    
+                    case lsu_op_t::sw:
+                        if(store_buffer->producer_is_full())
+                        {
+                            store_stall = true;
+                        }
+                        else
+                        {
+                            item.enable = true;
+                            item.addr = l2_addr;
+                            item.size = 4;
+                            item.data = l2_rev_pack.src2_value;
+                            item.committed = false;
+                            item.pc = l2_rev_pack.pc;
+                            item.rob_id = l2_rev_pack.rob_id;
+                            store_buffer->push(item);
+                        }
+                        
+                        break;
+                }
+                
+                this->l2_stall = load_stall || store_stall;//generate l2_stall signal
+                
+                if(load_stall || store_stall)
+                {
+                    send_pack = execute_wb_pack_t();
                 }
             }
-            else if(commit_feedback_pack.flush)
+        }
+        
+        lsu_wb_port->set(send_pack);
+        
+        //level 1 pipeline: calculate effective address
+        lsu_readreg_execute_pack_t rev_pack;
+        
+        if(!commit_feedback_pack.flush)
+        {
+            if(!l2_stall)
             {
-                this->l2_stall = false;
-                this->l2_rev_pack = readreg_execute_pack_t();
-            }
-            
-            lsu_wb_port->set(send_pack);
-            
-            //level 1 pipeline: calculate effective address
-            readreg_execute_pack_t rev_pack;
-            
-            if(!commit_feedback_pack.flush)
-            {
-                if(!l2_stall)
+                if(readreg_lsu_hdff->pop(&rev_pack))
                 {
                     l2_addr = 0;
                     l2_rev_pack.enable = rev_pack.enable;
@@ -249,34 +244,34 @@ namespace pipeline
                             {
                                 case lsu_op_t::lb:
                                 case lsu_op_t::lbu:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 1);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 1);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                                     break;
                                     
                                 case lsu_op_t::lh:
                                 case lsu_op_t::lhu:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 2);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 2);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                                     break;
                                     
                                 case lsu_op_t::lw:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 4);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 4);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
                                     break;
                                     
                                 case lsu_op_t::sb:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 1);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 1);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;
                                     
                                 case lsu_op_t::sh:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 2);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 2);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;
                                     
                                 case lsu_op_t::sw:
-                                    l2_rev_pack.has_exception = !bus->check_align(l2_addr, 4);
-                                    l2_rev_pack.exception_id = !bus->check_align(l2_addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
+                                    l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 4);
+                                    l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;
                                     
                                 default:
@@ -286,18 +281,23 @@ namespace pipeline
                         }
                     }
                 }
+                else
+                {
+                    l2_addr = 0;
+                    l2_rev_pack = lsu_readreg_execute_pack_t();
+                }
             }
-            else
-            {
-                l2_addr = 0;
-                l2_rev_pack = readreg_execute_pack_t();
-            }
-    
-            execute_feedback_channel_t feedback_pack;
-            feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
-            feedback_pack.phy_id = send_pack.rd_phy;
-            feedback_pack.value = send_pack.rd_value;
-            return feedback_pack;
         }
+        else
+        {
+            l2_addr = 0;
+            l2_rev_pack = lsu_readreg_execute_pack_t();
+        }
+
+        execute_feedback_channel_t feedback_pack;
+        feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
+        feedback_pack.phy_id = send_pack.rd_phy;
+        feedback_pack.value = send_pack.rd_value;
+        return feedback_pack;
     }
 }
