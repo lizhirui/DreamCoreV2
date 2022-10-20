@@ -1,5 +1,5 @@
 #pragma once
-#include <common.h>
+#include "common.h"
 const uint32_t FETCH_WIDTH = 4;
 const uint32_t DECODE_WIDTH = 4;
 const uint32_t RENAME_WIDTH = 4;
@@ -64,6 +64,16 @@ const uint32_t RAS_SIZE = 256;
 
 const uint32_t CHARFIFO_SEND_FIFO_SIZE = 1024;
 const uint32_t CHARFIFO_REV_FIFO_SIZE = 1024;
+
+typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> charfifo_send_fifo_t;
+typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> charfifo_rev_fifo_t;
+
+#define MODE_ISA_MODEL_ONLY 0
+#define MODE_CYCLE_MODEL_ONLY 1
+#define MODE_ISA_AND_CYCLE_MODEL_DIFFTEST 2
+
+#define MODE MODE_ISA_MODEL_ONLY
+//#define MODE MODE_ISA_AND_CYCLE_MODEL_DIFFTEST
 
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 

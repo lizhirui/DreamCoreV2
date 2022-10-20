@@ -37,7 +37,7 @@ namespace cycle_model::pipeline
         
         if(!commit_feedback_pack.flush)
         {
-            for(auto i = 0;i < DECODE_WIDTH;i++)
+            for(uint32_t i = 0;i < DECODE_WIDTH;i++)
             {
                 if(!this->fetch2_decode_fifo->customer_is_empty() && !this->decode_rename_fifo->producer_is_full())
                 {

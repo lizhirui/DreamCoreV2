@@ -9,7 +9,15 @@
  */
 
 #pragma once
-#include <common.h>
+#include "common.h"
 
-bool get_and_clear_pause_detected();
+void set_recv_thread_stop(bool value);
+bool get_recv_thread_stopped();
+void set_program_stop(bool value);
+bool get_program_stop();
+bool get_server_thread_stopped();
+bool get_charfifo_thread_stopped();
+charfifo_send_fifo_t *get_charfifo_send_fifo();
+charfifo_rev_fifo_t *get_charfifo_rev_fifo();
+void debug_event_handle();
 void network_init();

@@ -259,12 +259,12 @@ namespace isa_model
                     t["sub_op"] = outenum(sub_op.div_op);
                     break;
                 
-                case op_unit_t::lsu:
-                    t["sub_op"] = outenum(sub_op.lsu_op);
-                    break;
-                
                 case op_unit_t::mul:
                     t["sub_op"] = outenum(sub_op.mul_op);
+                    break;
+    
+                case op_unit_t::lsu:
+                    t["sub_op"] = outenum(sub_op.lsu_op);
                     break;
                 
                 default:
@@ -281,10 +281,10 @@ namespace isa_model
         private:
             static isa_model *instance;
             
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo;
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo;
+            charfifo_send_fifo_t *charfifo_send_fifo;
+            charfifo_rev_fifo_t *charfifo_rev_fifo;
             
-            isa_model(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo);
+            isa_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo);
             ~isa_model();
         
         public:
@@ -297,13 +297,15 @@ namespace isa_model
             
             uint64_t pc = INIT_PC;
             
+            uint64_t commit_num = 0;//only for debugger
+            
             component::bus bus;
             component::csrfile csr_file;
             component::interrupt_interface interrupt_interface;
             component::regfile<uint32_t> arch_regfile;
             component::slave::clint clint;
             
-            static isa_model *create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo);
+            static isa_model *create(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo);
             static void destroy();
             
             void load(void *mem, size_t size);

@@ -18,7 +18,7 @@ namespace cycle_model::component
     class rat;
     
     template<typename T>
-    class regfile : public if_reset_t
+    class regfile : public if_print_t, if_reset_t
     {
         private:
             dff<T> *reg_data;
@@ -44,7 +44,7 @@ namespace cycle_model::component
         
             virtual void reset()
             {
-                for(auto i = 0;i < size;i++)
+                for(uint32_t i = 0;i < size;i++)
                 {
                     reg_data[i].set(0);
                     reg_data_valid[i].set(false);
@@ -87,10 +87,27 @@ namespace cycle_model::component
             
             void restore(rat *element)
             {
-                for(auto i = 0;i < size;i++)
+                for(uint32_t i = 0;i < size;i++)
                 {
                     reg_data_valid[i].set(element->producer_get_valid(i));
                 }
+            }
+            
+            virtual json get_json()
+            {
+                json t;
+                json value = json::array();
+                json valid = json::array();
+                
+                for(uint32_t i = 0;i < size;i++)
+                {
+                    value.push_back(reg_data[i].get());
+                    valid.push_back(reg_data_valid[i].get());
+                }
+                
+                t["value"] = value;
+                t["valid"] = valid;
+                return t;
             }
     };
 }

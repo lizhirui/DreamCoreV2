@@ -69,6 +69,8 @@ namespace cycle_model::component
                 {
                     wptr.set(wptr.get_new() + 1);
                 }
+                
+                return true;
             }
 
             virtual bool pop(T *element)

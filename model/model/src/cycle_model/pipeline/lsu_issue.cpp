@@ -38,7 +38,7 @@ namespace cycle_model::pipeline
         this->busy = false;
         this->hold_rev_pack = dispatch_issue_pack_t();
         
-        for(auto i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
+        for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
         {
             this->wakeup_shift_src1[i] = 0;
             this->src1_ready[i] = false;
@@ -122,7 +122,7 @@ namespace cycle_model::pipeline
     {
         if(!commit_feedback_pack.flush)
         {
-            for(auto i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
             {
                 if(issue_q.customer_check_id_valid(i))
                 {
@@ -223,7 +223,7 @@ namespace cycle_model::pipeline
                 rev_pack = dispatch_lsu_issue_port->get();
             }
             
-            for(auto i = 0;i < DISPATCH_WIDTH;i++)
+            for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
             {
                 if(rev_pack.op_info[i].enable)
                 {
@@ -390,6 +390,28 @@ namespace cycle_model::pipeline
     
     json lsu_issue::get_json()
     {
-        return issue_q.get_json();
+        json t;
+        
+        t["busy"] = this->busy;
+        t["issue_q"] = issue_q.get_json();
+        
+        auto wakeup_shift_src1 = json::array();
+        auto src1_ready = json::array();
+        auto wakeup_shift_src2 = json::array();
+        auto src2_ready = json::array();
+        
+        for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
+        {
+            wakeup_shift_src1.push_back(this->wakeup_shift_src1[i]);
+            src1_ready.push_back(this->src1_ready[i]);
+            wakeup_shift_src2.push_back(this->wakeup_shift_src2[i]);
+            src2_ready.push_back(this->src2_ready[i]);
+        }
+        
+        t["wakeup_shift_src1"] = wakeup_shift_src1;
+        t["src1_ready"] = src1_ready;
+        t["wakeup_shift_src2"] = wakeup_shift_src2;
+        t["src2_ready"] = src2_ready;
+        return t;
     }
 }

@@ -23,7 +23,7 @@ namespace isa_model
 {
     isa_model *isa_model::instance = nullptr;
     
-    isa_model *isa_model::create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo)
+    isa_model *isa_model::create(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo)
     {
         if(instance == nullptr)
         {
@@ -42,7 +42,7 @@ namespace isa_model
         }
     }
     
-    isa_model::isa_model(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo) :
+    isa_model::isa_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo) :
     charfifo_send_fifo(charfifo_send_fifo),
     charfifo_rev_fifo(charfifo_rev_fifo),
     interrupt_interface(&csr_file),
@@ -106,7 +106,7 @@ namespace isa_model
         auto buf = (uint8_t *)mem;
         verify(size < MEMORY_SIZE);
     
-        for(auto i = 0;i < size;i++)
+        for(size_t i = 0;i < size;i++)
         {
             bus.write8(MEMORY_BASE + i, buf[i]);
         }
@@ -156,6 +156,7 @@ namespace isa_model
         
         cpu_clock_cycle++;
         committed_instruction_num++;
+        commit_num++;//only for debugger
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
         csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));

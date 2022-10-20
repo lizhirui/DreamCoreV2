@@ -34,7 +34,7 @@ namespace cycle_model::component
             {
                 fifo<T>::reset();
                 
-                for(auto i = 0;i < this->size;i++)
+                for(uint32_t i = 0;i < this->size;i++)
                 {
                     valid[i].set(false);
                 }
@@ -46,7 +46,7 @@ namespace cycle_model::component
             {
                 fifo<T>::flush();
                 
-                for(auto i = 0;i < this->size;i++)
+                for(uint32_t i = 0;i < this->size;i++)
                 {
                     valid[i].set(false);
                 }

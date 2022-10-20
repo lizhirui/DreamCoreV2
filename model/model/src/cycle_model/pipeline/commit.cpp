@@ -79,7 +79,7 @@ namespace cycle_model::pipeline
             }
             else
             {
-                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
                 {
                     if(rob->get_front_id(&rob_item_id))
                     {
@@ -158,7 +158,7 @@ namespace cycle_model::pipeline
                 {
                     auto rev_pack = wb_commit_port->get();
                     
-                    for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                    for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                     {
                         if(rev_pack.op_info[i].enable)
                         {

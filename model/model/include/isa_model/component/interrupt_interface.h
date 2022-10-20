@@ -11,7 +11,6 @@
 #pragma once
 #include "common.h"
 #include "config.h"
-#include "dff.h"
 #include "csrfile.h"
 #include "csr_all.h"
 

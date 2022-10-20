@@ -64,10 +64,10 @@ namespace cycle_model
         private:
             static cycle_model *instance;
             
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo;
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo;
+            charfifo_send_fifo_t *charfifo_send_fifo;
+            charfifo_rev_fifo_t *charfifo_rev_fifo;
             
-            cycle_model(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo);
+            cycle_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo);
             ~cycle_model();
             
         public:
@@ -141,7 +141,7 @@ namespace cycle_model
             pipeline::wb_feedback_pack_t wb_feedback_pack;
             pipeline::commit_feedback_pack_t commit_feedback_pack;
             
-            static cycle_model *create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo);
+            static cycle_model *create(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo);
             static void destroy();
             
             void load(void *mem, size_t size);

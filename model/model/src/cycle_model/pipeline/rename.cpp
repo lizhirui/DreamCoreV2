@@ -200,7 +200,7 @@ namespace cycle_model::pipeline
         //assertion
         if(send_pack.op_info[0].enable && send_pack.op_info[0].valid && !send_pack.op_info[0].has_exception && (send_pack.op_info[0].op_unit == op_unit_t::csr))
         {
-            for(auto i = 1;i < RENAME_WIDTH;i++)
+            for(uint32_t i = 1;i < RENAME_WIDTH;i++)
             {
                 verify(!send_pack.op_info[i].enable);
             }
@@ -208,7 +208,7 @@ namespace cycle_model::pipeline
         
         auto assertion_found_fence = false;
         
-        for(auto i = 0;i < RENAME_WIDTH;i++)
+        for(uint32_t i = 0;i < RENAME_WIDTH;i++)
         {
             if(send_pack.op_info[i].enable && send_pack.op_info[i].valid && !send_pack.op_info[i].has_exception)
             {

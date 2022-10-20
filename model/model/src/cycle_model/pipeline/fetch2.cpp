@@ -49,7 +49,7 @@ namespace cycle_model::pipeline
             this->busy = false;//set not busy state temporarily
             uint32_t fail_index = 0;//busy item index
             
-            for(auto i = 0;i < FETCH_WIDTH;i++)
+            for(uint32_t i = 0;i < FETCH_WIDTH;i++)
             {
                 send_pack.enable = this->rev_pack.op_info[i].enable;
                 send_pack.pc = this->rev_pack.op_info[i].pc;
@@ -74,7 +74,7 @@ namespace cycle_model::pipeline
             }
             
             //let remain instructions keep right alignment
-            for(auto i = 0;i < FETCH_WIDTH;i++)
+            for(uint32_t i = 0;i < FETCH_WIDTH;i++)
             {
                 if((i + fail_index) < FETCH_WIDTH)
                 {
@@ -93,5 +93,13 @@ namespace cycle_model::pipeline
         }
         
         return feedback_pack;
+    }
+    
+    json fetch2::get_json()
+    {
+        json t;
+        
+        t["busy"] = this->busy;
+        return t;
     }
 }

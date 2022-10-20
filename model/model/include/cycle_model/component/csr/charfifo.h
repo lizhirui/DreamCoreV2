@@ -18,11 +18,11 @@ namespace cycle_model::component::csr
     class charfifo : public csr_base
     {
         private:
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> *send_fifo;
-            boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> *rev_fifo;
+            charfifo_send_fifo_t *send_fifo;
+            charfifo_rev_fifo_t *rev_fifo;
 
         public:
-            charfifo(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *rev_fifo) : csr_base("charfifo", 0x00000000)
+            charfifo(charfifo_send_fifo_t *send_fifo, charfifo_rev_fifo_t *rev_fifo) : csr_base("charfifo", 0x00000000)
             {
                 this->send_fifo = send_fifo;
                 this->rev_fifo = rev_fifo;

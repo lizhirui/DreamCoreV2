@@ -61,7 +61,7 @@ namespace cycle_model
 {
     cycle_model *cycle_model::instance = nullptr;
     
-    cycle_model *cycle_model::create(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo)
+    cycle_model *cycle_model::create(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo)
     {
         if(instance == nullptr)
         {
@@ -80,7 +80,7 @@ namespace cycle_model
         }
     }
     
-    cycle_model::cycle_model(boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> *charfifo_send_fifo, boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> *charfifo_rev_fifo) :
+    cycle_model::cycle_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo) :
     charfifo_send_fifo(charfifo_send_fifo),
     charfifo_rev_fifo(charfifo_rev_fifo),
     fetch1_fetch2_port(pipeline::fetch1_fetch2_pack_t()),

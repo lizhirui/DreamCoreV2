@@ -49,5 +49,6 @@ namespace cycle_model::pipeline
             lsu_readreg(component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             lsu_readreg_feedback_pack_t run(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            virtual json get_json();
     };
 }

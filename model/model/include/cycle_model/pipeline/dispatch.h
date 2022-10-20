@@ -58,5 +58,6 @@ namespace cycle_model::pipeline
             dispatch(component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer);
             virtual void reset();
             dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            virtual json get_json();
     };
 }

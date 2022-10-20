@@ -298,4 +298,17 @@ namespace cycle_model::pipeline
         
         return feedback_pack;
     }
+    
+    json dispatch::get_json()
+    {
+        json t;
+        
+        t["integer_busy"] = this->integer_busy;
+        t["lsu_busy"] = this->lsu_busy;
+        t["busy"] = this->busy;
+        t["is_inst_waiting"] = this->is_inst_waiting;
+        t["inst_waiting_rob_id"] = this->inst_waiting_rob_id;
+        t["is_stbuf_empty_waiting"] = this->is_stbuf_empty_waiting;
+        return t;
+    }
 }

@@ -60,7 +60,7 @@ namespace cycle_model::component
             
             bool check_addr_override(uint32_t base, uint32_t size)
             {
-                for(auto i = 0;i < slave_info_list.size();i++)
+                for(uint32_t i = 0;i < slave_info_list.size();i++)
                 {
                     if(((base >= slave_info_list[i].base) && (base < (slave_info_list[i].base + slave_info_list[i].size))) || ((base < slave_info_list[i].base) && ((base + size) > slave_info_list[i].base)))
                     {
@@ -79,7 +79,7 @@ namespace cycle_model::component
             
             int find_slave_info(uint32_t addr, bool is_fetch)
             {
-                for(auto i = 0;i < slave_info_list.size();i++)
+                for(uint32_t i = 0;i < slave_info_list.size();i++)
                 {
                     if((addr >= slave_info_list[i].base) && (addr < (slave_info_list[i].base + slave_info_list[i].size)))
                     {
@@ -233,6 +233,36 @@ namespace cycle_model::component
                 }
             }
             
+            uint8_t read8_sys(uint32_t addr)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->read8_sys(addr - slave_info_list[slave_index].base);
+                }
+                
+                return 0;
+            }
+            
+            uint16_t read16_sys(uint32_t addr)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->read16_sys(addr - slave_info_list[slave_index].base);
+                }
+    
+                return 0;
+            }
+        
+            uint16_t read32_sys(uint32_t addr)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->read32_sys(addr - slave_info_list[slave_index].base);
+                }
+            
+                return 0;
+            }
+            
             void read_instruction(uint32_t addr)
             {
                 if(auto slave_index = find_slave_info(addr, true);slave_index >= 0)
@@ -245,7 +275,7 @@ namespace cycle_model::component
             {
                 if(instruction_value_valid)
                 {
-                    for(auto i = 0;i < FETCH_WIDTH;i++)
+                    for(uint32_t i = 0;i < FETCH_WIDTH;i++)
                     {
                         value[i] = instruction_value[i];
                     }
@@ -271,7 +301,7 @@ namespace cycle_model::component
             {
                 instruction_value_valid.set(true);
                 
-                for(auto i = 0;i < FETCH_WIDTH;i++)
+                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
                 {
                     instruction_value[i] = value[i];
                 }

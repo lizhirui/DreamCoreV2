@@ -29,7 +29,7 @@ namespace cycle_model::component
             {
                 fifo<if_print_fake<uint32_t>>::reset();
                 
-                for(auto i = 0;i < this->size;i++)
+                for(uint32_t i = 0;i < this->size;i++)
                 {
                     this->push(i);
                 }
@@ -39,7 +39,7 @@ namespace cycle_model::component
             {
                 fifo<if_print_fake<uint32_t>>::flush();
     
-                for(auto i = 0;i < this->size;i++)
+                for(uint32_t i = 0;i < this->size;i++)
                 {
                     this->push(i);
                 }

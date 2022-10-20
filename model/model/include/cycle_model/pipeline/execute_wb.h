@@ -60,10 +60,10 @@ namespace cycle_model::pipeline
         {
             alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
-            div_op_t div_op;
-            lsu_op_t lsu_op;
-            mul_op_t mul_op;
             csr_op_t csr_op;
+            div_op_t div_op;
+            mul_op_t mul_op;
+            lsu_op_t lsu_op;
         }sub_op;
         
         virtual void print(std::string indent)

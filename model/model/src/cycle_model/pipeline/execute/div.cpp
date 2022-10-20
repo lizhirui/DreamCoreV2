@@ -136,4 +136,13 @@ namespace cycle_model::pipeline::execute
         
         return feedback_pack;
     }
+    
+    json div::get_json()
+    {
+        json t;
+        
+        t["progress"] = this->progress;
+        t["busy"] = this->busy;
+        return t;
+    }
 }

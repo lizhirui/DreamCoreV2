@@ -39,5 +39,6 @@ namespace cycle_model::pipeline::execute
             lsu(uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
+            virtual json get_json();
     };
 }

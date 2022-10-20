@@ -37,42 +37,42 @@ namespace cycle_model::pipeline
         this->busy = false;
         this->hold_rev_pack = dispatch_issue_pack_t();
         
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             this->alu_idle[i] = 1;
             this->alu_idle_shift[i] = 0;
             this->alu_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             this->bru_idle[i] = 1;
             this->bru_idle_shift[i] = 0;
             this->bru_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             this->csr_idle[i] = 1;
             this->csr_idle_shift[i] = 0;
             this->csr_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             this->div_idle[i] = 1;
             this->div_idle_shift[i] = 0;
             this->div_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             this->mul_idle[i] = 1;
             this->mul_idle_shift[i] = 0;
             this->mul_busy_shift[i] = 0;
         }
         
-        for(auto i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
+        for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
         {
             this->wakeup_shift_src1[i] = 0;
             this->src1_ready[i] = false;
@@ -109,9 +109,9 @@ namespace cycle_model::pipeline
             bool selected_valid[INTEGER_ISSUE_WIDTH] = {false};
             
             //select instructions
-            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
-                for(auto j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
+                for(uint32_t j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
                 {
                     if(issue_q.is_valid(i) && (op_unit_seq[j] & op_unit_seq_mask[i]) && src1_ready[i] && src2_ready[i] && (!selected_valid[i] ||
                       ((rob_id_stage[j] == selected_rob_id_stage[i]) && (rob_id[j] < selected_rob_id[i])) || ((rob_id_stage[j] != selected_rob_id_stage[i]) && (rob_id[j] > selected_rob_id[i]))))
@@ -125,7 +125,7 @@ namespace cycle_model::pipeline
             }
             
             //build send_pack
-            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
                 if(selected_valid[i])
                 {
@@ -171,7 +171,7 @@ namespace cycle_model::pipeline
             }
             
             //build feedback_pack
-            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
                 feedback_pack.wakeup_valid[i] = selected_valid[i] && wakeup_rd_valid[selected_issue_id[i]];
                 feedback_pack.wakeup_rd[i] = wakeup_rd_valid[selected_issue_id[i]];
@@ -179,7 +179,7 @@ namespace cycle_model::pipeline
             }
             
             //calculate busy
-            for(auto i = 0;i < ALU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
             {
                 if(alu_idle[i])
                 {
@@ -207,7 +207,7 @@ namespace cycle_model::pipeline
                 }
             }
     
-            for(auto i = 0;i < BRU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
                 if(bru_idle[i])
                 {
@@ -235,7 +235,7 @@ namespace cycle_model::pipeline
                 }
             }
     
-            for(auto i = 0;i < CSR_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
                 if(csr_idle[i])
                 {
@@ -263,7 +263,7 @@ namespace cycle_model::pipeline
                 }
             }
     
-            for(auto i = 0;i < DIV_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
                 if(div_idle[i])
                 {
@@ -291,7 +291,7 @@ namespace cycle_model::pipeline
                 }
             }
     
-            for(auto i = 0;i < MUL_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
                 if(mul_idle[i])
                 {
@@ -389,11 +389,11 @@ namespace cycle_model::pipeline
     {
         if(!commit_feedback_pack.flush)
         {
-            for(auto i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
             {
                 if(issue_q.is_valid(i))
                 {
-                    auto item = issue_q.customer_get_item(i);
+                    uint32_t item = issue_q.customer_get_item(i);
                     
                     //integer_issue_output feedback
                     for(auto j = 0;j < INTEGER_ISSUE_WIDTH;j++)
@@ -489,7 +489,7 @@ namespace cycle_model::pipeline
                 rev_pack = dispatch_integer_issue_port->get();
             }
             
-            for(auto i = 0;i < DISPATCH_WIDTH;i++)
+            for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
             {
                 if(rev_pack.op_info[i].enable)
                 {
@@ -745,35 +745,35 @@ namespace cycle_model::pipeline
             busy = false;
             hold_rev_pack = dispatch_issue_pack_t();
             
-            for(auto i = 0;i < ALU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
             {
                 alu_idle[i] = 1;
                 alu_idle_shift[i] = 0;
                 alu_busy_shift[i] = 0;
             }
             
-            for(auto i = 0;i < BRU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
                 bru_idle[i] = 1;
                 bru_idle_shift[i] = 0;
                 bru_busy_shift[i] = 0;
             }
             
-            for(auto i = 0;i < CSR_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
                 csr_idle[i] = 1;
                 csr_idle_shift[i] = 0;
                 csr_busy_shift[i] = 0;
             }
             
-            for(auto i = 0;i < DIV_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
                 div_idle[i] = 1;
                 div_idle_shift[i] = 0;
                 div_busy_shift[i] = 0;
             }
             
-            for(auto i = 0;i < MUL_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
                 mul_idle[i] = 1;
                 mul_idle_shift[i] = 0;
@@ -804,6 +804,191 @@ namespace cycle_model::pipeline
     
     json integer_issue::get_json()
     {
-        return issue_q.get_json();
+        json t;
+        
+        t["busy"] = this->busy;
+        t["next_port_index"] = this->next_port_index;
+        t["issue_q"] = issue_q.get_json();
+        
+        auto alu_idle = json::array();
+        
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            alu_idle.push_back(this->alu_idle[i]);
+        }
+        
+        t["alu_idle"] = alu_idle;
+    
+        auto bru_idle = json::array();
+    
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            bru_idle.push_back(this->bru_idle[i]);
+        }
+    
+        t["bru_idle"] = bru_idle;
+    
+        auto csr_idle = json::array();
+    
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            csr_idle.push_back(this->csr_idle[i]);
+        }
+    
+        t["csr_idle"] = csr_idle;
+    
+        auto div_idle = json::array();
+    
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            div_idle.push_back(this->div_idle[i]);
+        }
+    
+        t["div_idle"] = div_idle;
+        
+        auto mul_idle = json::array();
+        
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            mul_idle.push_back(this->mul_idle[i]);
+        }
+        
+        t["mul_idle"] = mul_idle;
+        
+        auto alu_idle_shift = json::array();
+        
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            alu_idle_shift.push_back(this->alu_idle_shift[i]);
+        }
+        
+        t["alu_idle_shift"] = alu_idle_shift;
+        
+        auto bru_idle_shift = json::array();
+        
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            bru_idle_shift.push_back(this->bru_idle_shift[i]);
+        }
+        
+        t["bru_idle_shift"] = bru_idle_shift;
+        
+        auto csr_idle_shift = json::array();
+        
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            csr_idle_shift.push_back(this->csr_idle_shift[i]);
+        }
+        
+        t["csr_idle_shift"] = csr_idle_shift;
+        
+        auto div_idle_shift = json::array();
+        
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            div_idle_shift.push_back(this->div_idle_shift[i]);
+        }
+        
+        t["div_idle_shift"] = div_idle_shift;
+        
+        auto mul_idle_shift = json::array();
+        
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            mul_idle_shift.push_back(this->mul_idle_shift[i]);
+        }
+        
+        t["mul_idle_shift"] = mul_idle_shift;
+        
+        auto alu_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            alu_busy_shift.push_back(this->alu_busy_shift[i]);
+        }
+        
+        t["alu_busy_shift"] = alu_busy_shift;
+        
+        auto bru_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            bru_busy_shift.push_back(this->bru_busy_shift[i]);
+        }
+        
+        t["bru_busy_shift"] = bru_busy_shift;
+        
+        auto csr_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            csr_busy_shift.push_back(this->csr_busy_shift[i]);
+        }
+        
+        t["csr_busy_shift"] = csr_busy_shift;
+        
+        auto div_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            div_busy_shift.push_back(this->div_busy_shift[i]);
+        }
+        
+        t["div_busy_shift"] = div_busy_shift;
+        
+        auto mul_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            mul_busy_shift.push_back(this->mul_busy_shift[i]);
+        }
+        
+        t["mul_busy_shift"] = mul_busy_shift;
+        
+        auto wakeup_shift_src1 = json::array();
+        auto src1_ready = json::array();
+        auto wakeup_shift_src2 = json::array();
+        auto src2_ready = json::array();
+        auto port_index = json::array();
+        auto op_unit_seq = json::array();
+        auto rob_id = json::array();
+        auto rob_id_stage = json::array();
+        auto wakeup_rd = json::array();
+        auto wakeup_rd_valid = json::array();
+        auto wakeup_shift = json::array();
+        auto new_idle_shift = json::array();
+        auto new_busy_shift = json::array();
+        
+        for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
+        {
+            wakeup_shift_src1.push_back(this->wakeup_shift_src1[i]);
+            src1_ready.push_back(this->src1_ready[i]);
+            wakeup_shift_src2.push_back(this->wakeup_shift_src2[i]);
+            src2_ready.push_back(this->src2_ready[i]);
+            port_index.push_back(this->port_index[i]);
+            op_unit_seq.push_back(this->op_unit_seq[i]);
+            rob_id.push_back(this->rob_id[i]);
+            rob_id_stage.push_back(this->rob_id_stage[i]);
+            wakeup_rd.push_back(this->wakeup_rd[i]);
+            wakeup_rd_valid.push_back(this->wakeup_rd_valid[i]);
+            wakeup_shift.push_back(this->wakeup_shift[i]);
+            new_idle_shift.push_back(this->new_idle_shift[i]);
+            new_busy_shift.push_back(this->new_busy_shift[i]);
+        }
+        
+        t["wakeup_shift_src1"] = wakeup_shift_src1;
+        t["src1_ready"] = src1_ready;
+        t["wakeup_shift_src2"] = wakeup_shift_src2;
+        t["src2_ready"] = src2_ready;
+        t["port_index"] = port_index;
+        t["op_unit_seq"] = op_unit_seq;
+        t["rob_id"] = rob_id;
+        t["rob_id_stage"] = rob_id_stage;
+        t["wakeup_rd"] = wakeup_rd;
+        t["wakeup_rd_valid"] = wakeup_rd_valid;
+        t["wakeup_shift"] = wakeup_shift;
+        t["new_idle_shift"] = new_idle_shift;
+        t["new_busy_shift"] = new_busy_shift;
+        return t;
     }
 }

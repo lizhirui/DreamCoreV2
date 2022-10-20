@@ -8,40 +8,85 @@
  * 2022-10-14     lizhirui     the first version
  */
 
-#include <common.h>
-#include <config.h>
-#include <network/network.h>
-#include <network/network_command.h>
+#include "common.h"
+#include "config.h"
+#include "network/network.h"
+#include "network/network_command.h"
+#include "main.h"
 
 static asio::io_context recv_ioc;
 static asio::io_context send_ioc;
-std::atomic<bool> recv_thread_stop = false;
-std::atomic<bool> recv_thread_stopped = false;
-std::atomic<bool> server_thread_stopped = false;
-std::atomic<bool> program_stop = false;
+static std::atomic<bool> recv_thread_stop = false;
+static std::atomic<bool> recv_thread_stopped = false;
+static std::atomic<bool> server_thread_stopped = false;
+static std::atomic<bool> program_stop = false;
 
 static asio::io_context tcp_charfifo_thread_ioc;
-static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfifo_send_fifo;
-static boost::lockfree::spsc_queue<char, boost::lockfree::capacity<1024>> charfifo_rev_fifo;
-std::atomic<bool> charfifo_thread_stopped = false;
-std::atomic<bool> charfifo_recv_thread_stop = false;
-std::atomic<bool> charfifo_recv_thread_stopped = false;
+static charfifo_send_fifo_t charfifo_send_fifo;
+static charfifo_rev_fifo_t charfifo_rev_fifo;
+static std::atomic<bool> charfifo_thread_stopped = false;
+static std::atomic<bool> charfifo_recv_thread_stop = false;
+static std::atomic<bool> charfifo_recv_thread_stopped = false;
 
 static asio::io_context tcp_server_thread_ioc;
 
-std::atomic<bool> pause_detected = false;
-std::unordered_map<std::string, socket_cmd_handler> socket_cmd_list;
+static std::unordered_map<std::string, socket_cmd_handler> socket_cmd_list;
 
-bool get_and_clear_pause_detected()
+void set_recv_thread_stop(bool value)
 {
-    bool ret = pause_detected;
-    pause_detected = false;
-    return ret;
+    recv_thread_stop = value;
+}
+
+bool get_recv_thread_stopped()
+{
+    return recv_thread_stopped;
+}
+
+void set_program_stop(bool value)
+{
+    program_stop = value;
+}
+
+bool get_program_stop()
+{
+    return program_stop;
+}
+
+bool get_server_thread_stopped()
+{
+    return server_thread_stopped;
+}
+
+bool get_charfifo_thread_stopped()
+{
+    return charfifo_thread_stopped;
+}
+
+charfifo_send_fifo_t *get_charfifo_send_fifo()
+{
+    return &charfifo_send_fifo;
+}
+
+charfifo_rev_fifo_t *get_charfifo_rev_fifo()
+{
+    return &charfifo_rev_fifo;
+}
+
+void debug_event_handle()
+{
+    try
+    {
+        recv_ioc.run_one();
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << ex.what() << std::endl;
+    }
 }
 
 void register_socket_cmd(std::string name, socket_cmd_handler handler)
 {
-    assert(socket_cmd_list.find(name) == socket_cmd_list.end());
+    verify(socket_cmd_list.find(name) == socket_cmd_list.end());
     socket_cmd_list[name] = handler;
 }
 
@@ -124,7 +169,7 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
 
             try
             {
-                while(1)
+                while(true)
                 {
                     if(!charfifo_send_fifo.empty())
                     {
@@ -212,7 +257,7 @@ static void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
 
                     if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("pause")))
                     {
-                        pause_detected = true;
+                        set_pause_detected(true);
                     }
 
                     asio::post(recv_ioc, [&soc, rev_str]{socket_cmd_handle(soc, rev_str);});
@@ -245,7 +290,7 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
 
             try
             {
-                while(1)
+                while(true)
                 {
                     send_ioc.run_one_for(std::chrono::milliseconds(1000));
 

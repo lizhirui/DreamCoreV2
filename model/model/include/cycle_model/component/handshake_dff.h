@@ -15,7 +15,7 @@
 namespace cycle_model::component
 {
     template<typename T>
-    class handshake_dff
+    class handshake_dff : public if_print_t
     {
         private:
             dff<bool> has_data;
@@ -69,6 +69,11 @@ namespace cycle_model::component
                 *element = data.get();
                 has_data.set(false);
                 return true;
+            }
+            
+            virtual json get_json()
+            {
+                return data.get().get_json();
             }
     };
 }

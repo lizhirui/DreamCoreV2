@@ -53,10 +53,10 @@ namespace cycle_model::pipeline
         {
             alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
-            div_op_t div_op;
-            lsu_op_t lsu_op;
-            mul_op_t mul_op;
             csr_op_t csr_op;
+            div_op_t div_op;
+            mul_op_t mul_op;
+            lsu_op_t lsu_op;
         }sub_op;
     }dispatch_issue_op_info_t;
     
@@ -121,13 +121,13 @@ namespace cycle_model::pipeline
                     case op_unit_t::div:
                         std::cout << outenum(op_info[i].sub_op.div_op);
                         break;
+    
+                    case op_unit_t::mul:
+                        std::cout << outenum(op_info[i].sub_op.mul_op);
+                        break;
                     
                     case op_unit_t::lsu:
                         std::cout << outenum(op_info[i].sub_op.lsu_op);
-                        break;
-                    
-                    case op_unit_t::mul:
-                        std::cout << outenum(op_info[i].sub_op.mul_op);
                         break;
                     
                     default:
@@ -191,12 +191,12 @@ namespace cycle_model::pipeline
                         t["sub_op"] = outenum(op_info[i].sub_op.div_op);
                         break;
                     
-                    case op_unit_t::lsu:
-                        t["sub_op"] = outenum(op_info[i].sub_op.lsu_op);
-                        break;
-                    
                     case op_unit_t::mul:
                         t["sub_op"] = outenum(op_info[i].sub_op.mul_op);
+                        break;
+    
+                    case op_unit_t::lsu:
+                        t["sub_op"] = outenum(op_info[i].sub_op.lsu_op);
                         break;
                     
                     default:

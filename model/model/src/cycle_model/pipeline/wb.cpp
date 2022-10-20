@@ -38,32 +38,32 @@ namespace cycle_model::pipeline
     
     void wb::init()
     {
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(alu_wb_port[i]);
         }
         
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(bru_wb_port[i]);
         }
         
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(csr_wb_port[i]);
         }
         
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(div_wb_port[i]);
         }
         
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(mul_wb_port[i]);
         }
     
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             this->execute_wb_port.push_back(lsu_wb_port[i]);
         }
@@ -75,7 +75,7 @@ namespace cycle_model::pipeline
     
         wb_feedback_pack_t feedback_pack;
         
-        for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
         {
             feedback_pack.channel[i].enable = false;
             feedback_pack.channel[i].phy_id = 0;
@@ -84,7 +84,7 @@ namespace cycle_model::pipeline
         
         if(!commit_feedback_pack.flush)
         {
-            for(auto i = 0;i < this->execute_wb_port.size();i++)
+            for(uint32_t i = 0;i < this->execute_wb_port.size();i++)
             {
                 execute_wb_pack_t rev_pack;
                 rev_pack = this->execute_wb_port[i]->get();

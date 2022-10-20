@@ -300,4 +300,14 @@ namespace cycle_model::pipeline::execute
         feedback_pack.value = send_pack.rd_value;
         return feedback_pack;
     }
+    
+    json lsu::get_json()
+    {
+        json t;
+        
+        t["l2_stall"] = this->l2_stall;
+        t["l2_addr"] = this->l2_addr;
+        t["l2_rev_pack"] = this->l2_rev_pack.get_json();
+        return t;
+    }
 }

@@ -201,7 +201,7 @@ namespace cycle_model::component
                             {
                                 bool ready_to_commit = false;
                                 
-                                for(auto i = 0;i < COMMIT_WIDTH;i++)
+                                for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
                                 {
                                     if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
                                     {
@@ -269,7 +269,7 @@ namespace cycle_model::component
                     {
                         auto cur_item = get_item(cur_id);
                         
-                        for(auto i = 0;i < COMMIT_WIDTH;i++)
+                        for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
                         {
                             if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
                             {

@@ -57,7 +57,7 @@ namespace cycle_model::pipeline
                 
                 if(!fetch2_feedback_pack.stall && this->bus->get_instruction_value(instruction_value))
                 {
-                    for(auto i = 0;i < FETCH_WIDTH;i++)
+                    for(uint32_t i = 0;i < FETCH_WIDTH;i++)
                     {
                         uint32_t cur_pc = old_pc + i * 4;
                         bool has_exception = !component::bus::check_align(cur_pc, 4);
@@ -129,9 +129,10 @@ namespace cycle_model::pipeline
     
     json fetch1::get_json()
     {
-        json j;
-        j["pc"] = this->pc;
-        j["jump_wait"] = this->jump_wait;
-        return j;
+        json t;
+        
+        t["pc"] = this->pc;
+        t["jump_wait"] = this->jump_wait;
+        return t;
     }
 }

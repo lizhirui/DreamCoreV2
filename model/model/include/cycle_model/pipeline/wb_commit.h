@@ -60,10 +60,10 @@ namespace cycle_model::pipeline
         {
             alu_op_t alu_op = alu_op_t::add;
             bru_op_t bru_op;
-            div_op_t div_op;
-            lsu_op_t lsu_op;
-            mul_op_t mul_op;
             csr_op_t csr_op;
+            div_op_t div_op;
+            mul_op_t mul_op;
+            lsu_op_t lsu_op;
         }sub_op;
         
         virtual void print(std::string indent)
@@ -120,13 +120,13 @@ namespace cycle_model::pipeline
                 case op_unit_t::div:
                     std::cout << outenum(sub_op.div_op);
                     break;
+    
+                case op_unit_t::mul:
+                    std::cout << outenum(sub_op.mul_op);
+                    break;
                 
                 case op_unit_t::lsu:
                     std::cout << outenum(sub_op.lsu_op);
-                    break;
-                
-                case op_unit_t::mul:
-                    std::cout << outenum(sub_op.mul_op);
                     break;
                 
                 default:
@@ -188,13 +188,13 @@ namespace cycle_model::pipeline
                 case op_unit_t::div:
                     t["sub_op"] = outenum(sub_op.div_op);
                     break;
+    
+                case op_unit_t::mul:
+                    t["sub_op"] = outenum(sub_op.mul_op);
+                    break;
                 
                 case op_unit_t::lsu:
                     t["sub_op"] = outenum(sub_op.lsu_op);
-                    break;
-                
-                case op_unit_t::mul:
-                    t["sub_op"] = outenum(sub_op.mul_op);
                     break;
                 
                 default:
@@ -226,7 +226,7 @@ namespace cycle_model::pipeline
         {
             json ret = json::array();
             
-            for(auto i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
+            for(uint32_t i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
             {
                 ret.push_back(op_info[i].get_json());
             }

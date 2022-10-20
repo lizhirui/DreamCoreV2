@@ -38,7 +38,7 @@ namespace cycle_model::pipeline
         {
             json t = json::array();
             
-            for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
             {
                 t.push_back(channel[i].get_json());
             }

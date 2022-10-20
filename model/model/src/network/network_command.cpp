@@ -8,25 +8,27 @@
  * 2022-10-14     lizhirui     the first version
  */
 
-#include <common.h>
-#include <config.h>
-#include <network/network_command.h>
+#include "common.h"
+#include "config.h"
+#include "network/network.h"
+#include "network/network_command.h"
+#include "main.h"
 
 static std::string socket_cmd_quit(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
-    recv_thread_stop = true;
-    program_stop = true;
+    set_recv_thread_stop(true);
+    set_program_stop(true);
     return "ok";
 }
 
 static std::string socket_cmd_reset(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
@@ -37,52 +39,52 @@ static std::string socket_cmd_reset(std::vector<std::string> args)
 
 static std::string socket_cmd_continue(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
-
-    pause_state = false;
-    step_state = false;
-    wait_commit = false;
+    
+    set_pause_state(false);
+    set_step_state(false);
+    set_wait_commit(false);
     return "ok";
 }
 
 static std::string socket_cmd_pause(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
-
-    step_state = true;
-    wait_commit = false;
+    
+    set_step_state(true);
+    set_wait_commit(false);
     return "ok";
 }
 
 static std::string socket_cmd_step(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
-
-    pause_state = false;
-    step_state = true;
-    wait_commit = false;
+    
+    set_pause_state(false);
+    set_step_state(true);
+    set_wait_commit(false);
     return "ok";
 }
 
 static std::string socket_cmd_stepcommit(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
-
-    pause_state = false;
-    step_state = true;
-    wait_commit = true;
+    
+    set_pause_state(false);
+    set_step_state(true);
+    set_wait_commit(true);
     return "ok";
 }
 
@@ -108,7 +110,11 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
 
     for(auto addr = address;addr < (address + size);addr++)
     {
-        result << "," << std::hex << (uint32_t)bus.read8(addr);
+#if NEED_CYCLE_MODEL
+        result << "," << std::hex << (uint32_t)cycle_model_inst->bus.read8_sys(addr);
+#else
+        result << "," << std::hex << (uint32_t)isa_model_inst->bus.read8(addr, false);
+#endif
     }
 
     return result.str();
@@ -135,7 +141,11 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
         hex_str.setf(std::ios::hex);
         uint32_t value = 0;
         hex_str >> value;
-        bus.write8(address + offset, (uint8_t)value);
+#if NEED_CYCLE_MODEL
+        cycle_model_inst->bus.write8(address + offset, (uint8_t)value);
+#else
+        isa_model_inst->bus.write8(address + offset, (uint8_t)value);
+#endif
     }
 
     return "ok";
@@ -143,7 +153,7 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
 
 static std::string socket_cmd_read_archreg(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
@@ -158,11 +168,15 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
         }
         else
         {
+#if NEED_CYCLE_MODEL
             uint32_t phy_id;
-            rat.get_commit_phy_id(i, &phy_id);
-            auto v = phy_regfile.read(phy_id);
-            assert(phy_regfile.read_data_valid(phy_id));
-            result << "," << std::hex << v.value;
+            cycle_model_inst->retire_rat.customer_get_phy_id(i, &phy_id);
+            auto v = cycle_model_inst->phy_regfile.read(phy_id);
+            verify(cycle_model_inst->phy_regfile.read_data_valid(phy_id));
+            result << "," << std::hex << v;
+#else
+            result << "," << std::hex << isa_model_inst->arch_regfile.read(i);
+#endif
         }
     }
 
@@ -171,17 +185,21 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
 
 static std::string socket_cmd_read_csr(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
-    return csr_file.get_info_packet();
+#if NEED_CYCLE_MODEL
+    return cycle_model_inst->csr_file.get_info_packet();
+#else
+    return isa_model_inst->csr_file.get_info_packet();
+#endif
 }
 
 static std::string socket_cmd_get_pc(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
@@ -193,77 +211,108 @@ static std::string socket_cmd_get_pc(std::vector<std::string> args)
 
 static std::string socket_cmd_get_cycle(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
     std::stringstream result;
-    result << cpu_clock_cycle;
+#if NEED_CYCLE_MODEL
+    result << cycle_model_inst->cpu_clock_cycle;
+#else
+    result << isa_model_inst->cpu_clock_cycle;
+#endif
     return result.str();
 }
 
+#if NEED_CYCLE_MODEL
 static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
     json ret;
-    ret["fetch"] = fetch_stage.get_json();
-    ret["fetch_decode"] = fetch_decode_fifo.get_json();
-    ret["decode_rename"] = decode_rename_fifo.get_json();
-    ret["rename_readreg"] = rename_readreg_port.get_json();
-    ret["readreg_issue"] = readreg_issue_port.get_json();
-    ret["issue"] = issue_stage.get_json();
+    ret["fetch1"] = cycle_model_inst->fetch1_stage.get_json();
+    ret["fetch1_fetch2"] = cycle_model_inst->fetch1_fetch2_port.get_json();
+    ret["fetch2"] = cycle_model_inst->fetch2_stage.get_json();
+    ret["fetch2_decode"] = cycle_model_inst->fetch2_decode_fifo.get_json();
+    ret["decode_rename"] = cycle_model_inst->decode_rename_fifo.get_json();
+    ret["rename_dispatch"] = cycle_model_inst->rename_dispatch_port.get_json();
+    ret["dispatch"] = cycle_model_inst->dispatch_stage.get_json();
+    ret["dispatch_integer_issue"] = cycle_model_inst->dispatch_integer_issue_port.get_json();
+    ret["dispatch_lsu_issue"] = cycle_model_inst->dispatch_lsu_issue_port.get_json();
+    ret["integer_issue"] = cycle_model_inst->integer_issue_stage.get_json();
+    ret["lsu_issue"] = cycle_model_inst->lsu_issue_stage.get_json();
+    ret["integer_issue_readreg"] = cycle_model_inst->integer_issue_readreg_port.get_json();
+    ret["lsu_issue_readreg"] = cycle_model_inst->lsu_issue_readreg_port.get_json();
+    ret["lsu_readreg"] = cycle_model_inst->lsu_readreg_stage.get_json();
 
-    json tie;
-    json tie_alu, tie_bru, tie_csr, tie_div, tie_lsu, tie_mul;
-    tie_alu = json::array();
-    tie_bru = json::array();
-    tie_csr = json::array();
-    tie_div = json::array();
-    tie_lsu = json::array();
-    tie_mul = json::array();
+    json ire;
+    json ire_alu, ire_bru, ire_csr, ire_div, ire_mul, ire_lsu;
+    ire_alu = json::array();
+    ire_bru = json::array();
+    ire_csr = json::array();
+    ire_div = json::array();
+    ire_mul = json::array();
+    ire_lsu = json::array();
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
-        tie_alu.push_back(issue_alu_fifo[i]->get_json());
+        ire_alu.push_back(cycle_model_inst->readreg_alu_hdff[i]->get_json());
     }
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        tie_bru.push_back(issue_bru_fifo[i]->get_json());
+        ire_bru.push_back(cycle_model_inst->readreg_bru_hdff[i]->get_json());
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
     {
-        tie_csr.push_back(issue_csr_fifo[i]->get_json());
+        ire_csr.push_back(cycle_model_inst->readreg_csr_hdff[i]->get_json());
     }
 
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
-        tie_div.push_back(issue_div_fifo[i]->get_json());
-    }
-
-    for(auto i = 0;i < LSU_UNIT_NUM;i++)
-    {
-        tie_lsu.push_back(issue_lsu_fifo[i]->get_json());
+        ire_div.push_back(cycle_model_inst->readreg_div_hdff[i]->get_json());
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
-        tie_mul.push_back(issue_mul_fifo[i]->get_json());
+        ire_mul.push_back(cycle_model_inst->readreg_mul_hdff[i]->get_json());
+    }
+    
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        ire_lsu.push_back(cycle_model_inst->readreg_lsu_hdff[i]->get_json());
     }
 
-    tie["alu"] = tie_alu;
-    tie["bru"] = tie_bru;
-    tie["csr"] = tie_csr;
-    tie["div"] = tie_div;
-    tie["lsu"] = tie_lsu;
-    tie["mul"] = tie_mul;
-    ret["issue_execute"] = tie;
+    ire["alu"] = ire_alu;
+    ire["bru"] = ire_bru;
+    ire["csr"] = ire_csr;
+    ire["div"] = ire_div;
+    ire["mul"] = ire_mul;
+    ret["integer_readreg_execute"] = ire;
+    ret["lsu_readreg_execute"] = ire_lsu;
+    
+    json te;
+    auto te_div = json::array();
+    auto te_lsu = json::array();
+    
+    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        te_div.push_back(cycle_model_inst->execute_div_stage[i]->get_json());
+    }
+    
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        te_lsu.push_back(cycle_model_inst->execute_lsu_stage[i]->get_json());
+    }
+    
+    te["div"] = te_div;
+    te["lsu"] = te_lsu;
+    ret["execute"] = te;
 
     json tew;
     json tew_alu, tew_bru, tew_csr, tew_div, tew_lsu, tew_mul;
@@ -276,72 +325,94 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
 
     for(auto i = 0;i < ALU_UNIT_NUM;i++)
     {
-        tew_alu.push_back(alu_wb_port[i]->get_json());
+        tew_alu.push_back(cycle_model_inst->alu_wb_port[i]->get_json());
     }
 
     for(auto i = 0;i < BRU_UNIT_NUM;i++)
     {
-        tew_bru.push_back(bru_wb_port[i]->get_json());
+        tew_bru.push_back(cycle_model_inst->bru_wb_port[i]->get_json());
     }
 
     for(auto i = 0;i < CSR_UNIT_NUM;i++)
     {
-        tew_csr.push_back(csr_wb_port[i]->get_json());
+        tew_csr.push_back(cycle_model_inst->csr_wb_port[i]->get_json());
     }
 
     for(auto i = 0;i < DIV_UNIT_NUM;i++)
     {
-        tew_div.push_back(div_wb_port[i]->get_json());
-    }
-
-    for(auto i = 0;i < LSU_UNIT_NUM;i++)
-    {
-        tew_lsu.push_back(lsu_wb_port[i]->get_json());
+        tew_div.push_back(cycle_model_inst->div_wb_port[i]->get_json());
     }
 
     for(auto i = 0;i < MUL_UNIT_NUM;i++)
     {
-        tew_mul.push_back(mul_wb_port[i]->get_json());
+        tew_mul.push_back(cycle_model_inst->mul_wb_port[i]->get_json());
+    }
+    
+    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        tew_lsu.push_back(cycle_model_inst->lsu_wb_port[i]->get_json());
     }
 
     tew["alu"] = tew_alu;
     tew["bru"] = tew_bru;
     tew["csr"] = tew_csr;
     tew["div"] = tew_div;
-    tew["lsu"] = tew_lsu;
     tew["mul"] = tew_mul;
+    tew["lsu"] = tew_lsu;
     ret["execute_wb"] = tew;
-    ret["wb_commit"] = wb_commit_port.get_json();
-
-    ret["issue_feedback_pack"] = t_issue_feedback_pack.get_json();
-    ret["wb_feedback_pack"] = t_wb_feedback_pack.get_json();
-    ret["commit_feedback_pack"] = t_commit_feedback_pack.get_json();
-    ret["rob"] = rob.get_json();
+    ret["wb_commit"] = cycle_model_inst->wb_commit_port.get_json();
+    ret["fetch2_decode_pack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
+    ret["decode_feedback_pack"] = cycle_model_inst->decode_feedback_pack.get_json();
+    ret["rename_feedback_pack"] = cycle_model_inst->rename_feedback_pack.get_json();
+    ret["dispatch_feedback_pack"] = cycle_model_inst->dispatch_feedback_pack.get_json();
+    ret["integer_issue_output_feedback_pack"] = cycle_model_inst->integer_issue_output_feedback_pack.get_json();
+    ret["integer_issue_feedback_pack"] = cycle_model_inst->integer_issue_feedback_pack.get_json();
+    ret["lsu_issue_feedback_pack"] = cycle_model_inst->lsu_issue_feedback_pack.get_json();
+    ret["lsu_readreg_feedback_pack"] = cycle_model_inst->lsu_readreg_feedback_pack.get_json();
+    ret["execute_feedback_pack"] = cycle_model_inst->execute_feedback_pack.get_json();
+    ret["wb_feedback_pack"] = cycle_model_inst->wb_feedback_pack.get_json();
+    ret["commit_feedback_pack"] = cycle_model_inst->commit_feedback_pack.get_json();
+    ret["rob"] = cycle_model_inst->rob.get_json();
+    ret["speculative_rat"] = cycle_model_inst->speculative_rat.get_json();
+    ret["retire_rat"] = cycle_model_inst->retire_rat.get_json();
+    ret["phy_regfile"] = cycle_model_inst->phy_regfile.get_json();
+    ret["phy_id_free_list"] = cycle_model_inst->phy_id_free_list.get_json();
+    ret["store_buffer"] = cycle_model_inst->store_buffer.get_json();
     return ret.dump();
 }
+#endif
 
 static std::string socket_cmd_get_commit_num(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
     std::stringstream result;
-    result << rob.get_commit_num();
-    rob.clear_commit_num();
+#if NEED_CYCLE_MODEL
+    result << cycle_model_inst->rob.get_commit_num();
+    cycle_model_inst->rob.clear_commit_num();
+#else
+    result << isa_model_inst->commit_num;
+    isa_model_inst->commit_num = 0;
+#endif
     return result.str();
 }
 
 static std::string socket_cmd_get_finish(std::vector<std::string> args)
 {
-    if(args.size() != 0)
+    if(!args.empty())
     {
         return "argerror";
     }
 
     std::stringstream result;
-    result << (int)csr_file.read_sys(CSR_FINISH);
+#if NEED_CYCLE_MODEL
+    result << (int)cycle_model_inst->csr_file.read_sys(CSR_FINISH);
+#else
+    result << (int)isa_model_inst->csr_file.read_sys(CSR_FINISH);
+#endif
     return result.str();
 }
 
@@ -359,7 +430,9 @@ void network_command_init()
     register_socket_cmd("read_csr", socket_cmd_read_csr);
     register_socket_cmd("get_pc", socket_cmd_get_pc);
     register_socket_cmd("get_cycle", socket_cmd_get_cycle);
+#if NEED_CYCLE_MODEL
     register_socket_cmd("get_pipeline_status", socket_cmd_get_pipeline_status);
+#endif
     register_socket_cmd("get_commit_num", socket_cmd_get_commit_num);
     register_socket_cmd("get_finish", socket_cmd_get_finish);
 }

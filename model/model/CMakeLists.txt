@@ -14,4 +14,4 @@ endif()
 include_directories(./include ./tools)
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./include/*.h" "./include/*.hpp" "./tools/*.h" "./tools/*.cpp")
 
-add_executable(sim ${src_files})
+add_executable(sim ${src_files} include/main.h)

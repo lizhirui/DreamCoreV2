@@ -59,7 +59,7 @@ namespace cycle_model::component
             
             void init_start()
             {
-                for(auto i = 0;i < phy_reg_num;i++)
+                for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
                     phy_map_table[i].set(0);
                     phy_map_table_valid[i].set(false);
@@ -76,7 +76,7 @@ namespace cycle_model::component
             
             virtual void reset()
             {
-                for(auto i = 0;i < phy_reg_num;i++)
+                for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
                     phy_map_table[i].set(0);
                     phy_map_table_valid[i].set(false);
@@ -125,7 +125,7 @@ namespace cycle_model::component
             
             void load(rat *element)
             {
-                for(auto i = 0;i < phy_reg_num;i++)
+                for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
                     phy_map_table[i].set(element->phy_map_table[i].get_new());
                     phy_map_table_valid[i].set(element->phy_map_table_valid[i].get_new());
@@ -281,6 +281,26 @@ namespace cycle_model::component
                     
                     std::cout << std::endl;
                 }
+            }
+            
+            virtual json get_json()
+            {
+                json t;
+                json value = json::array();
+                json valid = json::array();
+                json visible = json::array();
+                
+                for(uint32_t i = 0;i < phy_reg_num;i++)
+                {
+                    value.push_back(phy_map_table[i].get());
+                    valid.push_back(phy_map_table_valid[i].get());
+                    visible.push_back(phy_map_table_visible[i].get());
+                }
+                
+                t["value"] = value;
+                t["valid"] = valid;
+                t["visible"] = visible;
+                return t;
             }
     };
 }

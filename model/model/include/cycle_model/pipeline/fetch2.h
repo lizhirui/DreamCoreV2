@@ -44,5 +44,6 @@ namespace cycle_model::pipeline
             fetch2(component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo);
             virtual void reset();
             fetch2_feedback_pack_t run(const commit_feedback_pack_t &commit_feedback_pack);
+            virtual json get_json();
     };
 }

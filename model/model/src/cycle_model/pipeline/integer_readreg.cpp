@@ -45,7 +45,7 @@ namespace cycle_model::pipeline
         {
             auto rev_pack = this->integer_issue_readreg_port->get();
             
-            for(auto i = 0;i < INTEGER_READREG_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_READREG_WIDTH;i++)
             {
                 integer_readreg_execute_pack_t send_pack;
                 send_pack.enable = rev_pack.op_info[i].enable;
@@ -95,7 +95,7 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                                 {
                                     if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
@@ -120,7 +120,7 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                                 {
                                     if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -190,27 +190,27 @@ namespace cycle_model::pipeline
         }
         else
         {
-            for(auto i = 0;i < ALU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
             {
                 this->readreg_alu_hdff[i]->flush();
             }
             
-            for(auto i = 0;i < BRU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
                 this->readreg_bru_hdff[i]->flush();
             }
             
-            for(auto i = 0;i < CSR_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
                 this->readreg_csr_hdff[i]->flush();
             }
             
-            for(auto i = 0;i < DIV_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
                 this->readreg_div_hdff[i]->flush();
             }
             
-            for(auto i = 0;i < MUL_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
                 this->readreg_mul_hdff[i]->flush();
             }

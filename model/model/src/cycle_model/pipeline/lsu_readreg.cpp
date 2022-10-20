@@ -55,7 +55,7 @@ namespace cycle_model::pipeline
                 rev_pack = this->lsu_issue_readreg_port->get();
             }
         
-            for(auto i = 0;i < LSU_READREG_WIDTH;i++)
+            for(uint32_t i = 0;i < LSU_READREG_WIDTH;i++)
             {
                 lsu_readreg_execute_pack_t send_pack;
                 send_pack.enable = rev_pack.op_info[i].enable;
@@ -105,7 +105,7 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                                 {
                                     if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
@@ -130,7 +130,7 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(auto i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                                 {
                                     if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -161,7 +161,7 @@ namespace cycle_model::pipeline
         }
         else
         {
-            for(auto i = 0;i < LSU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
             {
                 this->readreg_lsu_hdff[i]->flush();
             }
@@ -171,5 +171,13 @@ namespace cycle_model::pipeline
         }
         
         return feedback_pack;
+    }
+    
+    json lsu_readreg::get_json()
+    {
+        json t;
+        
+        t["busy"] = this->busy;
+        return t;
     }
 }
