@@ -162,7 +162,7 @@ namespace cycle_model::pipeline
                     send_pack.op_info[i].csr = rev_pack.csr;
                     send_pack.op_info[i].op = rev_pack.op;
                     send_pack.op_info[i].op_unit = rev_pack.op_unit;
-                    memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                    memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                 }
                 else
                 {
@@ -393,10 +393,10 @@ namespace cycle_model::pipeline
             {
                 if(issue_q.is_valid(i))
                 {
-                    uint32_t item = issue_q.customer_get_item(i);
+                    auto item = issue_q.customer_get_item(i);
                     
                     //integer_issue_output feedback
-                    for(auto j = 0;j < INTEGER_ISSUE_WIDTH;j++)
+                    for(uint32_t j = 0;j < INTEGER_ISSUE_WIDTH;j++)
                     {
                         if(integer_issue_output_feedback_pack.wakeup_valid[j])
                         {
@@ -437,7 +437,7 @@ namespace cycle_model::pipeline
                     }
                     
                     //execute feedback
-                    for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                     {
                         if(execute_feedback_pack.channel[j].enable)
                         {
@@ -525,7 +525,7 @@ namespace cycle_model::pipeline
                     item.csr = rev_pack.op_info[i].csr;
                     item.op = rev_pack.op_info[i].op;
                     item.op_unit = rev_pack.op_info[i].op_unit;
-                    memcpy(&item.sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                    memcpy((void *)&item.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                     uint32_t issue_id = 0;
                     
                     if(issue_q.push(item, &issue_id))
@@ -540,7 +540,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs1_need_map)
                             {
-                                for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
@@ -551,7 +551,7 @@ namespace cycle_model::pipeline
                                 
                                 if(!src1_ready[issue_id])
                                 {
-                                    for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
@@ -580,7 +580,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs2_need_map)
                             {
-                                for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -591,7 +591,7 @@ namespace cycle_model::pipeline
                                 
                                 if(!src2_ready[issue_id])
                                 {
-                                    for(auto j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {
@@ -724,7 +724,7 @@ namespace cycle_model::pipeline
                         this->busy = true;
     
                         //let remain instructions keep right alignment
-                        for(auto j = 0;j < DISPATCH_WIDTH;j++)
+                        for(uint32_t j = 0;j < DISPATCH_WIDTH;j++)
                         {
                             if(j + i < DISPATCH_WIDTH)
                             {

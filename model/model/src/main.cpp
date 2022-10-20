@@ -3,6 +3,16 @@
 #include "network/network.h"
 #include "main.h"
 
+#if NEED_ISA_MODEL
+#include "isa_model/isa_model.h"
+isa_model::isa_model *isa_model_inst;
+#endif
+
+#if NEED_CYCLE_MODEL
+#include "cycle_model/cycle_model.h"
+cycle_model::cycle_model *cycle_model_inst;
+#endif
+
 static std::atomic<bool> pause_detected = false;
 static bool pause_state = false;
 static bool step_state = false;
@@ -28,7 +38,7 @@ void set_pause_detected(bool value)
     pause_detected = value;
 }
 
-static uint32_t get_current_pc()
+uint32_t get_current_pc()
 {
 #if NEED_CYCLE_MODEL
     cycle_model::component::rob_item_t rob_item;

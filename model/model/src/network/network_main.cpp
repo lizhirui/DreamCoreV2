@@ -138,7 +138,7 @@ static void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
         {
             auto length = soc.receive(asio::buffer(&buf, sizeof(buf)));
 
-            for(auto i = 0;i < length;i++)
+            for(size_t i = 0;i < length;i++)
             {
                 while(!charfifo_rev_fifo.push(buf[i]));
             }

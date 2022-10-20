@@ -37,7 +37,7 @@ namespace isa_model::component
         
             virtual void reset()
             {
-                for(auto i = 0;i < size;i++)
+                for(uint32_t i = 0;i < size;i++)
                 {
                     reg_data[i] = 0;
                 }

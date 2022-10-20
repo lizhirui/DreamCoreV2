@@ -134,7 +134,7 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
     address_str.setf(std::ios::hex);
     address_str >> address;
 
-    for(auto offset = 0;offset < (data_str.length() >> 1);offset++)
+    for(size_t offset = 0;offset < (data_str.length() >> 1);offset++)
     {
         std::stringstream hex_str(data_str.substr(offset << 1, 2));
         hex_str.unsetf(std::ios::dec);
@@ -160,7 +160,7 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
 
     std::stringstream result;
 
-    for(auto i = 0;i < ARCH_REG_NUM;i++)
+    for(uint32_t i = 0;i < ARCH_REG_NUM;i++)
     {
         if(i == 0)
         {

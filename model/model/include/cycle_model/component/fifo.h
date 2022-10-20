@@ -91,6 +91,8 @@ namespace cycle_model::component
                 {
                     rptr.set(rptr.get_new() + 1);
                 }
+                
+                return true;
             }
 
             bool producer_get_front(T *element)
@@ -101,6 +103,7 @@ namespace cycle_model::component
                 }
 
                 *element = buffer[rptr.get()].get();
+                return true;
             }
 
             bool customer_get_front(T *element)
@@ -111,6 +114,7 @@ namespace cycle_model::component
                 }
 
                 *element = buffer[rptr.get_new()].get();
+                return true;
             }
 
             bool producer_get_tail(T *element)
@@ -121,6 +125,7 @@ namespace cycle_model::component
                 }
 
                 *element = buffer[(wptr.get_new() + this->size - 1) % this->size].get();
+                return true;
             }
 
             bool customer_get_tail(T *element)
@@ -131,6 +136,7 @@ namespace cycle_model::component
                 }
 
                 *element = buffer[(wptr.get() + this->size - 1) % this->size].get();
+                return true;
             }
 
             bool producer_get_front_id(uint32_t *front_id)

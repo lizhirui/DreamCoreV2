@@ -76,7 +76,7 @@ namespace cycle_model::pipeline::execute
             send_pack.csr = l2_rev_pack.csr;
             send_pack.op = l2_rev_pack.op;
             send_pack.op_unit = l2_rev_pack.op_unit;
-            memcpy(&send_pack.sub_op, &l2_rev_pack.sub_op, sizeof(l2_rev_pack.sub_op));
+            memcpy((void *)&send_pack.sub_op, (void *)&l2_rev_pack.sub_op, sizeof(l2_rev_pack.sub_op));
             
             if(!l2_rev_pack.has_exception)
             {

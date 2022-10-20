@@ -56,7 +56,7 @@ namespace cycle_model::pipeline
         {
             std::string blank = "    ";
         
-            for(auto i = 0;i < FETCH_WIDTH;i++)
+            for(uint32_t i = 0;i < FETCH_WIDTH;i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
                 op_info[i].print(indent + "\t");
@@ -68,7 +68,7 @@ namespace cycle_model::pipeline
         {
             json ret = json::array();
         
-            for(auto i = 0;i < FETCH_WIDTH;i++)
+            for(uint32_t i = 0;i < FETCH_WIDTH;i++)
             {
                 ret.push_back(op_info[i].get_json());
             }

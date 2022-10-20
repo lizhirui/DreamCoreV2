@@ -67,7 +67,7 @@ namespace cycle_model::pipeline
         {
             std::string blank = "  ";
             
-            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
                 
@@ -141,7 +141,7 @@ namespace cycle_model::pipeline
         {
             json ret = json::array();
             
-            for(auto i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
             {
                 json t;
                 t["enable"] = op_info[i].enable;

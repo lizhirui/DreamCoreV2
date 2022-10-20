@@ -80,7 +80,7 @@ namespace cycle_model::pipeline
                 send_pack.csr = rev_pack.op_info[i].csr;
                 send_pack.op = rev_pack.op_info[i].op;
                 send_pack.op_unit = rev_pack.op_info[i].op_unit;
-                memcpy(&send_pack.sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                 
                 if(rev_pack.op_info[i].enable)
                 {

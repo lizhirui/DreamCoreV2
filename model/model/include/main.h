@@ -16,17 +16,17 @@
 
 #if NEED_ISA_MODEL
 #include "isa_model/isa_model.h"
-isa_model::isa_model *isa_model_inst;
+extern isa_model::isa_model *isa_model_inst;
 #endif
 
 #if NEED_CYCLE_MODEL
 #include "cycle_model/cycle_model.h"
-cycle_model::cycle_model *cycle_model_inst;
+extern cycle_model::cycle_model *cycle_model_inst;
 #endif
 
 void set_pause_state(bool value);
 void set_step_state(bool value);
 void set_wait_commit(bool value);
 void set_pause_detected(bool value);
-static uint32_t get_current_pc();
+uint32_t get_current_pc();
 void reset();

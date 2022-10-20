@@ -104,7 +104,7 @@ namespace cycle_model::pipeline
                             send_pack.op_info[i].op = rev_pack.op;
                             send_pack.op_info[i].op_unit = rev_pack.op_unit;
                             
-                            memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                            memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                             
                             //generate rob items
                             if(rev_pack.enable)

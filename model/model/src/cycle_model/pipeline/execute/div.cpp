@@ -78,7 +78,7 @@ namespace cycle_model::pipeline::execute
                     send_pack.csr = rev_pack.csr;
                     send_pack.op = rev_pack.op;
                     send_pack.op_unit = rev_pack.op_unit;
-                    memcpy(&send_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                    memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                     auto overflow = (rev_pack.src1_value == 0x80000000) && (rev_pack.src2_value == 0xFFFFFFFF);
                     
                     if(rev_pack.enable)

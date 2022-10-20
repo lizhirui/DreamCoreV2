@@ -72,8 +72,6 @@ namespace cycle_model::pipeline
     
                         if(jump)
                         {
-                            uint32_t jump_next_pc = 0;
-                            bool jump_result = false;
                             this->jump_wait = true;
                             this->pc = cur_pc + 4;
                         }

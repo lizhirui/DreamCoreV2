@@ -32,7 +32,7 @@ namespace isa_model::component
             
             bool check_addr_override(uint32_t base, uint32_t size)
             {
-                for(auto i = 0;i < slave_info_list.size();i++)
+                for(size_t i = 0;i < slave_info_list.size();i++)
                 {
                     if(((base >= slave_info_list[i].base) && (base < (slave_info_list[i].base + slave_info_list[i].size))) || ((base < slave_info_list[i].base) && ((base + size) > slave_info_list[i].base)))
                     {
@@ -51,7 +51,7 @@ namespace isa_model::component
             
             int find_slave_info(uint32_t addr, bool is_fetch)
             {
-                for(auto i = 0;i < slave_info_list.size();i++)
+                for(size_t i = 0;i < slave_info_list.size();i++)
                 {
                     if((addr >= slave_info_list[i].base) && (addr < (slave_info_list[i].base + slave_info_list[i].size)))
                     {

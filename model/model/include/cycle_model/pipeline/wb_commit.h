@@ -214,7 +214,7 @@ namespace cycle_model::pipeline
         {
             std::string blank = "    ";
             
-            for(auto i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
+            for(uint32_t i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
             {
                 std::cout << indent << "Item " << i << ":" << std::endl;
                 op_info[i].print(indent + "\t");

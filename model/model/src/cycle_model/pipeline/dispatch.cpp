@@ -69,7 +69,7 @@ namespace cycle_model::pipeline
                     auto found_fence = false;
                     uint32_t found_rob_id = 0;
                     
-                    for(auto i = 0;i < RENAME_WIDTH;i++)
+                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable)
                         {
@@ -106,7 +106,7 @@ namespace cycle_model::pipeline
                                 integer_issue_pack.op_info[integer_issue_id].csr = rev_pack.op_info[i].csr;
                                 integer_issue_pack.op_info[integer_issue_id].op = rev_pack.op_info[i].op;
                                 integer_issue_pack.op_info[integer_issue_id].op_unit = rev_pack.op_info[i].op_unit;
-                                memcpy(&integer_issue_pack.op_info[integer_issue_id].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                                memcpy((void *)&integer_issue_pack.op_info[integer_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                                 integer_issue_id++;
                             }
                             else
@@ -142,7 +142,7 @@ namespace cycle_model::pipeline
                                 lsu_issue_pack.op_info[lsu_issue_id].csr = rev_pack.op_info[i].csr;
                                 lsu_issue_pack.op_info[lsu_issue_id].op = rev_pack.op_info[i].op;
                                 lsu_issue_pack.op_info[lsu_issue_id].op_unit = rev_pack.op_info[i].op_unit;
-                                memcpy(&lsu_issue_pack.op_info[lsu_issue_id].sub_op, &rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                                memcpy((void *)&lsu_issue_pack.op_info[lsu_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                                 lsu_issue_id++;
                             }
         

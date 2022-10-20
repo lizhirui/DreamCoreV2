@@ -126,7 +126,7 @@ namespace cycle_model::pipeline
                 send_pack.op_info[i].csr_newvalue_valid = rev_pack.csr_newvalue_valid;
                 send_pack.op_info[i].op = rev_pack.op;
                 send_pack.op_info[i].op_unit = rev_pack.op_unit;
-                memcpy(&send_pack.op_info[i].sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                 
                 if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && rev_pack.need_rename)
                 {

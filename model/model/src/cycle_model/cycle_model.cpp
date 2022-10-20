@@ -133,42 +133,42 @@ namespace cycle_model
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint), false);
         
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             readreg_alu_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             execute_alu_stage[i] = new pipeline::execute::alu(i, readreg_alu_hdff[i], alu_wb_port[i]);
             alu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
         }
         
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             execute_bru_stage[i] = new pipeline::execute::bru(i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
         }
         
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             readreg_csr_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             execute_csr_stage[i] = new pipeline::execute::csr(i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
             csr_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
         }
         
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             readreg_div_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             execute_div_stage[i] = new pipeline::execute::div(i, readreg_div_hdff[i], div_wb_port[i]);
             div_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
         }
         
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             readreg_mul_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             execute_mul_stage[i] = new pipeline::execute::mul(i, readreg_mul_hdff[i], mul_wb_port[i]);
             mul_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
         }
         
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             readreg_lsu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer);
@@ -222,42 +222,42 @@ namespace cycle_model
     
     cycle_model::~cycle_model()
     {
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             delete readreg_alu_hdff[i];
             delete execute_alu_stage[i];
             delete alu_wb_port[i];
         }
         
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             delete readreg_bru_hdff[i];
             delete execute_bru_stage[i];
             delete bru_wb_port[i];
         }
         
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             delete readreg_csr_hdff[i];
             delete execute_csr_stage[i];
             delete csr_wb_port[i];
         }
         
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             delete readreg_div_hdff[i];
             delete execute_div_stage[i];
             delete div_wb_port[i];
         }
         
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             delete readreg_mul_hdff[i];
             delete execute_mul_stage[i];
             delete mul_wb_port[i];
         }
         
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             delete readreg_lsu_hdff[i];
             delete execute_lsu_stage[i];
@@ -270,7 +270,7 @@ namespace cycle_model
         auto buf = (uint8_t *)mem;
         verify(size < MEMORY_SIZE);
         
-        for(auto i = 0;i < size;i++)
+        for(size_t i = 0;i < size;i++)
         {
             bus.write8(MEMORY_BASE + i, buf[i]);
         }
@@ -302,42 +302,42 @@ namespace cycle_model
         integer_issue_readreg_port.reset();
         lsu_issue_readreg_port.reset();
         
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             readreg_alu_hdff[i]->reset();
             execute_alu_stage[i]->reset();
             alu_wb_port[i]->reset();
         }
     
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             readreg_bru_hdff[i]->reset();
             execute_bru_stage[i]->reset();
             bru_wb_port[i]->reset();
         }
     
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             readreg_csr_hdff[i]->reset();
             execute_csr_stage[i]->reset();
             csr_wb_port[i]->reset();
         }
     
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             readreg_div_hdff[i]->reset();
             execute_div_stage[i]->reset();
             div_wb_port[i]->reset();
         }
     
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             readreg_mul_hdff[i]->reset();
             execute_mul_stage[i]->reset();
             mul_wb_port[i]->reset();
         }
         
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             readreg_lsu_hdff[i]->reset();
             execute_lsu_stage[i]->reset();
@@ -385,32 +385,32 @@ namespace cycle_model
         
         uint32_t execute_feedback_channel = 0;
         
-        for(auto i = 0;i < ALU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(commit_feedback_pack);
         }
         
-        for(auto i = 0;i < BRU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_bru_stage[i]->run(commit_feedback_pack);
         }
         
-        for(auto i = 0;i < CSR_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_csr_stage[i]->run(commit_feedback_pack);
         }
         
-        for(auto i = 0;i < DIV_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(commit_feedback_pack);
         }
         
-        for(auto i = 0;i < MUL_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(commit_feedback_pack);
         }
         
-        for(auto i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             execute_feedback_pack.channel[execute_feedback_channel++] = execute_lsu_stage[i]->run(commit_feedback_pack);
         }
