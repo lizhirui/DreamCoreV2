@@ -85,7 +85,7 @@ namespace cycle_model::pipeline::execute
                     {
                         send_pack.has_exception = true;
                         send_pack.exception_id = riscv_exception_t::illegal_instruction;
-                        send_pack.exception_value = 0;
+                        send_pack.exception_value = rev_pack.value;
                     }
                     else
                     {

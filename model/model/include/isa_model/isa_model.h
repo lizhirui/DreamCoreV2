@@ -197,10 +197,13 @@ namespace isa_model
         uint32_t exception_value = 0;
         uint32_t rs1 = 0;
         arg_src_t arg1_src = arg_src_t::reg;
+        uint32_t src1_value = 0;
         uint32_t rs2 = 0;
         arg_src_t arg2_src = arg_src_t::reg;
+        uint32_t src2_value = 0;
         uint32_t rd = 0;
         bool rd_enable = false;
+        uint32_t rd_value = 0;
         uint32_t csr = 0;
         op_t op = op_t::add;
         op_unit_t op_unit = op_unit_t::alu;
@@ -227,10 +230,13 @@ namespace isa_model
             t["exception_value"] = exception_value;
             t["rs1"] = rs1;
             t["arg1_src"] = arg1_src;
+            t["src1_value"] = src1_value;
             t["rs2"] = rs2;
             t["arg2_src"] = outenum(arg2_src);
+            t["src2_value"] = src2_value;
             t["rd"] = rd;
             t["rd_enable"] = rd_enable;
+            t["rd_value"] = rd_value;
             t["csr"] = csr;
             t["op"] = outenum(op);
             t["op_unit"] = outenum(op_unit);
@@ -305,13 +311,12 @@ namespace isa_model
             void run();
             fetch_decode_pack_t fetch();
             decode_execute_pack_t decode(const fetch_decode_pack_t &fetch_decode_pack);
-            void execute(const decode_execute_pack_t &decode_execute_pack);
-            void execute_alu(const decode_execute_pack_t &decode_execute_pack);
-            void execute_bru(const decode_execute_pack_t &decode_execute_pack);
-            void execute_csr(const decode_execute_pack_t &decode_execute_pack);
-            void execute_div(const decode_execute_pack_t &decode_execute_pack);
-            void execute_mul(const decode_execute_pack_t &decode_execute_pack);
-            void execute_lsu(const decode_execute_pack_t &decode_execute_pack);
-            void handle_exception();
+            void execute(decode_execute_pack_t &decode_execute_pack);
+            void execute_alu(decode_execute_pack_t &decode_execute_pack);
+            void execute_bru(decode_execute_pack_t &decode_execute_pack);
+            void execute_csr(decode_execute_pack_t &decode_execute_pack);
+            void execute_div(decode_execute_pack_t &decode_execute_pack);
+            void execute_mul(decode_execute_pack_t &decode_execute_pack);
+            void execute_lsu(decode_execute_pack_t &decode_execute_pack);
     };
 }

@@ -128,19 +128,16 @@ namespace isa_model::component::slave
                 return value;
             }
             
-            void run_pre()
-            {
-                interrupt_interface->set_pending(riscv_interrupt_t::machine_timer, mtime >= mtimecmp);
-                interrupt_interface->set_pending(riscv_interrupt_t::machine_software, msip);
-            }
-            
-            void run_post()
+            void run()
             {
                 if(!mtime_changed)
                 {
                     mtime++;
                     mtime_changed = false;
                 }
+    
+                interrupt_interface->set_pending(riscv_interrupt_t::machine_timer, mtime >= mtimecmp);
+                interrupt_interface->set_pending(riscv_interrupt_t::machine_software, msip);
             }
     };
 }

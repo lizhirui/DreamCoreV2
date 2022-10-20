@@ -93,6 +93,9 @@ namespace cycle_model::pipeline
         
                             if(rob_item.has_exception)
                             {
+                                csr_file->write_sys(CSR_MEPC, rob_item.pc);
+                                csr_file->write_sys(CSR_MTVAL, rob_item.exception_value);
+                                csr_file->write_sys(CSR_MCAUSE, static_cast<uint32_t>(rob_item.exception_id));
                                 feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
                                 feedback_pack.flush = true;
                                 speculative_rat->load(retire_rat);

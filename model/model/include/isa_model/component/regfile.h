@@ -43,7 +43,7 @@ namespace isa_model::component
                 }
             }
         
-            void write(uint32_t addr, T value, bool valid)
+            void write(uint32_t addr, T value)
             {
                 verify(addr < size);
                 reg_data[addr] = value;
