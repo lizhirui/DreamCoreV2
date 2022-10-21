@@ -89,5 +89,29 @@ namespace cycle_model::component
             {
                 return valid[index];
             }
+            
+            virtual json get_json()
+            {
+                json ret;
+                json value = json::array();
+                json valid = json::array();
+                if_print_t *if_print;
+                
+                for(uint32_t i = 0;i < this->size;i++)
+                {
+                    auto item = this->buffer[i].get();
+                    if_print = dynamic_cast<if_print_t *>(&item);
+                    value.push_back(if_print->get_json());
+                    valid.push_back(this->valid[i].get());
+                }
+                
+                ret["value"] = value;
+                ret["valid"] = valid;
+                ret["rptr"] = this->rptr.get();
+                ret["rstage"] = this->rstage.get();
+                ret["wptr"] = this->wptr.get();
+                ret["wstage"] = this->wstage.get();
+                return ret;
+            }
     };
 }

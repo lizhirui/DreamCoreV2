@@ -256,7 +256,8 @@ namespace cycle_model::component
                     
                     while(true)
                     {
-                        if_print = dynamic_cast<if_print_t *>(&buffer[cur]);
+                        auto data = buffer[cur].get();
+                        if_print = dynamic_cast<if_print_t *>(&data);
                         json item = if_print->get_json();
                         item["rob_id"] = cur;
                         ret.push_back(item);

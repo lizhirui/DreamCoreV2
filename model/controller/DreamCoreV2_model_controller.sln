@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DreamCoreV2_model_controller", "DreamCoreV2_model_controller.csproj", "{D1308F5D-AAD8-4A66-A5D3-24B3EC44AE20}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1308F5D-AAD8-4A66-A5D3-24B3EC44AE20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1308F5D-AAD8-4A66-A5D3-24B3EC44AE20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1308F5D-AAD8-4A66-A5D3-24B3EC44AE20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1308F5D-AAD8-4A66-A5D3-24B3EC44AE20}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {84645422-C235-4DB3-8838-626E7EB68E77}
+	EndGlobalSection
+EndGlobal

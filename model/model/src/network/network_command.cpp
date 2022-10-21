@@ -416,6 +416,22 @@ static std::string socket_cmd_get_finish(std::vector<std::string> args)
     return result.str();
 }
 
+static std::string socket_cmd_get_mode(std::vector<std::string> args)
+{
+    if(!args.empty())
+    {
+        return "argerror";
+    }
+    
+#if MODE_ISA_MODEL_ONLY
+    return "isa_model_only";
+#elif MODE_CYCLE_MODEL_ONLY
+    return "cycle_model_only";
+#else
+    return "isa_and_cycle_model_difftest";
+#endif
+}
+
 void network_command_init()
 {
     register_socket_cmd("quit", socket_cmd_quit);
@@ -435,4 +451,5 @@ void network_command_init()
 #endif
     register_socket_cmd("get_commit_num", socket_cmd_get_commit_num);
     register_socket_cmd("get_finish", socket_cmd_get_finish);
+    register_socket_cmd("get_mode", socket_cmd_get_mode);
 }

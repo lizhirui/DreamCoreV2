@@ -44,8 +44,6 @@ namespace cycle_model::pipeline
         bool need_rename = false;
         uint32_t rd_phy = 0;
     
-        uint32_t unit_id = 0;
-    
         uint32_t csr = 0;
         op_t op = op_t::add;
         op_unit_t op_unit = op_unit_t::alu;
@@ -169,7 +167,6 @@ namespace cycle_model::pipeline
                 t["need_rename"] = op_info[i].need_rename;
                 t["rd_phy"] = op_info[i].rd_phy;
                 t["csr"] = op_info[i].csr;
-                t["unit_id"] = op_info[i].unit_id;
                 t["op"] = outenum(op_info[i].op);
                 t["op_unit"] = outenum(op_info[i].op_unit);
                 
