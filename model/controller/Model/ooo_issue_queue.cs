@@ -24,4 +24,3 @@ namespace DreamCoreV2_model_controller.Model
         public bool wstage { get; set; }
     }
 }
-

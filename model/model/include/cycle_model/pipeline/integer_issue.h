@@ -27,6 +27,26 @@ namespace cycle_model::pipeline
         bool wakeup_valid[INTEGER_ISSUE_WIDTH] = {false};
         uint32_t wakeup_rd[INTEGER_ISSUE_WIDTH] = {0};
         uint32_t wakeup_shift[INTEGER_ISSUE_WIDTH] = {0};
+        
+        virtual json get_json()
+        {
+            json t;
+            json t1 = json::array();
+            json t2 = json::array();
+            json t3 = json::array();
+            
+            for(uint32_t i = 0;i < INTEGER_ISSUE_WIDTH;i++)
+            {
+                t1.push_back(wakeup_valid[i]);
+                t2.push_back(wakeup_rd[i]);
+                t3.push_back(wakeup_shift[i]);
+            }
+            
+            t["wakeup_valid"] = t1;
+            t["wakeup_rd"] = t2;
+            t["wakeup_shift"] = t3;
+            return t;
+        }
     }integer_issue_output_feedback_pack_t;
     
     typedef struct integer_issue_feedback_pack_t : if_print_t

@@ -24,6 +24,7 @@ namespace cycle_model::pipeline
         virtual json get_json()
         {
             json t;
+            t["idle"] = idle;
             return t;
         }
     }decode_feedback_pack_t;

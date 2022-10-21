@@ -43,13 +43,22 @@ namespace cycle_model::pipeline
             t["idle"] = idle;
             t["next_handle_rob_id_valid"] = next_handle_rob_id_valid;
             t["next_handle_rob_id"] = next_handle_rob_id;
-            t["committed_rob_id_valid_0"] = committed_rob_id_valid[0];
-            t["committed_rob_id_0"] = committed_rob_id[0];
-            t["committed_rob_id_valid_1"] = committed_rob_id_valid[1];
-            t["committed_rob_id_1"] = committed_rob_id[1];
             t["has_exception"] = has_exception;
             t["exception_pc"] = exception_pc;
             t["flush"] = flush;
+            
+            json t1 = json::array();
+            json t2 = json::array();
+            
+            for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
+            {
+                t1.push_back(committed_rob_id[i]);
+                t2.push_back(committed_rob_id_valid[i]);
+            }
+            
+            t["committed_rob_id"] = t1;
+            t["committed_rob_id_valid"] = t2;
+            
             t["jump_enable"] = jump_enable;
             t["jump"] = jump;
             t["next_pc"] = next_pc;

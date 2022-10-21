@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 namespace DreamCoreV2_model_controller.Model
 {
     [Serializable]
-    public class Fetch1
+    public class fetch1
     {
         [JsonProperty("pc")]
         public uint pc { get; set; }

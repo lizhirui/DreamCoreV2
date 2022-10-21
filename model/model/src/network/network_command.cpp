@@ -361,7 +361,7 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tew["lsu"] = tew_lsu;
     ret["execute_wb"] = tew;
     ret["wb_commit"] = cycle_model_inst->wb_commit_port.get_json();
-    ret["fetch2_decode_pack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
+    ret["fetch2_feedbackpack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
     ret["decode_feedback_pack"] = cycle_model_inst->decode_feedback_pack.get_json();
     ret["rename_feedback_pack"] = cycle_model_inst->rename_feedback_pack.get_json();
     ret["dispatch_feedback_pack"] = cycle_model_inst->dispatch_feedback_pack.get_json();
