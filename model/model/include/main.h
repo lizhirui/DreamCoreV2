@@ -11,9 +11,6 @@
 #pragma once
 #include "common.h"
 
-#define NEED_ISA_MODEL (MODE == MODE_ISA_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
-#define NEED_CYCLE_MODEL (MODE == MODE_CYCLE_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
-
 #if NEED_ISA_MODEL
 #include "isa_model/isa_model.h"
 extern isa_model::isa_model *isa_model_inst;
@@ -29,4 +26,5 @@ void set_step_state(bool value);
 void set_wait_commit(bool value);
 void set_pause_detected(bool value);
 uint32_t get_current_pc();
+void load(void *buf, size_t size);
 void reset();

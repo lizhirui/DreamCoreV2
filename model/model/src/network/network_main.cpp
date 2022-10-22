@@ -30,6 +30,8 @@ static std::atomic<bool> charfifo_recv_thread_stopped = false;
 
 static asio::io_context tcp_server_thread_ioc;
 
+static asio::ip::tcp::socket *client_soc;
+
 static std::unordered_map<std::string, socket_cmd_handler> socket_cmd_list;
 
 void set_recv_thread_stop(bool value)
@@ -76,7 +78,10 @@ void debug_event_handle()
 {
     try
     {
-        recv_ioc.run_one();
+        if(!recv_ioc.run_one())
+        {
+            recv_ioc.restart();
+        }
     }
     catch(const std::exception &ex)
     {
@@ -97,6 +102,21 @@ void send_cmd_result(asio::ip::tcp::socket &soc, std::string result)
     memcpy(buffer + 4, result.data(), result.length());
     soc.send(asio::buffer(buffer, result.length() + 4));
     delete[] buffer;
+}
+
+void send_cmd(std::string prefix, std::string cmd, std::string arg)
+{
+    try
+    {
+        if(client_soc != nullptr)
+        {
+            send_cmd_result(std::ref(*client_soc), prefix + " " + cmd + " " + arg);
+        }
+    }
+    catch(const std::exception &e)
+    {
+    
+    }
 }
 
 static void socket_cmd_handle(asio::ip::tcp::socket &soc, std::string rev_str)
@@ -283,16 +303,20 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
             std::cout << "Wait Server Connection" << std::endl;
             auto soc = listener.accept();
             soc.set_option(asio::ip::tcp::no_delay(true));
-            std::cout << "GUI Connected" << std::endl;
+            std::cout << "Server Connected" << std::endl;
             recv_thread_stop = false;
             recv_thread_stopped = false;
+            client_soc = &soc;
             std::thread rev_thread(tcp_server_thread_receive_entry, std::ref(soc));
 
             try
             {
                 while(true)
                 {
-                    send_ioc.run_one_for(std::chrono::milliseconds(1000));
+                    if(!send_ioc.run_one_for(std::chrono::milliseconds(1000)))
+                    {
+                        send_ioc.restart();
+                    }
 
                     if(recv_thread_stopped)
                     {
@@ -305,6 +329,7 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
                 std::cout << ex.what() << std::endl;
             }
 
+            client_soc = nullptr;
             recv_thread_stop = true;
             rev_thread.join();
             soc.shutdown(asio::socket_base::shutdown_both);

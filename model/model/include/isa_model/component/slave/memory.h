@@ -28,7 +28,7 @@ namespace isa_model::component::slave
             
             virtual void _reset()
             {
-            
+                memset(mem, 0, this->size);
             }
         
         public:

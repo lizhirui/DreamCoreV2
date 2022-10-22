@@ -18,6 +18,7 @@
 #include "isa_model/component/regfile.h"
 #include "isa_model/component/slave/memory.h"
 #include "isa_model/component/slave/clint.h"
+#include "breakpoint.h"
 
 namespace isa_model
 {
@@ -1049,6 +1050,10 @@ namespace isa_model
             case bru_op_t::mret:
                 bru_jump = true;
                 bru_next_pc = csr_file.read_sys(CSR_MEPC);
+                component::csr::mstatus mstatus;
+                mstatus.load(csr_file.read_sys(CSR_MSTATUS));
+                mstatus.set_mie(mstatus.get_mpie());
+                csr_file.write_sys(CSR_MSTATUS, mstatus.get_value());
                 break;
         }
         
@@ -1063,7 +1068,7 @@ namespace isa_model
         verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
         uint32_t csr_value = 0;
         
-        if(decode_execute_pack.rd_enable && decode_execute_pack.rd_value != 0 && !csr_file.read(decode_execute_pack.csr, &csr_value))
+        if(!csr_file.read(decode_execute_pack.csr, &csr_value))
         {
             decode_execute_pack.has_exception = true;
             decode_execute_pack.exception_id = riscv_exception_t::illegal_instruction;
@@ -1072,6 +1077,9 @@ namespace isa_model
         else
         {
             decode_execute_pack.rd_value = csr_value;
+#ifdef NEED_ISA_MODEL
+            breakpoint_csr_trigger(decode_execute_pack.csr, csr_value, false);
+#endif
             
             if(!(decode_execute_pack.arg1_src == arg_src_t::reg && (decode_execute_pack.rs1 == 0)))
             {
@@ -1095,6 +1103,12 @@ namespace isa_model
                     decode_execute_pack.has_exception = true;
                     decode_execute_pack.exception_id = riscv_exception_t::illegal_instruction;
                     decode_execute_pack.exception_value = decode_execute_pack.value;
+                }
+                else
+                {
+#ifdef NEED_ISA_MODEL
+                    breakpoint_csr_trigger(decode_execute_pack.csr, csr_value, true);
+#endif
                 }
             }
         }
@@ -1177,15 +1191,15 @@ namespace isa_model
                 break;
         
             case lsu_op_t::sb:
-                bus.write8(addr, decode_execute_pack.rd_value & 0xff);
+                bus.write8(addr, decode_execute_pack.src2_value & 0xff);
                 break;
         
             case lsu_op_t::sh:
-                bus.write16(addr, decode_execute_pack.rd_value & 0xffff);
+                bus.write16(addr, decode_execute_pack.src2_value & 0xffff);
                 break;
         
             case lsu_op_t::sw:
-                bus.write32(addr, decode_execute_pack.rd_value);
+                bus.write32(addr, decode_execute_pack.src2_value);
                 break;
         }
     }

@@ -26,6 +26,8 @@ namespace DreamCoreV2_model_controller
         public static ValueDataSource<int> cpuCycle = 0;
         public static ValueDataSource<uint> pc = 0;
 
+        public static ObjectDataSource<string> model_mode = "unknown";
+
         public delegate void CommandReceivedHandler(string prefix, string cmd, string result);
         public static event CommandReceivedHandler? CommandReceivedEvent;
 

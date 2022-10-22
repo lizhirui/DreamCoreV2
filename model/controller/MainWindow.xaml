@@ -16,6 +16,7 @@
         <converter:RunningStatusColorConverter x:Key="RunningStatusColorConverter" />
         <converter:CPUCycleConverter x:Key="CPUCycleConverter" />
         <converter:PCConverter x:Key="PCConverter" />
+        <converter:LabelTitleAttachConverter x:Key="LabelTitleAttachConverter" />
         <Style x:Key="ListViewItemHighlight" TargetType="{x:Type ListViewItem}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Highlight}" Value="True">
@@ -66,6 +67,9 @@
             <Label Content="{Binding Source={x:Static local:Global.running}, Path=Value, Converter={StaticResource RunningStatusValueConverter}}" Foreground="{Binding Source={x:Static local:Global.running}, Path=Value, Converter={StaticResource RunningStatusColorConverter}}"/>
             <Label Content="{Binding Source={x:Static local:Global.cpuCycle}, Path=Value, Converter={StaticResource CPUCycleConverter}}" />
             <Label Content="{Binding Source={x:Static local:Global.pc}, Path=Value, Converter={StaticResource PCConverter}}" />
+            <Label>
+                <TextBlock Text="{Binding Source={x:Static local:Global.model_mode}, Path=Value, Converter={StaticResource LabelTitleAttachConverter}, ConverterParameter='Model Mode: '}" />
+            </Label>
         </Menu>
         <Grid DockPanel.Dock="Bottom">
             <Grid.RowDefinitions>
@@ -103,7 +107,7 @@
             </ListView>
 
             <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True">
-                <TextBox DockPanel.Dock="Top" x:Name="textBox_MemoryAddress" KeyDown="textBox_MemoryAddress_KeyDown" />
+                <TextBox DockPanel.Dock="Top" x:Name="textBox_MemoryAddress" KeyDown="textBox_MemoryAddress_KeyDown"/>
                 <Grid DockPanel.Dock="Bottom">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -128,7 +132,7 @@
             </DockPanel>
 
             <DockPanel Grid.Row="2" Grid.Column="0" LastChildFill="True">
-                <TextBox DockPanel.Dock="Bottom" x:Name="textBox_Command" KeyDown="textBox_Command_KeyDown" />
+                <TextBox DockPanel.Dock="Bottom" x:Name="textBox_Command" KeyDown="textBox_Command_KeyDown" KeyUp="textBox_Command_KeyUp" />
                 <TextBox DockPanel.Dock="Top" x:Name="textBox_CommandLog" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" />
             </DockPanel>
 

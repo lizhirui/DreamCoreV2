@@ -17,17 +17,17 @@ namespace isa_model::component
 {
     class slave_base;
     
-    typedef struct slave_info_t
-    {
-        uint32_t base = 0;
-        uint32_t size = 0;
-        std::shared_ptr<slave_base> slave;
-        bool support_fetch = false;
-    }slave_info_t;
-    
     class bus : public if_reset_t
     {
         private:
+            typedef struct slave_info_t
+            {
+                uint32_t base = 0;
+                uint32_t size = 0;
+                std::shared_ptr<slave_base> slave;
+                bool support_fetch = false;
+            }slave_info_t;
+            
             std::vector<slave_info_t> slave_info_list;
             
             bool check_addr_override(uint32_t base, uint32_t size)
@@ -44,6 +44,17 @@ namespace isa_model::component
             }
         
         public:
+            typedef struct error_msg_t
+            {
+                uint32_t addr = 0;
+                uint32_t size = 0;
+                uint32_t value = 0;
+                bool is_write = false;
+                bool is_fetch = false;
+            }error_msg_t;
+            
+            std::queue<error_msg_t> error_msg_queue;
+            
             bus()
             {
                 this->bus::reset();
@@ -57,7 +68,7 @@ namespace isa_model::component
                     {
                         if(!is_fetch || slave_info_list[i].support_fetch)
                         {
-                            return i;
+                            return (int)i;
                         }
                     }
                 }
@@ -117,7 +128,16 @@ namespace isa_model::component
                 if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->write8(addr - slave_info_list[slave_index].base, value);
+                    return;
                 }
+                
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 1;
+                error_msg.value = value;
+                error_msg.is_write = true;
+                error_msg.is_fetch = false;
+                error_msg_queue.push(error_msg);
             }
             
             void write16(uint32_t addr, uint16_t value)
@@ -125,7 +145,16 @@ namespace isa_model::component
                 if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->write16(addr - slave_info_list[slave_index].base, value);
+                    return;
                 }
+                
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 2;
+                error_msg.value = value;
+                error_msg.is_write = true;
+                error_msg.is_fetch = false;
+                error_msg_queue.push(error_msg);
             }
             
             void write32(uint32_t addr, uint32_t value)
@@ -133,7 +162,16 @@ namespace isa_model::component
                 if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->write32(addr - slave_info_list[slave_index].base, value);
+                    return;
                 }
+                
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 4;
+                error_msg.value = value;
+                error_msg.is_write = true;
+                error_msg.is_fetch = false;
+                error_msg_queue.push(error_msg);
             }
             
             uint8_t read8(uint32_t addr, bool is_fetch)
@@ -143,6 +181,13 @@ namespace isa_model::component
                    return slave_info_list[slave_index].slave->read8(addr - slave_info_list[slave_index].base);
                 }
                 
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 1;
+                error_msg.value = 0;
+                error_msg.is_write = false;
+                error_msg.is_fetch = is_fetch;
+                error_msg_queue.push(error_msg);
                 return 0;
             }
             
@@ -153,6 +198,13 @@ namespace isa_model::component
                     return slave_info_list[slave_index].slave->read16(addr - slave_info_list[slave_index].base);
                 }
                 
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 2;
+                error_msg.value = 0;
+                error_msg.is_write = false;
+                error_msg.is_fetch = is_fetch;
+                error_msg_queue.push(error_msg);
                 return 0;
             }
             
@@ -163,6 +215,13 @@ namespace isa_model::component
                     return slave_info_list[slave_index].slave->read32(addr - slave_info_list[slave_index].base);
                 }
                 
+                error_msg_t error_msg;
+                error_msg.addr = addr;
+                error_msg.size = 4;
+                error_msg.value = 0;
+                error_msg.is_write = false;
+                error_msg.is_fetch = is_fetch;
+                error_msg_queue.push(error_msg);
                 return 0;
             }
     };

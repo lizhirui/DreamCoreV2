@@ -65,7 +65,7 @@ namespace DreamCoreV2_model_controller
 
         private void updateInstruction()
         {
-            if(pipelineStatus != null)
+            /*if(pipelineStatus != null)
             {
                 for(var i = 0;i < pipelineStatus.FetchDecode?.Length;i++)
                 {
@@ -242,7 +242,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ROB[i];
                     item.Instruction = getInstructionText(item.InstValue, item.PC);
                 }
-            }
+            }*/
         }
 
         private string getDisplayText(string instruction, uint pc)
@@ -260,7 +260,7 @@ namespace DreamCoreV2_model_controller
         #pragma warning disable CS8602
         private void refreshDisplay()
         {
-            if(pipelineStatus != null)
+            /*if(pipelineStatus != null)
             {
                 label_Fetch.Content = "PC = 0x" + string.Format("{0:X8}", pipelineStatus.Fetch?.PC) + " jump__wait = " + pipelineStatus.Fetch?.JumpWait;
                 
@@ -478,7 +478,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ROB[i];
                     listView_ROB.Items.Add(new{Highlight = false, Value = item.ROBID + ":" + getDisplayText(item.Instruction, item.PC) + "(" + (item.Finish ? "Finished" : "Unfinish") + ")"});
                 }
-            }
+            }*/
         }
         #pragma warning restore CS8602
 
@@ -499,7 +499,7 @@ namespace DreamCoreV2_model_controller
         #pragma warning disable CS8602
         private void HighlightROBItem(uint robID, bool highlight)
         {
-            for(var i = 0;i < listView_ROB.Items.Count;i++)
+            /*for(var i = 0;i < listView_ROB.Items.Count;i++)
             {
                 var item = (dynamic)listView_ROB.Items[i];
 
@@ -507,7 +507,7 @@ namespace DreamCoreV2_model_controller
                 {
                     listView_ROB.Items[i] = new{Highlight = (pipelineStatus?.ROB?[i].ROBID == robID) && highlight, Value = item.Value};
                 }
-            }
+            }*/
         }
 
         private void DisplayDetail(object? obj)
@@ -528,7 +528,7 @@ namespace DreamCoreV2_model_controller
             if(id >= 0)
             {
                 HighlightROBItem(0, false);
-                DisplayDetail(pipelineStatus.FetchDecode[id]);
+                //DisplayDetail(pipelineStatus.FetchDecode[id]);
             }
         }
 
@@ -540,7 +540,7 @@ namespace DreamCoreV2_model_controller
             if(id >= 0)
             {
                 HighlightROBItem(0, false);
-                DisplayDetail(pipelineStatus.DecodeRename[id]);
+                //DisplayDetail(pipelineStatus.DecodeRename[id]);
             }
         }
 
@@ -553,9 +553,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.RenameReadreg[id];
+                    /*var item = pipelineStatus.RenameReadreg[id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -574,9 +574,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.ReadregIssue[id];
+                    /*var item = pipelineStatus.ReadregIssue[id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -595,9 +595,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.Issue[id];
+                    /*var item = pipelineStatus.Issue[id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -616,9 +616,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.ALU[0][id];
+                    /*var item = pipelineStatus.IssueExecute.ALU[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -637,9 +637,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.ALU[1][id];
+                    /*var item = pipelineStatus.IssueExecute.ALU[1][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -658,9 +658,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.BRU[0][id];
+                    /*var item = pipelineStatus.IssueExecute.BRU[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -679,9 +679,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.CSR[0][id];
+                    /*var item = pipelineStatus.IssueExecute.CSR[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -700,9 +700,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.DIV[0][id];
+                    /*var item = pipelineStatus.IssueExecute.DIV[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -721,9 +721,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.LSU[0][id];
+                    /*var item = pipelineStatus.IssueExecute.LSU[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -742,9 +742,9 @@ namespace DreamCoreV2_model_controller
 
                 if(id >= 0)
                 {
-                    var item = pipelineStatus.IssueExecute.MUL[0][id];
+                    /*var item = pipelineStatus.IssueExecute.MUL[0][id];
                     HighlightROBItem(item.ROBID, true);
-                    DisplayDetail(item);
+                    DisplayDetail(item);*/
                 }
             }
             catch
@@ -758,7 +758,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -766,7 +766,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.IssueExecute.MUL[1][id];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -779,7 +779,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -787,7 +787,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.ALU[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -800,7 +800,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -808,7 +808,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.ALU[1];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -821,7 +821,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -829,7 +829,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.BRU[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -842,7 +842,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -850,7 +850,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.CSR[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -863,7 +863,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -871,7 +871,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.DIV[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -884,7 +884,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -892,7 +892,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.LSU[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -905,7 +905,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -913,7 +913,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.MUL[0];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -926,7 +926,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -934,7 +934,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.ExecuteWB.MUL[1];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -947,7 +947,7 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
@@ -955,7 +955,7 @@ namespace DreamCoreV2_model_controller
                     var item = pipelineStatus.WBCommit[id];
                     HighlightROBItem(item.ROBID, true);
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -968,14 +968,14 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var list = sender as ListView;
+                /*var list = sender as ListView;
                 var id = list.SelectedIndex;
 
                 if(id >= 0)
                 {
                     var item = pipelineStatus.ROB[id];
                     DisplayDetail(item);
-                }
+                }*/
             }
             catch
             {
@@ -987,8 +987,8 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var item = pipelineStatus.WBFeedback;
-                DisplayDetail(item);
+                /*var item = pipelineStatus.WBFeedback;
+                DisplayDetail(item);*/
             }
             catch
             {
@@ -1000,8 +1000,8 @@ namespace DreamCoreV2_model_controller
         {
             try
             {
-                var item = pipelineStatus.CommitFeedback;
-                DisplayDetail(item);
+                /*var item = pipelineStatus.CommitFeedback;
+                DisplayDetail(item);*/
             }
             catch
             {

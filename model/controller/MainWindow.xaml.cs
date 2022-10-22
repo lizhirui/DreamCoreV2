@@ -30,7 +30,7 @@ namespace DreamCoreV2_model_controller
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Global.CommandReceivedEvent += Global_CommandReceivedEvent;
             Global.connected.PropertyChanged += Connected_PropertyChanged;
-            PipelineStatusWindow.CreateInstance(this);
+            //PipelineStatusWindow.CreateInstance(this);
 
             if(int.TryParse(Config.Get("MainWindow_Left", ""), out var left) && int.TryParse(Config.Get("MainWindow_Top", ""), out var top))
             {
@@ -42,8 +42,8 @@ namespace DreamCoreV2_model_controller
         private void ConnectedEvent()
         {
             Global.SendCommand("main", "pause", true);
+            Global.SendCommand("main", "get_mode", true);
             Global.running.Value = true;
-            refreshGlobalStatus(true);
         }
 
         private void Connected_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -138,17 +138,40 @@ namespace DreamCoreV2_model_controller
                     }
 
                     break;
+
+                case "get_mode":
+                    switch(result)
+                    {
+                        case "isa_model_only":
+                            Global.model_mode.Value = result;
+                            refreshGlobalStatus(true);
+                            break;
+
+                        default:
+                            Global.model_mode.Value = result + " - unsupported";
+                            break;
+                    }
+
+                    break;
+
+                case "breakpoint_trigger":
+                    Global.running.Value = false;
+                    refreshGlobalStatus(true);
+                    break;
             }
         }
 
         private void refreshGlobalStatus(bool ignoreRunning = false)
         {
-            Global.SendCommand("main", "read_memory 0x" + string.Format("{0:X8}", Global.pc & (~0xfff)) + " 4096", ignoreRunning);
             Global.SendCommand("main", "read_archreg", ignoreRunning);
             Global.SendCommand("main", "read_csr", ignoreRunning);
             Global.SendCommand("main", "get_pc", ignoreRunning);
             Global.SendCommand("main", "get_cycle", ignoreRunning);
-            Global.SendCommand("main", "get_pipeline_status", ignoreRunning);
+
+            if(Global.model_mode.getNotNull().Contains("cycle"))
+            {
+                Global.SendCommand("main", "get_pipeline_status", ignoreRunning);
+            }
         }
 
         private List<byte> lastMemoryByteList = new List<byte>();
@@ -217,6 +240,8 @@ namespace DreamCoreV2_model_controller
 
             var inst_info = RISC_V_Disassembler.Disassemble(byte_list.ToArray(), address);
             listView_Instruction.Items.Clear();
+            var item_id = 0;
+            var pc_item_index = -1;
 
             foreach(var item in inst_info)
             {
@@ -231,8 +256,20 @@ namespace DreamCoreV2_model_controller
 
                     data_str.Append(string.Format("{0:X2}", item.bytes[i]));
                 }
+                
+                listView_Instruction.Items.Add(new{Highlight = Global.pc.Value == item.address, Status = Global.pc.Value == item.address ? "-->" : "", Address = string.Format("{0:X8}", item.address), Data = data_str.ToString(), Instruction = item.mnemonic + " " + item.op_str});
 
-                listView_Instruction.Items.Add(new{Highlight = false, Status = "", Address = string.Format("{0:X8}", item.address), Data = data_str.ToString(), Instruction = item.mnemonic + " " + item.op_str});
+                if(Global.pc.Value == item.address)
+                {
+                    pc_item_index = item_id;
+                }
+
+                item_id++;
+            }
+
+            if(pc_item_index >= 0)
+            {
+                listView_Instruction.ScrollIntoView(listView_Instruction.Items[pc_item_index]);
             }
         }
 
@@ -349,40 +386,9 @@ namespace DreamCoreV2_model_controller
         private void refreshPC(string result)
         {
             var pc = Convert.ToUInt32(result, 16);
-            var pc_item_index = -1;
-            uint addr_min = 0xFFFFFFFFU;
-            uint addr_max = 0u;
-
-            for(var i = 0;i < listView_Instruction.Items.Count;i++)
-            {
-                var address = Convert.ToUInt32(((dynamic)listView_Instruction.Items[i]).Address, 16);
-                var item = (dynamic)listView_Instruction.Items[i];
-
-                addr_min = Math.Min(addr_min, address);
-                addr_max = Math.Max(addr_max, address);
-
-                if((pc == address) ^ (((dynamic)listView_Instruction.Items[i]).Status == "-->"))
-                {
-                    listView_Instruction.Items[i] = new{Status = (pc == address) ? "-->" : "", Highlight = pc == address, Address = item.Address, Data = item.Data, Instruction = item.Instruction};
-                }
-
-                if(pc == address)
-                {
-                    pc_item_index = i;   
-                }
-            }
 
             Global.pc.Value = pc;
-
-            if((pc < addr_min) || (pc > addr_max))
-            {
-                refreshGlobalStatus(true);
-            }
-
-            if(pc_item_index >= 0)
-            {
-                listView_Instruction.ScrollIntoView(listView_Instruction.Items[pc_item_index]);
-            }
+            Global.SendCommand("main", "read_memory 0x" + string.Format("{0:X8}", pc - 2048) + " 4096", true);
         }
 
         private void Global_CommandReceivedEvent(string prefix, string cmd, string result)
@@ -420,8 +426,19 @@ namespace DreamCoreV2_model_controller
 
                 if(Global.SendCommand("log", lastCmd))
                 {
+                    textBox_CommandLog.AppendText("send: " + lastCmd + "\n");
                     textBox_Command.Text = "";
                 }
+            }
+        }
+
+        private void textBox_Command_KeyUp(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Up && lastCmd != "")
+            {
+                e.Handled = true;
+                textBox_Command.Text = "";
+                textBox_Command.AppendText(lastCmd);
             }
         }
 

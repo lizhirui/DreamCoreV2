@@ -13,6 +13,7 @@
 #include "network/network.h"
 #include "network/network_command.h"
 #include "main.h"
+#include "breakpoint.h"
 
 static std::string socket_cmd_quit(std::vector<std::string> args)
 {
@@ -423,13 +424,98 @@ static std::string socket_cmd_get_mode(std::vector<std::string> args)
         return "argerror";
     }
     
-#if MODE_ISA_MODEL_ONLY
+#if MODE == MODE_ISA_MODEL_ONLY
     return "isa_model_only";
-#elif MODE_CYCLE_MODEL_ONLY
+#elif MODE == MODE_CYCLE_MODEL_ONLY
     return "cycle_model_only";
 #else
     return "isa_and_cycle_model_difftest";
 #endif
+}
+
+static uint32_t get_multi_radix_num(std::string str)
+{
+    uint32_t value;
+    std::stringstream stream(str);
+    
+    if((str.size() > 2) && (str[0] == '0') && (tolower(str[1]) == 'x'))
+    {
+        stream.unsetf(std::ios::dec);
+        stream.setf(std::ios::hex);
+    }
+    
+    stream >> value;
+    return value;
+}
+
+static std::string socket_cmd_breakpoint_add(std::vector<std::string> args)
+{
+    if(args.size() != 2)
+    {
+        return "argerror";
+    }
+    
+    auto type = args[0];
+    auto value = get_multi_radix_num(args[1]);
+    breakpoint_info_t info;
+    
+    if(type == "cycle")
+    {
+        info.type = breakpoint_type_t::cycle;
+    }
+    else if(type == "inst")
+    {
+        info.type = breakpoint_type_t::instruction_num;
+    }
+    else if(type == "pc")
+    {
+        info.type = breakpoint_type_t::pc;
+    }
+    else if(type == "csrw")
+    {
+        info.type = breakpoint_type_t::csrw;
+    }
+    else
+    {
+        return "typeerror";
+    }
+    
+    info.value = value;
+    breakpoint_add(info.type, info.value);
+    return "ok";
+}
+
+static std::string socket_cmd_breakpoint_remove(std::vector<std::string> args)
+{
+    if(args.size() != 1)
+    {
+        return "argerror";
+    }
+    
+    auto id = get_multi_radix_num(args[0]);
+    breakpoint_remove(id);
+    return "ok";
+}
+
+static std::string socket_cmd_breakpoint_get_list(std::vector<std::string> args)
+{
+    if(!args.empty())
+    {
+        return "argerror";
+    }
+    
+    return breakpoint_get_list();
+}
+
+static std::string socket_cmd_breakpoint_clear(std::vector<std::string> args)
+{
+    if(!args.empty())
+    {
+        return "argerror";
+    }
+    
+    breakpoint_clear();
+    return "ok";
 }
 
 void network_command_init()
@@ -452,4 +538,8 @@ void network_command_init()
     register_socket_cmd("get_commit_num", socket_cmd_get_commit_num);
     register_socket_cmd("get_finish", socket_cmd_get_finish);
     register_socket_cmd("get_mode", socket_cmd_get_mode);
+    register_socket_cmd("b", socket_cmd_breakpoint_add);
+    register_socket_cmd("br", socket_cmd_breakpoint_remove);
+    register_socket_cmd("bl", socket_cmd_breakpoint_get_list);
+    register_socket_cmd("bc", socket_cmd_breakpoint_clear);
 }

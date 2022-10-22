@@ -75,6 +75,9 @@ typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV
 #define MODE MODE_ISA_MODEL_ONLY
 //#define MODE MODE_ISA_AND_CYCLE_MODEL_DIFFTEST
 
+#define NEED_ISA_MODEL (MODE == MODE_ISA_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
+#define NEED_CYCLE_MODEL (MODE == MODE_CYCLE_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
+
 const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
 
 //#define TRACE_ENABLE

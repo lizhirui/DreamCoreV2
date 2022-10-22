@@ -19,5 +19,6 @@ bool get_server_thread_stopped();
 bool get_charfifo_thread_stopped();
 charfifo_send_fifo_t *get_charfifo_send_fifo();
 charfifo_rev_fifo_t *get_charfifo_rev_fifo();
+void send_cmd(std::string prefix, std::string cmd, std::string arg);
 void debug_event_handle();
 void network_init();

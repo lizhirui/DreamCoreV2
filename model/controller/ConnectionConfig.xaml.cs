@@ -28,7 +28,7 @@ namespace DreamCoreV2_model_controller
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            textBox_Server.Text = Config.Get("server", "127.0.0.1");
+            textBox_Server.Text = Config.Get("server", "192.168.0.121");
             textBox_Port.Text = Config.Get("port", "10240");
         }
 
