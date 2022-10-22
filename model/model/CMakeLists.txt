@@ -7,7 +7,7 @@ set(CMAKE_CXX_STACK_SIZE "1048576")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    add_compile_options(-Wall -Werror)
+    add_compile_options(-Wall -Werror -Wno-unused-function)
 else()
     message(FATAL_ERROR "This compiler isn't supported by this model!")
 endif()

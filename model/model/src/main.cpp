@@ -3,6 +3,7 @@
 #include "network/network.h"
 #include "main.h"
 #include "breakpoint.h"
+#include "elf_loader.h"
 
 #if NEED_ISA_MODEL
 #include "isa_model/isa_model.h"
@@ -210,7 +211,7 @@ static void run()
     }
 }
 
-static void load_file(std::string path)
+static void load_bin_file(std::string path)
 {
     std::ifstream binfile(path, std::ios::binary);
     
@@ -231,12 +232,20 @@ static void load_file(std::string path)
     std::cout << path << " Load OK!" << std::endl;
 }
 
+static void load_elf_file(std::string path)
+{
+    auto ret = load_elf(path);
+    load(ret.first, ret.second);
+    std::cout << path << " Load OK!" << std::endl;
+}
+
 static void sub_main()
 {
     init();
     reset();
     set_pause_detected(true);
-    load_file("../../../image/rtthread.bin");
+    //load_bin_file("../../../image/rtthread.bin");
+    load_elf_file("../../../testcase/compiled/rtthread.elf");
     run();
 }
 
