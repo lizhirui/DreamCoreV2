@@ -79,14 +79,18 @@ charfifo_rev_fifo_t *get_charfifo_rev_fifo()
     return &charfifo_rev_fifo;
 }
 
+void recv_ioc_stop()
+{
+    recv_ioc.stop();
+}
+
 void debug_event_handle()
 {
     try
     {
-        if(!recv_ioc.run_one())
-        {
-            recv_ioc.restart();
-        }
+        auto guard = std::make_shared<asio::io_context::work>(recv_ioc);
+        recv_ioc.run();
+        recv_ioc.restart();
     }
     catch(const std::exception &ex)
     {
@@ -115,7 +119,7 @@ void send_cmd(std::string prefix, std::string cmd, std::string arg)
     {
         if(client_soc != nullptr)
         {
-            send_cmd_result(std::ref(*client_soc), prefix + " " + cmd + " " + arg);
+            asio::post(send_ioc, [prefix, cmd, arg]{send_cmd_result(std::ref(*client_soc), prefix + " " + cmd + " " + arg);});
         }
     }
     catch(const std::exception &e)
@@ -153,9 +157,10 @@ static void socket_cmd_handle(asio::ip::tcp::socket &soc, std::string rev_str)
     }
 }
 
-static void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
+static void tcp_charfifo_recv_thread_entry(asio::ip::tcp::socket &soc)
 {
     char buf[1024];
+    std::cout << MESSAGE_OUTPUT_PREFIX << "tcp_charfifo_recv thread tid: " << gettid() << std::endl;
 
     while(!charfifo_recv_thread_stop)
     {
@@ -180,6 +185,8 @@ static void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
 
 static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
 {
+    std::cout << MESSAGE_OUTPUT_PREFIX << "tcp_charfifo thread tid: " << gettid() << std::endl;
+    
     try
     {
         while(!program_stop)
@@ -190,7 +197,7 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
             std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Connected" << std::endl;
             charfifo_recv_thread_stop = false;
             charfifo_recv_thread_stopped = false;
-            std::thread rev_thread(tcp_charfifo_recv_thread_receive_entry, std::ref(soc));
+            std::thread rev_thread(tcp_charfifo_recv_thread_entry, std::ref(soc));
 
             try
             {
@@ -221,8 +228,16 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
 
             charfifo_recv_thread_stop = true;
             rev_thread.join();
-            soc.shutdown(asio::socket_base::shutdown_both);
-            soc.close();
+            
+            try
+            {
+                soc.shutdown(asio::socket_base::shutdown_both);
+                soc.close();
+            }
+            catch(const std::exception &ex)
+            {
+            }
+            
             std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Disconnected" << std::endl;
         }
 
@@ -237,6 +252,8 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
 
 static void std_output_charfifo_thread_entry()
 {
+    std::cout << MESSAGE_OUTPUT_PREFIX << "std_output_charfifo thread tid: " << gettid() << std::endl;
+    
     try
     {
         while(!program_stop)
@@ -250,7 +267,7 @@ static void std_output_charfifo_thread_entry()
                     while(!charfifo_send_fifo.pop());
                 }
         
-                if(charfifo_recv_thread_stopped)
+                if(charfifo_thread_stopped)
                 {
                     break;
                 }
@@ -270,13 +287,14 @@ static void std_output_charfifo_thread_entry()
     }
 }
 
-static void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
+static void tcp_server_recv_thread_entry(asio::ip::tcp::socket &soc)
 {
     uint32_t length = 0;
     size_t rev_length = 0;
     char *packet_payload = nullptr;
     char packet_length[4];
     std::string rev_str;
+    std::cout << MESSAGE_OUTPUT_PREFIX << "tcp_server_recv thread tid: " << gettid() << std::endl;
 
     while(!recv_thread_stop)
     {
@@ -314,8 +332,13 @@ static void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
                         stream >> t;
                         cmd_arg_list.push_back(t);
                     }
+                    
+                    if((cmd_arg_list.size() >= 2) && (cmd_arg_list[0] == std::string("protocol")) && (cmd_arg_list[1] == std::string("heart")))
+                    {
+                        send_cmd("protocol", "heart", "");
+                    }
 
-                    if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("pause")))
+                    if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("pause") || cmd_arg_list[1] == std::string("p")))
                     {
                         set_pause_detected(true);
                     }
@@ -332,10 +355,13 @@ static void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
     }
 
     recv_thread_stopped = true;
+    send_ioc.stop();
 }
 
 void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
 {
+    std::cout << MESSAGE_OUTPUT_PREFIX << "tcp_server thread tid: " << gettid() << std::endl;
+    
     try
     {
         while(!program_stop)
@@ -347,33 +373,32 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
             recv_thread_stop = false;
             recv_thread_stopped = false;
             client_soc = &soc;
-            std::thread rev_thread(tcp_server_thread_receive_entry, std::ref(soc));
+            std::thread rev_thread(tcp_server_recv_thread_entry, std::ref(soc));
 
             try
             {
-                while(true)
-                {
-                    if(!send_ioc.run_one_for(std::chrono::milliseconds(1000)))
-                    {
-                        send_ioc.restart();
-                    }
-
-                    if(recv_thread_stopped)
-                    {
-                        break;
-                    }
-                }
+                auto guard = asio::make_work_guard(send_ioc);
+                send_ioc.run();
             }
             catch(const std::exception &ex)
             {
                 std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
             }
-
+    
+            send_ioc.restart();
             client_soc = nullptr;
             recv_thread_stop = true;
             rev_thread.join();
-            soc.shutdown(asio::socket_base::shutdown_both);
-            soc.close();
+            
+            try
+            {
+                soc.shutdown(asio::socket_base::shutdown_both);
+                soc.close();
+            }
+            catch(const std::exception &ex)
+            {
+            }
+            
             std::cout << MESSAGE_OUTPUT_PREFIX "Server Disconnected" << std::endl;
         }
 

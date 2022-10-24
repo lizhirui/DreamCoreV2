@@ -22,5 +22,6 @@ bool get_charfifo_recv_thread_stopped();
 charfifo_send_fifo_t *get_charfifo_send_fifo();
 charfifo_rev_fifo_t *get_charfifo_rev_fifo();
 void send_cmd(std::string prefix, std::string cmd, std::string arg);
+void recv_ioc_stop();
 void debug_event_handle();
 void network_init(const command_line_arg_t &arg);

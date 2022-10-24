@@ -18,9 +18,13 @@ namespace DreamCoreV2_model_controller
         public static TcpClient? conn = null;
         public static Thread? recvThread = null;
         public static Thread? recvHandleThread = null;
+        public static Thread? heartThread = null;
+        //public static BlockingCollection<string> recvQueue = new BlockingCollection<string>();
         public static ConcurrentQueue<string> recvQueue = new ConcurrentQueue<string>();
         private static bool recvThreadClose = false;
         private static bool recvHandleThreadClose = false;
+        private static bool heartThreadClose = false;
+        private static long heartLastRecvTime = 0;
 
         public static ValueDataSource<bool> running = false;
         public static ValueDataSource<int> cpuCycle = 0;
@@ -48,7 +52,7 @@ namespace DreamCoreV2_model_controller
                 return false;
             }
 
-            if(running && (cmd != "pause") && (!ignoreRunning))
+            if(running && (cmd != "pause") && (cmd != "p") && (!ignoreRunning))
             {
                 return false;
             }
@@ -72,6 +76,10 @@ namespace DreamCoreV2_model_controller
             recvHandleThread = new Thread(RecvHandleThreadEntry);
             recvHandleThread.IsBackground = true;
             recvHandleThread.Start();
+            heartThreadClose = false;
+            heartThread = new Thread(HeartThreadEntry);
+            heartThread.IsBackground = true;
+            heartThread.Start();
         }
 
         public static void StopRecv()
@@ -79,6 +87,7 @@ namespace DreamCoreV2_model_controller
             if(recvHandleThread != null)
             {
                 recvHandleThreadClose = true;
+                //recvQueue.Add("protocol none");
                 recvHandleThread.Join();
                 recvHandleThread = null;
             }
@@ -97,6 +106,23 @@ namespace DreamCoreV2_model_controller
             {
                 try
                 {
+                    /*var packet = recvQueue.Take();
+                    var cmdArgList = packet.Split(' ');
+                    var prefix = cmdArgList[0];
+                    var cmd = cmdArgList[1];
+                    var result = packet.Substring(prefix.Length + cmd.Length + 2);
+
+                    if(prefix == "protocol")
+                    {
+                        if(cmd == "heart")
+                        {
+                            heartLastRecvTime = Environment.TickCount64;
+                        }
+                    }
+                    else
+                    {
+                        CommandReceivedEvent?.Invoke(prefix, cmd, result);
+                    }*/
                     if(!recvQueue.IsEmpty)
                     {
                         var packet = "";
@@ -107,7 +133,18 @@ namespace DreamCoreV2_model_controller
                             var prefix = cmdArgList[0];
                             var cmd = cmdArgList[1];
                             var result = packet.Substring(prefix.Length + cmd.Length + 2);
-                            CommandReceivedEvent?.Invoke(prefix, cmd, result);
+                            
+                            if(prefix == "protocol")
+                            {
+                                if(cmd == "heart")
+                                {
+                                    heartLastRecvTime = Environment.TickCount64;
+                                }
+                            }
+                            else
+                            {
+                                CommandReceivedEvent?.Invoke(prefix, cmd, result);
+                            }
                         }
                     }
                     else
@@ -160,6 +197,7 @@ namespace DreamCoreV2_model_controller
                             if(finish)
                             {
                                 var str = Encoding.UTF8.GetString(Encoding.Convert(Encoding.GetEncoding("GB2312"), Encoding.UTF8, packetPayload));
+                                //recvQueue.Add(str);
                                 recvQueue.Enqueue(str);
                                 packetPayload = null;
                                 revLength = 0;
@@ -169,7 +207,33 @@ namespace DreamCoreV2_model_controller
                 }
                 catch(IOException)
                 {
-                    
+                }
+                catch
+                {
+                    connected.Value = false;
+                }
+            }
+        }
+
+        private static void HeartThreadEntry()
+        {
+            heartLastRecvTime = Environment.TickCount64;
+
+            while(!heartThreadClose)
+            {
+                try
+                {
+                    if((conn != null) && (connected))
+                    {
+                        SendCommand("protocol", "heart", true);
+                        
+                        if(Environment.TickCount64 - heartLastRecvTime > 2000)
+                        {
+                            connected.Value = false;
+                        }
+                    }
+
+                    Thread.Sleep(1000);
                 }
                 catch
                 {

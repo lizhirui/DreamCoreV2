@@ -140,7 +140,10 @@ static void run(const command_line_arg_t &arg)
     {
         if(arg.no_controller && !arg.no_telnet)
         {
-            while(get_charfifo_recv_thread_stopped());
+            if(get_charfifo_recv_thread_stopped())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
         }
         
 #if NEED_CYCLE_MODEL
@@ -435,6 +438,7 @@ static void atexit_func()
 
 int main(int argc, char **argv)
 {
+    std::cout << MESSAGE_OUTPUT_PREFIX << "main thread tid: " << gettid() << std::endl;
     std::atexit(atexit_func);
     show_copyright();
     command_line_arg_t arg;

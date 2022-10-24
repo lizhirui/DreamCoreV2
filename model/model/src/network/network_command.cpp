@@ -48,6 +48,7 @@ static std::string socket_cmd_continue(std::vector<std::string> args)
     set_pause_state(false);
     set_step_state(false);
     set_wait_commit(false);
+    recv_ioc_stop();
     return "ok";
 }
 
@@ -73,6 +74,7 @@ static std::string socket_cmd_step(std::vector<std::string> args)
     set_pause_state(false);
     set_step_state(true);
     set_wait_commit(false);
+    recv_ioc_stop();
     return "ok";
 }
 
@@ -86,6 +88,7 @@ static std::string socket_cmd_stepcommit(std::vector<std::string> args)
     set_pause_state(false);
     set_step_state(true);
     set_wait_commit(true);
+    recv_ioc_stop();
     return "ok";
 }
 
@@ -508,9 +511,13 @@ void network_command_init()
     register_socket_cmd("quit", socket_cmd_quit);
     register_socket_cmd("reset", socket_cmd_reset);
     register_socket_cmd("continue", socket_cmd_continue);
+    register_socket_cmd("c", socket_cmd_continue);
     register_socket_cmd("pause", socket_cmd_pause);
+    register_socket_cmd("p", socket_cmd_pause);
     register_socket_cmd("step", socket_cmd_step);
+    register_socket_cmd("s", socket_cmd_step);
     register_socket_cmd("stepcommit", socket_cmd_stepcommit);
+    register_socket_cmd("sc", socket_cmd_stepcommit);
     register_socket_cmd("read_memory", socket_cmd_read_memory);
     register_socket_cmd("write_memory", socket_cmd_write_memory);
     register_socket_cmd("read_archreg", socket_cmd_read_archreg);
