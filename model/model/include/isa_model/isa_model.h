@@ -283,6 +283,10 @@ namespace isa_model
             
             charfifo_send_fifo_t *charfifo_send_fifo;
             charfifo_rev_fifo_t *charfifo_rev_fifo;
+
+#ifdef BRANCH_DUMP
+            std::ofstream branch_dump_stream;
+#endif
             
             isa_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo);
             ~isa_model();
@@ -310,6 +314,7 @@ namespace isa_model
             
             void load(void *mem, size_t size);
             void reset();
+            void pause_event();
             void run();
             fetch_decode_pack_t fetch();
             decode_execute_pack_t decode(const fetch_decode_pack_t &fetch_decode_pack);

@@ -68,17 +68,24 @@ const uint32_t CHARFIFO_REV_FIFO_SIZE = 1024;
 typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> charfifo_send_fifo_t;
 typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> charfifo_rev_fifo_t;
 
+#define MODEL_NAME "DreamCoreV2 Model"
+
+#define MESSAGE_OUTPUT_PREFIX "[" MODEL_NAME "]: "
+
 #define MODE_ISA_MODEL_ONLY 0
 #define MODE_CYCLE_MODEL_ONLY 1
-#define MODE_ISA_AND_CYCLE_MODEL_DIFFTEST 2
+#define MODE_ISA_AND_CYCLE_MODEL_COMPARE 2
 
 #define MODE MODE_ISA_MODEL_ONLY
-//#define MODE MODE_ISA_AND_CYCLE_MODEL_DIFFTEST
+//#define MODE MODE_ISA_AND_CYCLE_MODEL_COMPARE
 
-#define NEED_ISA_MODEL (MODE == MODE_ISA_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
-#define NEED_CYCLE_MODEL (MODE == MODE_CYCLE_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_DIFFTEST)
+#define NEED_ISA_MODEL (MODE == MODE_ISA_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_COMPARE)
+#define NEED_CYCLE_MODEL (MODE == MODE_CYCLE_MODEL_ONLY) || (MODE == MODE_ISA_AND_CYCLE_MODEL_COMPARE)
 
-const std::string TRACE_DIR = R"(D:\program\project\MyRISC-VCore\model\MyRISC-VCore_Model_CMake\trace\coremark_10\)";
+//#define BRANCH_DUMP
+const std::string BRANCH_DUMP_FILE = "../../../branch_dump/coremark_10.txt";
+
+const std::string TRACE_DIR = "../../../trace/coremark_10/";
 
 //#define TRACE_ENABLE
 //#define TRACE_ENABLE_FULL

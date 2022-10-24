@@ -259,32 +259,32 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     ire_mul = json::array();
     ire_lsu = json::array();
 
-    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
     {
         ire_alu.push_back(cycle_model_inst->readreg_alu_hdff[i]->get_json());
     }
 
-    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
     {
         ire_bru.push_back(cycle_model_inst->readreg_bru_hdff[i]->get_json());
     }
 
-    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
     {
         ire_csr.push_back(cycle_model_inst->readreg_csr_hdff[i]->get_json());
     }
 
-    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
     {
         ire_div.push_back(cycle_model_inst->readreg_div_hdff[i]->get_json());
     }
 
-    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
     {
         ire_mul.push_back(cycle_model_inst->readreg_mul_hdff[i]->get_json());
     }
     
-    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
     {
         ire_lsu.push_back(cycle_model_inst->readreg_lsu_hdff[i]->get_json());
     }
@@ -301,12 +301,12 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     auto te_div = json::array();
     auto te_lsu = json::array();
     
-    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
     {
         te_div.push_back(cycle_model_inst->execute_div_stage[i]->get_json());
     }
     
-    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
     {
         te_lsu.push_back(cycle_model_inst->execute_lsu_stage[i]->get_json());
     }
@@ -324,32 +324,32 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tew_lsu = json::array();
     tew_mul = json::array();
 
-    for(auto i = 0;i < ALU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
     {
         tew_alu.push_back(cycle_model_inst->alu_wb_port[i]->get_json());
     }
 
-    for(auto i = 0;i < BRU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
     {
         tew_bru.push_back(cycle_model_inst->bru_wb_port[i]->get_json());
     }
 
-    for(auto i = 0;i < CSR_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
     {
         tew_csr.push_back(cycle_model_inst->csr_wb_port[i]->get_json());
     }
 
-    for(auto i = 0;i < DIV_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
     {
         tew_div.push_back(cycle_model_inst->div_wb_port[i]->get_json());
     }
 
-    for(auto i = 0;i < MUL_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
     {
         tew_mul.push_back(cycle_model_inst->mul_wb_port[i]->get_json());
     }
     
-    for(auto i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
     {
         tew_lsu.push_back(cycle_model_inst->lsu_wb_port[i]->get_json());
     }
@@ -429,23 +429,8 @@ static std::string socket_cmd_get_mode(std::vector<std::string> args)
 #elif MODE == MODE_CYCLE_MODEL_ONLY
     return "cycle_model_only";
 #else
-    return "isa_and_cycle_model_difftest";
+    return "isa_and_cycle_model_compare";
 #endif
-}
-
-static uint32_t get_multi_radix_num(std::string str)
-{
-    uint32_t value;
-    std::stringstream stream(str);
-    
-    if((str.size() > 2) && (str[0] == '0') && (tolower(str[1]) == 'x'))
-    {
-        stream.unsetf(std::ios::dec);
-        stream.setf(std::ios::hex);
-    }
-    
-    stream >> value;
-    return value;
 }
 
 static std::string socket_cmd_breakpoint_add(std::vector<std::string> args)

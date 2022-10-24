@@ -12,7 +12,7 @@ else()
     message(FATAL_ERROR "This compiler isn't supported by this model!")
 endif()
 
-include_directories(./include ./tools)
+include_directories(./include ./tools ./include_third_party)
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./include/*.h" "./include/*.hpp" "./tools/*.h" "./tools/*.cpp")
 
 add_executable(sim ${src_files})

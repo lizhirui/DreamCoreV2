@@ -46,6 +46,9 @@ namespace isa_model
     isa_model::isa_model(charfifo_send_fifo_t *charfifo_send_fifo, charfifo_rev_fifo_t *charfifo_rev_fifo) :
     charfifo_send_fifo(charfifo_send_fifo),
     charfifo_rev_fifo(charfifo_rev_fifo),
+#ifdef BRANCH_DUMP
+    branch_dump_stream(BRANCH_DUMP_FILE),
+#endif
     interrupt_interface(&csr_file),
     arch_regfile(ARCH_REG_NUM),
     clint(&bus, &interrupt_interface)
@@ -132,11 +135,22 @@ namespace isa_model
         pc = INIT_PC;
     }
     
+    void isa_model::pause_event()
+    {
+#ifdef BRANCH_DUMP
+        branch_dump_stream.flush();
+#endif
+    }
+    
     void isa_model::run()
     {
         riscv_interrupt_t interrupt_id;
         
         auto fetch_decode_pack = fetch();
+        
+#ifdef BRANCH_DUMP
+        branch_dump_stream << outhex(fetch_decode_pack.pc) << "," << outhex(fetch_decode_pack.value) << std::endl;
+#endif
         auto decode_execute_pack = decode(fetch_decode_pack);
         execute(decode_execute_pack);
         interrupt_interface.run();

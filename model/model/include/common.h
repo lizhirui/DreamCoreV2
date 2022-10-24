@@ -27,6 +27,7 @@
 #include "asio.hpp"
 #include "json.hpp"
 #include "boost/lockfree/spsc_queue.hpp"
+#include "tclap/CmdLine.h"
 
 #include "trace/trace.h"
 
@@ -115,6 +116,21 @@ inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
     return extended_imm;
 }
 
+inline uint32_t get_multi_radix_num(std::string str)
+{
+    uint32_t value;
+    std::stringstream stream(str);
+    
+    if((str.size() > 2) && (str[0] == '0') && (tolower(str[1]) == 'x'))
+    {
+        stream.unsetf(std::ios::dec);
+        stream.setf(std::ios::hex);
+    }
+    
+    stream >> value;
+    return value;
+}
+
 typedef struct if_print_t
 {
     virtual ~if_print_t() = default;
@@ -183,3 +199,11 @@ void ras_full_add();
 void fetch_not_full_add();
 
 uint64_t get_cpu_clock_cycle();
+
+#define EXIT_CODE_OK 0
+#define EXIT_CODE_ERROR 1
+#define EXIT_CODE_SERVER_PORT_ERROR 2
+#define EXIT_CODE_TELNET_PORT_ERROR 3
+#define EXIT_CODE_CSR_FINISH_OK_DETECTED 4
+#define EXIT_CODE_CSR_FINISH_FAILURE_DETECTED 5
+#define EXIT_CODE_OTHER_BREAKPOINT_DETECTED 6

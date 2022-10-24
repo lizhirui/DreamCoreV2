@@ -9,7 +9,9 @@
  */
 
 #include "common.h"
+#include "config.h"
 #include "breakpoint.h"
+#include "main.h"
 
 static std::vector<breakpoint_info_t> breakpoint_info_list;
 
@@ -68,9 +70,19 @@ std::string breakpoint_get_list()
 }
 
 static bool breakpoint_found = false;
+static bool breakpoint_csr_finish_found = false;
+static uint32_t breakpoint_csr_finish_value = 0;
 
 void breakpoint_csr_trigger(uint32_t csr, uint32_t value, bool write)
 {
+    if((csr == CSR_FINISH) && write)
+    {
+        breakpoint_csr_finish_found = true;
+        breakpoint_csr_finish_value = value;
+        breakpoint_found = true;
+        return;
+    }
+    
     for(size_t i = 0;i < breakpoint_info_list.size();i++)
     {
         if((breakpoint_info_list[i].type == breakpoint_type_t::csrw) && write)
@@ -82,6 +94,17 @@ void breakpoint_csr_trigger(uint32_t csr, uint32_t value, bool write)
             }
         }
     }
+}
+
+std::optional<uint32_t> breakpoint_get_finish()
+{
+    if(breakpoint_csr_finish_found)
+    {
+        breakpoint_csr_finish_found = false;
+        return breakpoint_csr_finish_value;
+    }
+    
+    return std::nullopt;
 }
 
 bool breakpoint_check(uint32_t cycle, uint32_t instruction_num, uint32_t pc)

@@ -26,7 +26,7 @@ static charfifo_send_fifo_t charfifo_send_fifo;
 static charfifo_rev_fifo_t charfifo_rev_fifo;
 static std::atomic<bool> charfifo_thread_stopped = false;
 static std::atomic<bool> charfifo_recv_thread_stop = false;
-static std::atomic<bool> charfifo_recv_thread_stopped = false;
+static std::atomic<bool> charfifo_recv_thread_stopped = true;
 
 static asio::io_context tcp_server_thread_ioc;
 
@@ -64,6 +64,11 @@ bool get_charfifo_thread_stopped()
     return charfifo_thread_stopped;
 }
 
+bool get_charfifo_recv_thread_stopped()
+{
+    return charfifo_recv_thread_stopped;
+}
+
 charfifo_send_fifo_t *get_charfifo_send_fifo()
 {
     return &charfifo_send_fifo;
@@ -85,7 +90,7 @@ void debug_event_handle()
     }
     catch(const std::exception &ex)
     {
-        std::cout << ex.what() << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
     }
 }
 
@@ -165,7 +170,7 @@ static void tcp_charfifo_recv_thread_receive_entry(asio::ip::tcp::socket &soc)
         }
         catch(const std::exception &ex)
         {
-            std::cout << ex.what() << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
             break;
         }
     }
@@ -179,10 +184,10 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
     {
         while(!program_stop)
         {
-            std::cout << "Wait Telnet Connection" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Wait Telnet Connection" << std::endl;
             auto soc = listener.accept();
             soc.set_option(asio::ip::tcp::no_delay(true));
-            std::cout << "Telnet Connected" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Connected" << std::endl;
             charfifo_recv_thread_stop = false;
             charfifo_recv_thread_stopped = false;
             std::thread rev_thread(tcp_charfifo_recv_thread_receive_entry, std::ref(soc));
@@ -211,14 +216,14 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
             }
             catch(const std::exception &ex)
             {
-                std::cout << ex.what() << std::endl;
+                std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
             }
 
             charfifo_recv_thread_stop = true;
             rev_thread.join();
             soc.shutdown(asio::socket_base::shutdown_both);
             soc.close();
-            std::cout << "Telnet Disconnected" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Disconnected" << std::endl;
         }
 
         listener.close();
@@ -226,7 +231,42 @@ static void tcp_charfifo_thread_entry(asio::ip::tcp::acceptor &&listener)
     }
     catch(const std::exception &ex)
     {
-        std::cout << ex.what() << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
+    }
+}
+
+static void std_output_charfifo_thread_entry()
+{
+    try
+    {
+        while(!program_stop)
+        {
+            while(true)
+            {
+                if(!charfifo_send_fifo.empty())
+                {
+                    auto ch = charfifo_send_fifo.front();
+                    std::cout << ch;
+                    while(!charfifo_send_fifo.pop());
+                }
+        
+                if(charfifo_recv_thread_stopped)
+                {
+                    break;
+                }
+        
+                if(charfifo_send_fifo.empty())
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                }
+            }
+        }
+        
+        charfifo_thread_stopped = true;
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
     }
 }
 
@@ -286,7 +326,7 @@ static void tcp_server_thread_receive_entry(asio::ip::tcp::socket &soc)
         }
         catch(const std::exception &ex)
         {
-            std::cout << ex.what() << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
             break;
         }
     }
@@ -300,10 +340,10 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
     {
         while(!program_stop)
         {
-            std::cout << "Wait Server Connection" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Wait Server Connection" << std::endl;
             auto soc = listener.accept();
             soc.set_option(asio::ip::tcp::no_delay(true));
-            std::cout << "Server Connected" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Server Connected" << std::endl;
             recv_thread_stop = false;
             recv_thread_stopped = false;
             client_soc = &soc;
@@ -326,7 +366,7 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
             }
             catch(const std::exception &ex)
             {
-                std::cout << ex.what() << std::endl;
+                std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
             }
 
             client_soc = nullptr;
@@ -334,7 +374,7 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
             rev_thread.join();
             soc.shutdown(asio::socket_base::shutdown_both);
             soc.close();
-            std::cout << "Server Disconnected" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "Server Disconnected" << std::endl;
         }
 
         listener.close();
@@ -342,42 +382,63 @@ void tcp_server_thread_entry(asio::ip::tcp::acceptor &&listener)
     }
     catch(const std::exception &ex)
     {
-        std::cout << ex.what() << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << ex.what() << std::endl;
     }
 }
 
-static void telnet_init()
-{
-    asio::ip::tcp::acceptor listener(tcp_charfifo_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), 10241});
-    listener.set_option(asio::ip::tcp::no_delay(true));
-    listener.listen();
-    std::cout << "Telnet Bind on 0.0.0.0:10241" << std::endl;
-    charfifo_thread_stopped = false;
-    std::thread server_thread(tcp_charfifo_thread_entry, std::move(listener));
-    server_thread.detach();
-}
-
-static void server_init()
+static void telnet_init(const command_line_arg_t &arg)
 {
     try
     {
-        asio::ip::tcp::acceptor listener(tcp_server_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), 10240});
-        listener.set_option(asio::ip::tcp::no_delay(true));
-        listener.listen();
-        std::cout << "Server Bind on 0.0.0.0:10240" << std::endl;
-        server_thread_stopped = false;
-        std::thread server_thread(tcp_server_thread_entry, std::move(listener));
-        server_thread.detach();
+        if(!arg.no_telnet)
+        {
+            asio::ip::tcp::acceptor listener(tcp_charfifo_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), static_cast<asio::ip::port_type>(arg.telnet_port)});
+            listener.set_option(asio::ip::tcp::no_delay(true));
+            listener.listen();
+            std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Bind on 0.0.0.0:" << arg.telnet_port << std::endl;
+            charfifo_thread_stopped = false;
+            std::thread telnet_thread(tcp_charfifo_thread_entry, std::move(listener));
+            telnet_thread.detach();
+        }
+        else
+        {
+            charfifo_thread_stopped = false;
+            std::thread telnet_thread(std_output_charfifo_thread_entry);
+            telnet_thread.detach();
+        }
     }
     catch(const std::exception &e)
     {
-        std::cout << "Server Bind Port Failed:" << e.what() << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX "Telnet Bind Port Failed:" << e.what() << std::endl;
+        exit(EXIT_CODE_TELNET_PORT_ERROR);
     }
 }
 
-void network_init()
+static void server_init(const command_line_arg_t &arg)
 {
-    telnet_init();
+    try
+    {
+        if(!arg.no_controller)
+        {
+            asio::ip::tcp::acceptor listener(tcp_server_thread_ioc, {asio::ip::address::from_string("0.0.0.0"), static_cast<asio::ip::port_type>(arg.controller_port)});
+            listener.set_option(asio::ip::tcp::no_delay(true));
+            listener.listen();
+            std::cout << MESSAGE_OUTPUT_PREFIX "Server Bind on 0.0.0.0:" << arg.controller_port << std::endl;
+            server_thread_stopped = false;
+            std::thread server_thread(tcp_server_thread_entry, std::move(listener));
+            server_thread.detach();
+        }
+    }
+    catch(const std::exception &e)
+    {
+        std::cout << MESSAGE_OUTPUT_PREFIX "Server Bind Port Failed:" << e.what() << std::endl;
+        exit(EXIT_CODE_SERVER_PORT_ERROR);
+    }
+}
+
+void network_init(const command_line_arg_t &arg)
+{
+    telnet_init(arg);
     network_command_init();
-    server_init();
+    server_init(arg);
 }

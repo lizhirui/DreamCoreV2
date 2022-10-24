@@ -30,4 +30,5 @@ void breakpoint_add(breakpoint_type_t type, uint32_t value);
 void breakpoint_remove(uint32_t id);
 std::string breakpoint_get_list();
 void breakpoint_csr_trigger(uint32_t csr, uint32_t value, bool write);
+std::optional<uint32_t> breakpoint_get_finish();
 bool breakpoint_check(uint32_t cycle, uint32_t instruction_num, uint32_t pc);
