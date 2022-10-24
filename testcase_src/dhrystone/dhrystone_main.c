@@ -395,7 +395,7 @@ int main (int argc, char** argv)
   printf("Microseconds for one run through Dhrystone: %llu\n", Microseconds);
   printf("Dhrystones per Second:                      %llu\n", Dhrystones_Per_Second);
 
-  printf("DMIPS/MHz: %llu,%06llu\n", Dhrystones_Per_Second / 1757 / (HZ / 1000000ULL), (ee_u64)((1000000ull * Dhrystones_Per_Second / 1757 / (HZ / 1000000ULL)) % 1000000));
+  printf("DMIPS/MHz: %llu.%06llu\n", Dhrystones_Per_Second / 1757 / (HZ / 1000000ULL), (ee_u64)((1000000ull * Dhrystones_Per_Second / 1757 / (HZ / 1000000ULL)) % 1000000));
 
   ee_u64 total_time = get_time();
   ee_u64 total_instret = get_instret();

@@ -1,0 +1,260 @@
+Archive member included to satisfy reference by file (symbol)
+
+/opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+                              /tmp/ccTaN8ZN.o (__udivdi3)
+/opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+                              /tmp/ccTaN8ZN.o (__umoddi3)
+/opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+                              /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o) (__clz_tab)
+
+Allocating common symbols
+Common symbol       size              file
+
+static_memblk       0x7d0             /tmp/ccTaN8ZN.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+ICCM             0x0000000080000000 0x0000000000040000 axw !rl
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /tmp/ccyPyTOO.o
+LOAD /tmp/ccTaN8ZN.o
+LOAD /tmp/ccNU1cjS.o
+LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libm.a
+LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a
+                0x0000000000008000                __stack_size = DEFINED (__stack_size)?__stack_size:0x8000
+
+.text.init      0x0000000080000000       0xd8
+ *(.text.init)
+ .text.init     0x0000000080000000       0xd8 /tmp/ccyPyTOO.o
+                0x0000000080000000                _start
+                0x00000000800000d0                send_char
+                0x00000000800000d8                . = ALIGN (0x4)
+
+.text           0x00000000800000d8     0xe764
+ *(.text.unlikely .text.unlikely.*)
+ *(.text.startup .text.startup.*)
+ .text.startup  0x00000000800000d8     0x12fc /tmp/ccTaN8ZN.o
+                0x00000000800000d8                main
+ *(.text .text.*)
+ .text          0x00000000800013d4        0x0 /tmp/ccyPyTOO.o
+ .text          0x00000000800013d4     0x9b48 /tmp/ccTaN8ZN.o
+                0x00000000800013d4                cmp_idx
+                0x0000000080001614                copy_info
+                0x0000000080001628                core_list_init
+                0x0000000080001d1c                core_list_insert_new
+                0x0000000080001d7c                core_list_remove
+                0x0000000080001da8                core_list_undo_remove
+                0x0000000080001dc8                core_list_find
+                0x0000000080001e38                core_list_reverse
+                0x0000000080001ee0                core_list_mergesort
+                0x000000008000210c                matrix_test
+                0x00000000800047c8                core_bench_matrix
+                0x0000000080004a84                core_init_matrix
+                0x0000000080004ea4                matrix_sum
+                0x0000000080005340                matrix_mul_const
+                0x00000000800055c0                matrix_add_const
+                0x0000000080005704                matrix_mul_vect
+                0x0000000080005908                matrix_mul_matrix
+                0x0000000080005b70                matrix_mul_matrix_bitextract
+                0x0000000080005d5c                core_init_state
+                0x0000000080005f24                core_state_transition
+                0x0000000080006268                core_bench_state
+                0x0000000080006d94                calc_func
+                0x00000000800073c0                core_bench_list
+                0x0000000080008708                iterate
+                0x0000000080009268                cmp_complex
+                0x0000000080009e60                get_seed_32
+                0x0000000080009eb4                crcu8
+                0x0000000080009ff0                crcu16
+                0x000000008000a270                crcu32
+                0x000000008000a780                crc16
+                0x000000008000aa08                check_data_types
+                0x000000008000aa10                start_instret
+                0x000000008000aa9c                stop_instret
+                0x000000008000ab28                get_instret
+                0x000000008000ab4c                start_branch
+                0x000000008000ac44                stop_branch
+                0x000000008000ad3c                get_branch_hit
+                0x000000008000ad60                get_branch_total
+                0x000000008000ad84                start_time
+                0x000000008000ae10                stop_time
+                0x000000008000ae9c                get_time
+                0x000000008000aec0                time_in_secs
+                0x000000008000aee4                portable_init
+                0x000000008000aef0                portable_fini
+                0x000000008000aef8                memset
+ .text          0x000000008000af1c     0x30dc /tmp/ccNU1cjS.o
+                0x000000008000de30                _putchar
+                0x000000008000de68                printf_
+                0x000000008000debc                sprintf_
+                0x000000008000df0c                snprintf_
+                0x000000008000df58                vprintf_
+                0x000000008000df88                vsnprintf_
+                0x000000008000dfa4                fctprintf
+ .text          0x000000008000dff8      0x434 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+                0x000000008000dff8                __udivdi3
+ .text          0x000000008000e42c      0x410 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+                0x000000008000e42c                __umoddi3
+ .text          0x000000008000e83c        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+ *(.gnu.linkonce.t.*)
+                0x000000008000e83c                . = ALIGN (0x4)
+
+.rodata         0x000000008000e83c      0x8a0
+ *(.rdata)
+ *(.rodata .rodata.*)
+ .rodata        0x000000008000e83c       0x6c /tmp/ccTaN8ZN.o
+ .rodata.str1.4
+                0x000000008000e8a8      0x554 /tmp/ccTaN8ZN.o
+                                        0x552 (size before relaxing)
+ .rodata        0x000000008000edfc      0x1e0 /tmp/ccNU1cjS.o
+ .rodata        0x000000008000efdc      0x100 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+                0x000000008000efdc                __clz_tab
+ *(.gnu.linkonce.r.*)
+                0x000000008000f0dc                . = ALIGN (0x4)
+
+.eh_frame       0x000000008000f0dc       0x3c
+ .eh_frame      0x000000008000f0dc       0x28 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .eh_frame      0x000000008000f104       0x14 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+                                         0x28 (size before relaxing)
+
+.rela.dyn       0x000000008000f118        0x0
+ .rela.text.init
+                0x000000008000f118        0x0 /tmp/ccyPyTOO.o
+ .rela.text     0x000000008000f118        0x0 /tmp/ccyPyTOO.o
+ .rela.text.startup
+                0x000000008000f118        0x0 /tmp/ccyPyTOO.o
+
+.data           0x000000008000f118        0xc
+ *(.data .data.*)
+ .data          0x000000008000f118        0x0 /tmp/ccyPyTOO.o
+ .data          0x000000008000f118        0xc /tmp/ccTaN8ZN.o
+                0x000000008000f118                mem_name
+ .data          0x000000008000f124        0x0 /tmp/ccNU1cjS.o
+ .data          0x000000008000f124        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .data          0x000000008000f124        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .data          0x000000008000f124        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+ *(.gnu.linkonce.d.*)
+                0x000000008000f124                . = ALIGN (0x4)
+
+.sdata          0x000000008000f124        0xc
+                0x000000008000f124                . = ALIGN (0x4)
+                0x000000008000f924                __global_pointer$ = (. + 0x800)
+ *(.sdata .sdata.*)
+ .sdata         0x000000008000f124        0xc /tmp/ccTaN8ZN.o
+                0x000000008000f124                default_num_contexts
+                0x000000008000f128                seed4_volatile
+                0x000000008000f12c                seed3_volatile
+ *(.gnu.linkonce.s.*)
+                0x000000008000f130                . = ALIGN (0x4)
+ *(.srodata .srodata.*)
+                0x000000008000f130                . = ALIGN (0x4)
+                0x000000008000f130                __bss_start = .
+
+.sbss           0x000000008000f130       0x4c
+ *(.sbss .sbss.* .gnu.linkonce.sb.*)
+ .sbss          0x000000008000f130       0x4c /tmp/ccTaN8ZN.o
+                0x000000008000f170                seed5_volatile
+                0x000000008000f174                seed2_volatile
+                0x000000008000f178                seed1_volatile
+ *(.scommon)
+                0x000000008000f17c                . = ALIGN (0x4)
+
+.bss            0x000000008000f17c      0x7d0
+ *(.bss)
+ .bss           0x000000008000f17c        0x0 /tmp/ccyPyTOO.o
+ .bss           0x000000008000f17c        0x0 /tmp/ccTaN8ZN.o
+ .bss           0x000000008000f17c        0x0 /tmp/ccNU1cjS.o
+ .bss           0x000000008000f17c        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .bss           0x000000008000f17c        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .bss           0x000000008000f17c        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+                0x000000008000f17c                . = ALIGN (0x4)
+ COMMON         0x000000008000f17c      0x7d0 /tmp/ccTaN8ZN.o
+                0x000000008000f17c                static_memblk
+                0x000000008000f94c                _end = .
+
+.stack          0x000000008000f94c     0x8000
+                0x000000008000f94c                _heap_end = .
+                0x000000008001794c                . = (. + __stack_size)
+ *fill*         0x000000008000f94c     0x8000 
+                0x000000008001794c                _sp = .
+                0x000000008001794c                __bss_end = .
+OUTPUT(build_12_2/coremark_10_12_2.elf elf32-littleriscv)
+
+.debug_line     0x0000000000000000     0xa4a9
+ .debug_line    0x0000000000000000      0x166 /tmp/ccyPyTOO.o
+ .debug_line    0x0000000000000166     0x7f9b /tmp/ccTaN8ZN.o
+ .debug_line    0x0000000000008101     0x176e /tmp/ccNU1cjS.o
+ .debug_line    0x000000000000986f      0x495 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_line    0x0000000000009d04      0x488 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .debug_line    0x000000000000a18c      0x31d /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+
+.debug_info     0x0000000000000000     0xa204
+ .debug_info    0x0000000000000000       0x26 /tmp/ccyPyTOO.o
+ .debug_info    0x0000000000000026     0x534b /tmp/ccTaN8ZN.o
+ .debug_info    0x0000000000005371     0x2145 /tmp/ccNU1cjS.o
+ .debug_info    0x00000000000074b6     0x112a /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_info    0x00000000000085e0     0x1187 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .debug_info    0x0000000000009767      0xa9d /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+
+.debug_abbrev   0x0000000000000000      0xf50
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccyPyTOO.o
+ .debug_abbrev  0x0000000000000014      0x4b7 /tmp/ccTaN8ZN.o
+ .debug_abbrev  0x00000000000004cb      0x389 /tmp/ccNU1cjS.o
+ .debug_abbrev  0x0000000000000854      0x292 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_abbrev  0x0000000000000ae6      0x2ac /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .debug_abbrev  0x0000000000000d92      0x1be /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+
+.debug_aranges  0x0000000000000000       0xc0
+ .debug_aranges
+                0x0000000000000000       0x20 /tmp/ccyPyTOO.o
+ .debug_aranges
+                0x0000000000000020       0x28 /tmp/ccTaN8ZN.o
+ .debug_aranges
+                0x0000000000000048       0x20 /tmp/ccNU1cjS.o
+ .debug_aranges
+                0x0000000000000068       0x20 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_aranges
+                0x0000000000000088       0x20 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .debug_aranges
+                0x00000000000000a8       0x18 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+
+.debug_str      0x0000000000000000     0x1285
+ .debug_str     0x0000000000000000       0x5f /tmp/ccyPyTOO.o
+ .debug_str     0x000000000000005f      0xc56 /tmp/ccTaN8ZN.o
+                                        0xd73 (size before relaxing)
+ .debug_str     0x0000000000000cb5      0x16b /tmp/ccNU1cjS.o
+                                        0x2e1 (size before relaxing)
+ .debug_str     0x0000000000000e20      0x3c9 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+                                        0x872 (size before relaxing)
+ .debug_str     0x00000000000011e9        0xa /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+                                        0x872 (size before relaxing)
+ .debug_str     0x00000000000011f3       0x92 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+                                        0x7b9 (size before relaxing)
+
+.debug_loc      0x0000000000000000    0x13eb9
+ .debug_loc     0x0000000000000000     0xf57a /tmp/ccTaN8ZN.o
+ .debug_loc     0x000000000000f57a     0x33a6 /tmp/ccNU1cjS.o
+ .debug_loc     0x0000000000012920      0xbf5 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_loc     0x0000000000013515      0x9a4 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+
+.debug_ranges   0x0000000000000000     0x1ec8
+ .debug_ranges  0x0000000000000000     0x15b0 /tmp/ccTaN8ZN.o
+ .debug_ranges  0x00000000000015b0      0x768 /tmp/ccNU1cjS.o
+ .debug_ranges  0x0000000000001d18       0xf0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_ranges  0x0000000000001e08       0xc0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+
+.comment        0x0000000000000000       0x11
+ .comment       0x0000000000000000       0x11 /tmp/ccTaN8ZN.o
+                                         0x12 (size before relaxing)
+ .comment       0x0000000000000011       0x12 /tmp/ccNU1cjS.o
+ .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+
+.debug_frame    0x0000000000000000      0x7d4
+ .debug_frame   0x0000000000000000      0x608 /tmp/ccTaN8ZN.o
+ .debug_frame   0x0000000000000608      0x1cc /tmp/ccNU1cjS.o
