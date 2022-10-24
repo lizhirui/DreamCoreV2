@@ -944,76 +944,85 @@ namespace isa_model
     
     void isa_model::execute_alu(decode_execute_pack_t &decode_execute_pack)
     {
-        if(decode_execute_pack.valid && !decode_execute_pack.has_exception)
+        if(!decode_execute_pack.has_exception)
         {
-            switch(decode_execute_pack.sub_op.alu_op)
+            if(decode_execute_pack.valid)
             {
-                case alu_op_t::add:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value + decode_execute_pack.src2_value;
-                    break;
-        
-                case alu_op_t::_and:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value & decode_execute_pack.src2_value;
-                    break;
-        
-                case alu_op_t::auipc:
-                    decode_execute_pack.rd_value = decode_execute_pack.imm + decode_execute_pack.pc;
-                    break;
-        
-                case alu_op_t::ebreak:
-                    decode_execute_pack.rd_value = 0;
-                    decode_execute_pack.has_exception = true;
-                    decode_execute_pack.exception_id = riscv_exception_t::breakpoint;
-                    decode_execute_pack.exception_value = 0;
-                    break;
-        
-                case alu_op_t::ecall:
-                    decode_execute_pack.rd_value = 0;
-                    decode_execute_pack.has_exception = true;
-                    decode_execute_pack.exception_id = riscv_exception_t::environment_call_from_m_mode;
-                    decode_execute_pack.exception_value = 0;
-                    break;
-        
-                case alu_op_t::fence:
-                case alu_op_t::fence_i:
-                    decode_execute_pack.rd_value = 0;
-                    break;
-        
-                case alu_op_t::lui:
-                    decode_execute_pack.rd_value = decode_execute_pack.imm;
-                    break;
-        
-                case alu_op_t::_or:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value | decode_execute_pack.src2_value;
-                    break;
-        
-                case alu_op_t::sll:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value << (decode_execute_pack.src2_value & 0x1f);
-                    break;
-        
-                case alu_op_t::slt:
-                    decode_execute_pack.rd_value = (((int32_t)decode_execute_pack.src1_value) < ((int32_t)decode_execute_pack.src2_value)) ? 1 : 0;
-                    break;
-        
-                case alu_op_t::sltu:
-                    decode_execute_pack.rd_value = (decode_execute_pack.src1_value < decode_execute_pack.src2_value) ? 1 : 0;
-                    break;
-        
-                case alu_op_t::sra:
-                    decode_execute_pack.rd_value = (uint32_t)(((int32_t)decode_execute_pack.src1_value) >> (decode_execute_pack.src2_value & 0x1f));
-                    break;
-        
-                case alu_op_t::srl:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value >> (decode_execute_pack.src2_value & 0x1f);
-                    break;
-        
-                case alu_op_t::sub:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value - decode_execute_pack.src2_value;
-                    break;
-        
-                case alu_op_t::_xor:
-                    decode_execute_pack.rd_value = decode_execute_pack.src1_value ^ decode_execute_pack.src2_value;
-                    break;
+                switch(decode_execute_pack.sub_op.alu_op)
+                {
+                    case alu_op_t::add:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value + decode_execute_pack.src2_value;
+                        break;
+            
+                    case alu_op_t::_and:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value & decode_execute_pack.src2_value;
+                        break;
+            
+                    case alu_op_t::auipc:
+                        decode_execute_pack.rd_value = decode_execute_pack.imm + decode_execute_pack.pc;
+                        break;
+            
+                    case alu_op_t::ebreak:
+                        decode_execute_pack.rd_value = 0;
+                        decode_execute_pack.has_exception = true;
+                        decode_execute_pack.exception_id = riscv_exception_t::breakpoint;
+                        decode_execute_pack.exception_value = 0;
+                        break;
+            
+                    case alu_op_t::ecall:
+                        decode_execute_pack.rd_value = 0;
+                        decode_execute_pack.has_exception = true;
+                        decode_execute_pack.exception_id = riscv_exception_t::environment_call_from_m_mode;
+                        decode_execute_pack.exception_value = 0;
+                        break;
+            
+                    case alu_op_t::fence:
+                    case alu_op_t::fence_i:
+                        decode_execute_pack.rd_value = 0;
+                        break;
+            
+                    case alu_op_t::lui:
+                        decode_execute_pack.rd_value = decode_execute_pack.imm;
+                        break;
+            
+                    case alu_op_t::_or:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value | decode_execute_pack.src2_value;
+                        break;
+            
+                    case alu_op_t::sll:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value << (decode_execute_pack.src2_value & 0x1f);
+                        break;
+            
+                    case alu_op_t::slt:
+                        decode_execute_pack.rd_value = (((int32_t)decode_execute_pack.src1_value) < ((int32_t)decode_execute_pack.src2_value)) ? 1 : 0;
+                        break;
+            
+                    case alu_op_t::sltu:
+                        decode_execute_pack.rd_value = (decode_execute_pack.src1_value < decode_execute_pack.src2_value) ? 1 : 0;
+                        break;
+            
+                    case alu_op_t::sra:
+                        decode_execute_pack.rd_value = (uint32_t)(((int32_t)decode_execute_pack.src1_value) >> (decode_execute_pack.src2_value & 0x1f));
+                        break;
+            
+                    case alu_op_t::srl:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value >> (decode_execute_pack.src2_value & 0x1f);
+                        break;
+            
+                    case alu_op_t::sub:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value - decode_execute_pack.src2_value;
+                        break;
+            
+                    case alu_op_t::_xor:
+                        decode_execute_pack.rd_value = decode_execute_pack.src1_value ^ decode_execute_pack.src2_value;
+                        break;
+                }
+            }
+            else
+            {
+                decode_execute_pack.has_exception = true;
+                decode_execute_pack.exception_id = riscv_exception_t::illegal_instruction;
+                decode_execute_pack.exception_value = 0;
             }
         }
     }

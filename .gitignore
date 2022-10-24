@@ -156,6 +156,7 @@ orleans.codegen.cs
 *.dump
 .idea
 cmake-build-*
+_gsdata_
 image/
 model/controller_bak
 model/model_bak
