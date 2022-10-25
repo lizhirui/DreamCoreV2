@@ -164,7 +164,7 @@ namespace cycle_model::pipeline
                     t["exception_id"] = outenum(exception_id);
                     t["exception_value"] = exception_value;
                     t["rs1"] = rs1;
-                    t["arg1_src"] = arg1_src;
+                    t["arg1_src"] = outenum(arg1_src);
                     t["rs1_need_map"] = rs1_need_map;
                     t["rs1_phy"] = rs1_phy;
                     t["rs2"] = rs2;

@@ -45,13 +45,13 @@ namespace isa_model::component
         
             void write(uint32_t addr, T value)
             {
-                verify(addr < size);
+                verify_only(addr < size);
                 reg_data[addr] = value;
             }
         
             T read(uint32_t addr)
             {
-                verify(addr < size);
+                verify_only(addr < size);
                 return reg_data[addr];
             }
     };

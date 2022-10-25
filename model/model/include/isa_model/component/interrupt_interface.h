@@ -95,7 +95,7 @@ namespace isa_model::component
                         break;
                         
                     default:
-                        verify(0);
+                        verify_only(0);
                         break;
                 }
             }

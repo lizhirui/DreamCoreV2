@@ -184,7 +184,7 @@ static void run(const command_line_arg_t &arg)
         }
 #endif
 #if NEED_CYCLE_MODEL
-        if(pause_state || (step_state && (!wait_commit || cycle_model_inst->rob.get_committed())))
+        if(pause_detected || (step_state && (!wait_commit || cycle_model_inst->rob.get_committed())))
 #else
         if(pause_detected || step_state)
 #endif
@@ -201,6 +201,9 @@ static void run(const command_line_arg_t &arg)
             while(pause_state)
             {
                 debug_event_handle();
+#if NEED_ISA_MODEL
+                clear_queue(isa_model_inst->bus.error_msg_queue);
+#endif
                 
                 if(get_program_stop())
                 {
@@ -222,7 +225,6 @@ static void run(const command_line_arg_t &arg)
 #else
         auto isa_model_cycle = isa_model_inst->cpu_clock_cycle;
         auto isa_model_pc = isa_model_inst->pc;
-        clear_queue(isa_model_inst->bus.error_msg_queue);
         isa_model_inst->run();
         
         if(!isa_model_inst->bus.error_msg_queue.empty())

@@ -73,7 +73,14 @@ namespace cycle_model::component
             
             virtual json get_json()
             {
-                return data.get().get_json();
+                if(is_empty())
+                {
+                    return T().get_json();
+                }
+                else
+                {
+                    return data.get().get_json();
+                }
             }
     };
 }

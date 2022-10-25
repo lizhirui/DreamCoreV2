@@ -229,7 +229,7 @@ namespace isa_model
             t["exception_id"] = outenum(exception_id);
             t["exception_value"] = exception_value;
             t["rs1"] = rs1;
-            t["arg1_src"] = arg1_src;
+            t["arg1_src"] = outenum(arg1_src);
             t["src1_value"] = src1_value;
             t["rs2"] = rs2;
             t["arg2_src"] = outenum(arg2_src);

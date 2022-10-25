@@ -46,11 +46,23 @@ namespace cycle_model::pipeline
         dispatch_issue_pack_t lsu_issue_pack;
     
         dispatch_feedback_pack_t feedback_pack;
-        feedback_pack.stall = this->integer_busy || this->lsu_busy || this->busy;
+    
+        auto inst_waiting_ok = false;
+        
+        for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
+        {
+            if(commit_feedback_pack.committed_rob_id_valid[i] && commit_feedback_pack.committed_rob_id[i] == this->inst_waiting_rob_id)
+            {
+                inst_waiting_ok = true;
+                break;
+            }
+        }
+        
+        feedback_pack.stall = this->integer_busy || this->lsu_busy || this->busy || (this->is_inst_waiting && !inst_waiting_ok) || (this->is_stbuf_empty_waiting && !store_buffer->customer_is_empty());
         
         if(!commit_feedback_pack.flush)
         {
-            if((!is_inst_waiting || (commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))) && (!is_stbuf_empty_waiting || store_buffer->customer_is_empty()))
+            if((!is_inst_waiting || inst_waiting_ok) && (!is_stbuf_empty_waiting || store_buffer->customer_is_empty()))
             {
                 if(!(this->integer_busy || this->lsu_busy))
                 {
@@ -152,6 +164,7 @@ namespace cycle_model::pipeline
                                 {
                                     found_inst_waiting = true;
                                     found_rob_id = this->rev_pack.op_info[i].rob_id;
+                                    verify_only(i == 0);
                                     break;
                                 }
                                 else if(rev_pack.op_info[i].op == op_t::fence)
@@ -177,7 +190,6 @@ namespace cycle_model::pipeline
                             dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = found_rob_id;
-                            verify(found_rob_id == 0);
                         }
                     }
                     else if(found_fence && (((integer_issue_id > 0) && integer_issue_feedback_pack.stall) || ((lsu_issue_id > 0) && lsu_issue_feedback_pack.stall)))
@@ -258,7 +270,7 @@ namespace cycle_model::pipeline
                 dispatch_integer_issue_port->set(dispatch_issue_pack_t());
                 dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                 
-                if(commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == inst_waiting_rob_id))
+                if(inst_waiting_ok)
                 {
                     this->is_inst_waiting = false;
                     this->inst_waiting_rob_id = 0;

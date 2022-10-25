@@ -153,7 +153,7 @@ namespace cycle_model::pipeline
             t["bru_jump"] = bru_jump;
             t["bru_next_pc"] = bru_next_pc;
             t["rs1"] = rs1;
-            t["arg1_src"] = arg1_src;
+            t["arg1_src"] = outenum(arg1_src);
             t["rs1_need_map"] = rs1_need_map;
             t["rs1_phy"] = rs1_phy;
             t["src1_value"] = src1_value;

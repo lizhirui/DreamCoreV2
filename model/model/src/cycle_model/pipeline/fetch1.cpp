@@ -46,7 +46,7 @@ namespace cycle_model::pipeline
                     
                     if(commit_feedback_pack.jump)
                     {
-                        this->pc = commit_feedback_pack.next_pc;
+                        this->pc = commit_feedback_pack.jump_next_pc;
                     }
                 }
             }
@@ -105,8 +105,8 @@ namespace cycle_model::pipeline
             }
             else if(commit_feedback_pack.jump_enable)
             {
-                verify(commit_feedback_pack.jump);
-                this->pc = commit_feedback_pack.next_pc;
+                verify_only(commit_feedback_pack.jump);
+                this->pc = commit_feedback_pack.jump_next_pc;
             }
         }
     

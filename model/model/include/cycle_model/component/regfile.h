@@ -68,20 +68,20 @@ namespace cycle_model::component
         
             void write(uint32_t addr, T value, bool valid)
             {
-                verify(addr < size);
+                verify_only(addr < size);
                 reg_data[addr].set(value);
-                reg_data_valid[addr].set(value);
+                reg_data_valid[addr].set(valid);
             }
         
             T read(uint32_t addr)
             {
-                verify(addr < size);
+                verify_only(addr < size);
                 return reg_data[addr];
             }
         
             bool read_data_valid(uint32_t addr)
             {
-                verify(addr < size);
+                verify_only(addr < size);
                 return reg_data_valid[addr];
             }
             

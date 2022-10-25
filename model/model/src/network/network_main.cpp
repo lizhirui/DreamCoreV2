@@ -333,9 +333,14 @@ static void tcp_server_recv_thread_entry(asio::ip::tcp::socket &soc)
                         cmd_arg_list.push_back(t);
                     }
                     
-                    if((cmd_arg_list.size() >= 2) && (cmd_arg_list[0] == std::string("protocol")) && (cmd_arg_list[1] == std::string("heart")))
+                    if(cmd_arg_list[0] == std::string("protocol"))
                     {
-                        send_cmd("protocol", "heart", "");
+                        if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("heart")))
+                        {
+                            send_cmd("protocol", "heart", "");
+                        }
+                        
+                        continue;
                     }
 
                     if((cmd_arg_list.size() >= 2) && (cmd_arg_list[1] == std::string("pause") || cmd_arg_list[1] == std::string("p")))
@@ -353,7 +358,7 @@ static void tcp_server_recv_thread_entry(asio::ip::tcp::socket &soc)
             break;
         }
     }
-
+    
     recv_thread_stopped = true;
     send_ioc.stop();
 }

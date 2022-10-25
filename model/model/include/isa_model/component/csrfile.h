@@ -104,7 +104,7 @@ namespace isa_model::component
 
 			void map(uint32_t addr, bool readonly, std::shared_ptr<csr_base> csr)
 			{
-				verify(csr_map_table.find(addr) == csr_map_table.end());
+				verify_only(csr_map_table.find(addr) == csr_map_table.end());
 				csr_item_t t_item;
 				t_item.readonly = readonly;
 				t_item.csr = csr;
@@ -113,13 +113,13 @@ namespace isa_model::component
 
 			void write_sys(uint32_t addr, uint32_t value)
 			{
-				verify(!(csr_map_table.find(addr) == csr_map_table.end()));
+				verify_only(!(csr_map_table.find(addr) == csr_map_table.end()));
 				csr_map_table[addr].csr->write(value);
 			}
 
 			uint32_t read_sys(uint32_t addr)
 			{
-				verify(!(csr_map_table.find(addr) == csr_map_table.end()));
+				verify_only(!(csr_map_table.find(addr) == csr_map_table.end()));
 				return csr_map_table[addr].csr->read();
 			}
 

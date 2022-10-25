@@ -103,8 +103,8 @@
 在指令等待状态下（无来自commit流水级的flush信号，可能同时处于Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
 * 将空包送入dispatch_integer_issue_port与dispatch_lsu_issue_port
-* 若等待的指令已经成为commit流水级的下一个待处理项，则解除指令等待状态，同时若处于Store Buffer空等待状态且Store Buffer为空，则解除Store Buffer空等待状态
-* 若等待的指令仍没有成为commit流水级的下一个待处理项，则什么都不做
+* 若等待的指令已退休，则解除指令等待状态，同时若处于Store Buffer空等待状态且Store Buffer为空，则解除Store Buffer空等待状态
+* 若等待的指令仍未退休，则什么都不做
 
 在Store Buffer空等待状态下（无来自commit流水级的flush信号，不处于指令等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
@@ -134,7 +134,7 @@
 * 解除指令等待状态
 * 解除Store Buffer空等待状态
 
-反馈信号产生：若当前状态为整数队列繁忙等待状态或LSU队列繁忙等待状态或流水级繁忙状态，则产生stall信号
+反馈信号产生：若当前状态为整数队列繁忙等待状态、LSU队列繁忙等待状态、流水级繁忙状态、（指令等待状态且没有收到等待指令的退休信号）或（Store Buffer空等待状态且当前Store Buffer不为空），则产生stall信号
 
 ## Issue级
 

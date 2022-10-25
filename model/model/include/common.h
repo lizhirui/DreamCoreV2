@@ -34,15 +34,25 @@
 using json = nlohmann::json;
 
 #undef assert
-#define verify(cond) \
-    do \
-    { \
-        if(!(cond)) \
+
+#define DEBUG
+
+#ifdef DEBUG
+    #define verify(cond) \
+        do \
         { \
-            printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
-            abort();\
-        } \
-    }while(0) \
+            if(!(cond)) \
+            { \
+                printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+                abort();\
+            } \
+        }while(0)
+        
+    #define verify_only(cond) verify(cond)
+#else
+    #define verify(cond) cond
+    #define verify_only(cond)
+#endif
 
 //machine types
 using size_t = std::size_t;
@@ -110,7 +120,7 @@ inline bool is_align(uint32_t x, uint32_t access_size)
 
 inline uint32_t sign_extend(uint32_t imm, uint32_t imm_length)
 {
-    verify((imm_length > 0) && (imm_length < 32));
+    verify_only((imm_length > 0) && (imm_length < 32));
     auto sign_bit = (imm >> (imm_length - 1));
     auto extended_imm = ((sign_bit == 0) ? 0 : (((sign_bit << (32 - imm_length)) - 1) << imm_length)) | imm;
     return extended_imm;
@@ -168,6 +178,38 @@ template<typename T> class if_print_fake : public if_print_t
         T get()
         {
             return this->value;
+        }
+};
+
+template<typename T> class if_print_direct : public if_print_t
+{
+    private:
+        T value;
+    
+    public:
+        if_print_direct()
+        {
+        }
+        
+        if_print_direct(const T& value) : value(value)
+        {
+        }
+        
+        bool operator==(const T& x)
+        {
+            return this->value == x;
+        }
+        
+        T get()
+        {
+            return this->value;
+        }
+        
+        virtual json get_json()
+        {
+            json r;
+            r = this->value;
+            return r;
         }
 };
 

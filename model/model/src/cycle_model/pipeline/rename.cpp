@@ -29,7 +29,7 @@ namespace cycle_model::pipeline
     
     void rename::reset()
     {
-        phy_id_free_list->reset();
+    
     }
     
     rename_feedback_pack_t rename::run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
@@ -202,7 +202,7 @@ namespace cycle_model::pipeline
         {
             for(uint32_t i = 1;i < RENAME_WIDTH;i++)
             {
-                verify(!send_pack.op_info[i].enable);
+                verify_only(!send_pack.op_info[i].enable);
             }
         }
         
@@ -212,8 +212,8 @@ namespace cycle_model::pipeline
         {
             if(send_pack.op_info[i].enable && send_pack.op_info[i].valid && !send_pack.op_info[i].has_exception)
             {
-                verify((i == 0) || (send_pack.op_info[i].op_unit != op_unit_t::csr));
-                verify(!assertion_found_fence || (send_pack.op_info[i].op_unit != op_unit_t::lsu));
+                verify_only((i == 0) || (send_pack.op_info[i].op_unit != op_unit_t::csr));
+                verify_only(!assertion_found_fence || (send_pack.op_info[i].op_unit != op_unit_t::lsu));
                 
                 if(send_pack.op_info[i].op == op_t::fence)
                 {

@@ -142,7 +142,7 @@ namespace cycle_model::pipeline
                                     
                                     feedback_pack.jump_enable = true;
                                     feedback_pack.jump = rob_item.bru_jump;
-                                    feedback_pack.next_pc = rob_item.bru_jump ? rob_item.bru_next_pc : (rob_item.pc + 4);
+                                    feedback_pack.jump_next_pc = rob_item.bru_jump ? rob_item.bru_next_pc : (rob_item.pc + 4);
                                     break;
                                 }
                             }

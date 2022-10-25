@@ -30,7 +30,7 @@ namespace DreamCoreV2_model_controller
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Global.CommandReceivedEvent += Global_CommandReceivedEvent;
             Global.connected.PropertyChanged += Connected_PropertyChanged;
-            //PipelineStatusWindow.CreateInstance(this);
+            PipelineStatusWindow.CreateInstance(this);
 
             if(int.TryParse(Config.Get("MainWindow_Left", ""), out var left) && int.TryParse(Config.Get("MainWindow_Top", ""), out var top))
             {
@@ -41,9 +41,16 @@ namespace DreamCoreV2_model_controller
 
         private void ConnectedEvent()
         {
-            Global.SendCommand("main", "pause", true);
-            Global.SendCommand("main", "get_mode", true);
-            Global.running.Value = true;
+            try
+            {
+                Global.SendCommand("main", "pause", true);
+                Global.SendCommand("main", "get_mode", true);
+                Global.running.Value = true;
+            }
+            catch
+            {
+                Global.connected = false;
+            }
         }
 
         private void Connected_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -122,11 +129,31 @@ namespace DreamCoreV2_model_controller
                     break;
 
                 case "pause":
+                case "p":
                     Global.running.Value = false;
+                    
+                    if(prefix == "log")
+                    {
+                        refreshGlobalStatus();
+                    }
+                    
                     break;
 
                 case "continue":
+                case "c":
                     Global.running.Value = true;
+                    break;
+
+                case "s":
+                case "sc":
+                case "step":
+                case "stepcommit":
+                case "reset":
+                    if(prefix == "log")
+                    {
+                        refreshGlobalStatus();
+                    }
+
                     break;
 
                 case "get_pipeline_status":
@@ -143,6 +170,7 @@ namespace DreamCoreV2_model_controller
                     switch(result)
                     {
                         case "isa_model_only":
+                        case "cycle_model_only":
                             Global.model_mode.Value = result;
                             refreshGlobalStatus(true);
                             break;

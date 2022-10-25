@@ -106,8 +106,8 @@ namespace cycle_model
     wb_commit_port(pipeline::wb_commit_pack_t()),
     phy_id_free_list(PHY_REG_NUM),
     interrupt_interface(&csr_file),
-    speculative_rat(PHY_REG_NUM, ARCH_REG_NUM),
-    retire_rat(PHY_REG_NUM, ARCH_REG_NUM),
+    speculative_rat(PHY_REG_NUM, ARCH_REG_NUM, false),
+    retire_rat(PHY_REG_NUM, ARCH_REG_NUM, true),
     phy_regfile(PHY_REG_NUM),
     rob(ROB_SIZE),
     store_buffer(STORE_BUFFER_SIZE, &bus),
@@ -136,43 +136,43 @@ namespace cycle_model
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
             readreg_alu_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
-            execute_alu_stage[i] = new pipeline::execute::alu(i, readreg_alu_hdff[i], alu_wb_port[i]);
             alu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_alu_stage[i] = new pipeline::execute::alu(i, readreg_alu_hdff[i], alu_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
-            execute_bru_stage[i] = new pipeline::execute::bru(i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_bru_stage[i] = new pipeline::execute::bru(i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             readreg_csr_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
-            execute_csr_stage[i] = new pipeline::execute::csr(i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
             csr_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_csr_stage[i] = new pipeline::execute::csr(i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
         }
         
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             readreg_div_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
-            execute_div_stage[i] = new pipeline::execute::div(i, readreg_div_hdff[i], div_wb_port[i]);
             div_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_div_stage[i] = new pipeline::execute::div(i, readreg_div_hdff[i], div_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             readreg_mul_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
-            execute_mul_stage[i] = new pipeline::execute::mul(i, readreg_mul_hdff[i], mul_wb_port[i]);
             mul_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_mul_stage[i] = new pipeline::execute::mul(i, readreg_mul_hdff[i], mul_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             readreg_lsu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
-            execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer);
             lsu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer);
         }
     
         csr_file.map(CSR_MVENDORID, true, std::make_shared<component::csr::mvendorid>());
@@ -268,7 +268,7 @@ namespace cycle_model
     void cycle_model::load(void *mem, size_t size)
     {
         auto buf = (uint8_t *)mem;
-        verify(size < MEMORY_SIZE);
+        verify_only(size < MEMORY_SIZE);
         
         for(size_t i = 0;i < size;i++)
         {
@@ -278,17 +278,23 @@ namespace cycle_model
     
     void cycle_model::reset()
     {
+        component::dff_base::reset_all();
+        phy_id_free_list.reset();
         speculative_rat.reset();
         retire_rat.reset();
         speculative_rat.init_start();
         retire_rat.init_start();
         phy_regfile.reset();
+        component::dff_base::sync_all();
         
         for(uint32_t i = 1;i < ARCH_REG_NUM;i++)
         {
-            speculative_rat.set_map(i, i);
-            retire_rat.set_map(i, i);
-            phy_regfile.write(i, i, true);
+            uint32_t phy_id = 0;
+            verify(phy_id_free_list.pop(&phy_id));
+            speculative_rat.set_map(i, phy_id);
+            retire_rat.set_map(i, phy_id);
+            phy_regfile.write(phy_id, 0, true);
+            component::dff_base::sync_all();
         }
         
         speculative_rat.init_finish();
@@ -372,8 +378,8 @@ namespace cycle_model
         branch_predicted = 0;
         branch_hit = 0;
         branch_miss = 0;
-        
-        component::dff_base::reset_all();
+    
+        component::dff_base::sync_all();
     }
     
     void cycle_model::run()

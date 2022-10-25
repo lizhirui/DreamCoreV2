@@ -267,7 +267,7 @@ namespace cycle_model::component
             {
                 if(auto slave_index = find_slave_info(addr, true);slave_index >= 0)
                 {
-                    slave_info_list[slave_index].slave->read32(addr - slave_info_list[slave_index].base);
+                    slave_info_list[slave_index].slave->read_instruction(addr - slave_info_list[slave_index].base);
                 }
             }
             
@@ -315,8 +315,15 @@ namespace cycle_model::component
             
             void run()
             {
-                instruction_value_valid.set(false);
-                data_value_valid.set(false);
+                if(!instruction_value_valid.is_changed())
+                {
+                    instruction_value_valid.set(false);
+                }
+                
+                if(!data_value_valid.is_changed())
+                {
+                    data_value_valid.set(false);
+                }
             }
             
             void sync()

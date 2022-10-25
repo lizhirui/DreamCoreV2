@@ -113,7 +113,7 @@ namespace cycle_model::pipeline
             {
                 for(uint32_t j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
                 {
-                    if(issue_q.is_valid(i) && (op_unit_seq[j] & op_unit_seq_mask[i]) && src1_ready[i] && src2_ready[i] && (!selected_valid[i] ||
+                    if(issue_q.is_valid(j) && (op_unit_seq[j] & op_unit_seq_mask[i]) && port_index[j] == i && src1_ready[j] && src2_ready[j] && (!selected_valid[i] ||
                       ((rob_id_stage[j] == selected_rob_id_stage[i]) && (rob_id[j] < selected_rob_id[i])) || ((rob_id_stage[j] != selected_rob_id_stage[i]) && (rob_id[j] > selected_rob_id[i]))))
                     {
                         selected_issue_id[i] = j;
@@ -345,7 +345,7 @@ namespace cycle_model::pipeline
                         break;
                         
                     default:
-                        verify(0);
+                        verify_only(0);
                         break;
                 }
             }
@@ -370,7 +370,7 @@ namespace cycle_model::pipeline
                         break;
             
                     default:
-                        verify(0);
+                        verify_only(0);
                         break;
                 }
             }
@@ -402,7 +402,7 @@ namespace cycle_model::pipeline
                         {
                             if(!this->src1_ready[i])
                             {
-                                verify(item.arg1_src == arg_src_t::reg);
+                                verify_only(item.arg1_src == arg_src_t::reg);
                                 
                                 if(item.rs1 == integer_issue_output_feedback_pack.wakeup_rd[j])
                                 {
@@ -419,7 +419,7 @@ namespace cycle_model::pipeline
         
                             if(!this->src2_ready[i])
                             {
-                                verify(item.arg2_src == arg_src_t::reg);
+                                verify_only(item.arg2_src == arg_src_t::reg);
                                 
                                 if(item.rs2 == integer_issue_output_feedback_pack.wakeup_rd[j])
                                 {
@@ -443,8 +443,8 @@ namespace cycle_model::pipeline
                         {
                             if(!this->src1_ready[i])
                             {
-                                verify(item.arg1_src == arg_src_t::reg);
-                                verify(item.rs1_need_map);
+                                verify_only(item.arg1_src == arg_src_t::reg);
+                                verify_only(item.rs1_need_map);
                                 
                                 if(item.rs1 == execute_feedback_pack.channel[j].phy_id)
                                 {
@@ -454,8 +454,8 @@ namespace cycle_model::pipeline
         
                             if(!this->src2_ready[i])
                             {
-                                verify(item.arg2_src == arg_src_t::reg);
-                                verify(item.rs2_need_map);
+                                verify_only(item.arg2_src == arg_src_t::reg);
+                                verify_only(item.rs2_need_map);
                                 
                                 if(item.rs2 == execute_feedback_pack.channel[j].phy_id)
                                 {
@@ -651,7 +651,7 @@ namespace cycle_model::pipeline
                                 break;
                                 
                             default:
-                                verify(0);
+                                verify_only(0);
                                 break;
                         }
                         
@@ -686,7 +686,7 @@ namespace cycle_model::pipeline
                                 break;
         
                             default:
-                                verify(0);
+                                verify_only(0);
                                 break;
                         }
                         
@@ -714,7 +714,7 @@ namespace cycle_model::pipeline
                                 break;
         
                             default:
-                                verify(0);
+                                verify_only(0);
                                 break;
                         }
                     }

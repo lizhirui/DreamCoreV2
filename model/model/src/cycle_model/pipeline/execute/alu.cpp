@@ -74,7 +74,7 @@ namespace cycle_model::pipeline::execute
             
             if(rev_pack.enable)
             {
-                verify(rev_pack.op_unit == op_unit_t::alu);
+                verify_only(rev_pack.op_unit == op_unit_t::alu);
             }
             
             if(rev_pack.enable && (!rev_pack.has_exception))

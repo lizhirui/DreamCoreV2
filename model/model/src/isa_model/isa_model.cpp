@@ -108,7 +108,7 @@ namespace isa_model
     void isa_model::load(void *mem, size_t size)
     {
         auto buf = (uint8_t *)mem;
-        verify(size < MEMORY_SIZE);
+        verify_only(size < MEMORY_SIZE);
     
         for(size_t i = 0;i < size;i++)
         {
@@ -145,7 +145,6 @@ namespace isa_model
     void isa_model::run()
     {
         riscv_interrupt_t interrupt_id;
-        
         auto fetch_decode_pack = fetch();
         
 #ifdef BRANCH_DUMP
@@ -925,7 +924,7 @@ namespace isa_model
                 break;
                 
             default:
-                verify(0);
+                verify_only(0);
                 break;
         }
         
@@ -1029,7 +1028,7 @@ namespace isa_model
     
     void isa_model::execute_bru(decode_execute_pack_t &decode_execute_pack)
     {
-        verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
+        verify_only(decode_execute_pack.valid && !decode_execute_pack.has_exception);
         bool bru_jump = false;
         uint32_t bru_next_pc = decode_execute_pack.pc + decode_execute_pack.imm;
     
@@ -1088,7 +1087,7 @@ namespace isa_model
     
     void isa_model::execute_csr(decode_execute_pack_t &decode_execute_pack)
     {
-        verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
+        verify_only(decode_execute_pack.valid && !decode_execute_pack.has_exception);
         uint32_t csr_value = 0;
         
         if(!csr_file.read(decode_execute_pack.csr, &csr_value))
@@ -1139,7 +1138,7 @@ namespace isa_model
     
     void isa_model::execute_div(decode_execute_pack_t &decode_execute_pack)
     {
-        verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
+        verify_only(decode_execute_pack.valid && !decode_execute_pack.has_exception);
         auto overflow = (decode_execute_pack.src1_value == 0x80000000) && (decode_execute_pack.src2_value == 0xFFFFFFFF);
     
         switch(decode_execute_pack.sub_op.div_op)
@@ -1164,7 +1163,7 @@ namespace isa_model
     
     void isa_model::execute_mul(decode_execute_pack_t &decode_execute_pack)
     {
-        verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
+        verify_only(decode_execute_pack.valid && !decode_execute_pack.has_exception);
     
         switch(decode_execute_pack.sub_op.mul_op)
         {
@@ -1188,7 +1187,7 @@ namespace isa_model
     
     void isa_model::execute_lsu(decode_execute_pack_t &decode_execute_pack)
     {
-        verify(decode_execute_pack.valid && !decode_execute_pack.has_exception);
+        verify_only(decode_execute_pack.valid && !decode_execute_pack.has_exception);
         auto addr = decode_execute_pack.src1_value + decode_execute_pack.imm;
     
         switch(decode_execute_pack.sub_op.lsu_op)

@@ -76,8 +76,8 @@ namespace cycle_model::pipeline::execute
             
             if(rev_pack.enable)
             {
-                verify(rev_pack.valid);
-                verify(rev_pack.op_unit == op_unit_t::bru);
+                verify_only(rev_pack.valid);
+                verify_only(rev_pack.op_unit == op_unit_t::bru);
                 
                 switch(rev_pack.sub_op.bru_op)
                 {

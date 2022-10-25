@@ -14,6 +14,8 @@ namespace DreamCoreV2_model_controller.Model
         public bool idle { get; set; }
         [JsonProperty("next_handle_rob_id_valid")]
         public bool  next_handle_rob_id_valid { get; set; }
+        [JsonProperty("next_handle_rob_id")]
+        public uint  next_handle_rob_id { get; set; }
         [JsonProperty("has_exception")]
         public bool has_exception { get; set; }
         [JsonProperty("exception_pc")]
@@ -28,7 +30,7 @@ namespace DreamCoreV2_model_controller.Model
         public bool jump_enable { get; set; }
         [JsonProperty("jump")]
         public bool jump { get; set; }
-        [JsonProperty("next_pc")]
-        public uint next_pc { get; set; }
+        [JsonProperty("jump_next_pc")]
+        public uint jump_next_pc { get; set; }
     }
 }

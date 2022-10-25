@@ -66,7 +66,7 @@ namespace cycle_model::pipeline
                         //build send_pack
                         issue_queue_item_t rev_pack;
                         verify(issue_q.pop(&rev_pack));
-                        verify(rev_pack.op_unit == op_unit_t::lsu);
+                        verify_only(rev_pack.op_unit == op_unit_t::lsu);
                         
                         send_pack.op_info[0].enable = rev_pack.enable;
                         send_pack.op_info[0].value = rev_pack.value;
@@ -135,7 +135,7 @@ namespace cycle_model::pipeline
                         {
                             if(!this->src1_ready[i])
                             {
-                                verify(item.arg1_src == arg_src_t::reg);
+                                verify_only(item.arg1_src == arg_src_t::reg);
                             
                                 if(item.rs1 == integer_issue_output_feedback_pack.wakeup_rd[j])
                                 {
@@ -152,7 +152,7 @@ namespace cycle_model::pipeline
                         
                             if(!this->src2_ready[i])
                             {
-                                verify(item.arg2_src == arg_src_t::reg);
+                                verify_only(item.arg2_src == arg_src_t::reg);
                             
                                 if(item.rs2 == integer_issue_output_feedback_pack.wakeup_rd[j])
                                 {
@@ -176,8 +176,8 @@ namespace cycle_model::pipeline
                         {
                             if(!this->src1_ready[i])
                             {
-                                verify(item.arg1_src == arg_src_t::reg);
-                                verify(item.rs1_need_map);
+                                verify_only(item.arg1_src == arg_src_t::reg);
+                                verify_only(item.rs1_need_map);
                             
                                 if(item.rs1 == execute_feedback_pack.channel[j].phy_id)
                                 {
@@ -187,8 +187,8 @@ namespace cycle_model::pipeline
                         
                             if(!this->src2_ready[i])
                             {
-                                verify(item.arg2_src == arg_src_t::reg);
-                                verify(item.rs2_need_map);
+                                verify_only(item.arg2_src == arg_src_t::reg);
+                                verify_only(item.rs2_need_map);
                             
                                 if(item.rs2 == execute_feedback_pack.channel[j].phy_id)
                                 {
@@ -399,14 +399,15 @@ namespace cycle_model::pipeline
         auto src1_ready = json::array();
         auto wakeup_shift_src2 = json::array();
         auto src2_ready = json::array();
-        
-        for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
+    
+        issue_q.customer_foreach([&](uint32_t id, const issue_queue_item_t &item) -> bool
         {
-            wakeup_shift_src1.push_back(this->wakeup_shift_src1[i]);
-            src1_ready.push_back(this->src1_ready[i]);
-            wakeup_shift_src2.push_back(this->wakeup_shift_src2[i]);
-            src2_ready.push_back(this->src2_ready[i]);
-        }
+            wakeup_shift_src1.push_back(wakeup_shift_src1[id]);
+            src1_ready.push_back(src1_ready[id]);
+            wakeup_shift_src2.push_back(wakeup_shift_src2[id]);
+            src2_ready.push_back(src2_ready[id]);
+            return true;
+        });
         
         t["wakeup_shift_src1"] = wakeup_shift_src1;
         t["src1_ready"] = src1_ready;

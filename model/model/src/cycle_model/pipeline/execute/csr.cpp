@@ -78,8 +78,8 @@ namespace cycle_model::pipeline::execute
                 
                 if(rev_pack.enable)
                 {
-                    verify(rev_pack.valid);
-                    verify(rev_pack.op_unit == op_unit_t::csr);
+                    verify_only(rev_pack.valid);
+                    verify_only(rev_pack.op_unit == op_unit_t::csr);
                     
                     if(rev_pack.need_rename && !csr_file->read(rev_pack.csr, &csr_value))
                     {

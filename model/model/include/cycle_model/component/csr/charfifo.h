@@ -32,7 +32,10 @@ namespace cycle_model::component::csr
             {
                 if(value & 0x80000000)
                 {
-                    while(!rev_fifo->pop());
+                    if(!rev_fifo->empty())
+                    {
+                        while(!rev_fifo->pop());
+                    }
                 }
                 else
                 {

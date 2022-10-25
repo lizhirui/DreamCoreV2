@@ -11,8 +11,8 @@ namespace DreamCoreV2_model_controller.Model
     public class execute
     {
         [JsonProperty("div")]
-        public div? div { get; set; }
+        public div[]? div { get; set; }
         [JsonProperty("lsu")]
-        public lsu? lsu { get; set; }
+        public lsu[]? lsu { get; set; }
     }
 }

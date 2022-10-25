@@ -118,7 +118,7 @@ namespace cycle_model::component
                         break;
                         
                     default:
-                        verify(0);
+                        verify_only(0);
                         break;
                 }
             }
@@ -140,7 +140,7 @@ namespace cycle_model::component
                         break;
                         
                     default:
-                        verify(false);
+                        verify_only(false);
                         break;
                 }
             }

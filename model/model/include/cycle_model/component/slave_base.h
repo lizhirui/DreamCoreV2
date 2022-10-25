@@ -22,9 +22,9 @@ namespace cycle_model::component
             {
                 if(!test_mode)
                 {
-                    verify(!(addr & (access_size - 1)));//align check
-                    verify(addr < size);//boundary check
-                    verify((size - addr) >= access_size);//boundary check
+                    verify_only(!(addr & (access_size - 1)));//align check
+                    verify_only(addr < size);//boundary check
+                    verify_only((size - addr) >= access_size);//boundary check
                 }
                 else
                 {

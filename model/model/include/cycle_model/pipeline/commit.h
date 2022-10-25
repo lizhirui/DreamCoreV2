@@ -35,7 +35,7 @@ namespace cycle_model::pipeline
         
         bool jump_enable = false;
         bool jump = false;
-        uint32_t next_pc = 0;
+        uint32_t jump_next_pc = 0;
         
         virtual json get_json()
         {
@@ -61,7 +61,7 @@ namespace cycle_model::pipeline
             
             t["jump_enable"] = jump_enable;
             t["jump"] = jump;
-            t["next_pc"] = next_pc;
+            t["jump_next_pc"] = jump_next_pc;
             return t;
         }
     }commit_feedback_pack_t;

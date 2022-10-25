@@ -173,7 +173,7 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
         else
         {
 #if NEED_CYCLE_MODEL
-            uint32_t phy_id;
+            uint32_t phy_id = 0;
             cycle_model_inst->retire_rat.customer_get_phy_id(i, &phy_id);
             auto v = cycle_model_inst->phy_regfile.read(phy_id);
             verify(cycle_model_inst->phy_regfile.read_data_valid(phy_id));
@@ -365,7 +365,7 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tew["lsu"] = tew_lsu;
     ret["execute_wb"] = tew;
     ret["wb_commit"] = cycle_model_inst->wb_commit_port.get_json();
-    ret["fetch2_feedbackpack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
+    ret["fetch2_feedback_pack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
     ret["decode_feedback_pack"] = cycle_model_inst->decode_feedback_pack.get_json();
     ret["rename_feedback_pack"] = cycle_model_inst->rename_feedback_pack.get_json();
     ret["dispatch_feedback_pack"] = cycle_model_inst->dispatch_feedback_pack.get_json();

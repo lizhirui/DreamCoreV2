@@ -238,7 +238,7 @@ namespace cycle_model::component
                         {
                             store_buffer_item_t t_item;
                             pop(&t_item);
-                            verify((item.size == 1) || (item.size == 2) || (item.size == 4));
+                            verify_only((item.size == 1) || (item.size == 2) || (item.size == 4));
                             
                             switch(item.size)
                             {

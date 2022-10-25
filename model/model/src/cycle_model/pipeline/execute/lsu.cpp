@@ -44,7 +44,7 @@ namespace cycle_model::pipeline::execute
         
         if(l2_rev_pack.enable && !commit_feedback_pack.flush)
         {
-            verify(l2_rev_pack.valid);
+            verify_only(l2_rev_pack.valid);
             send_pack.enable = l2_rev_pack.enable;
             send_pack.value = l2_rev_pack.value;
             send_pack.valid = l2_rev_pack.valid;
@@ -232,8 +232,8 @@ namespace cycle_model::pipeline::execute
                     
                     if(rev_pack.enable)
                     {
-                        verify(rev_pack.valid);
-                        verify(rev_pack.op_unit == op_unit_t::lsu);
+                        verify_only(rev_pack.valid);
+                        verify_only(rev_pack.op_unit == op_unit_t::lsu);
                         
                         if(!rev_pack.has_exception)
                         {
@@ -275,7 +275,7 @@ namespace cycle_model::pipeline::execute
                                     break;
                                     
                                 default:
-                                    verify(0);
+                                    verify_only(0);
                                     break;
                             }
                         }

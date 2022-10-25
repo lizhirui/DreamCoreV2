@@ -259,6 +259,38 @@ namespace cycle_model::component
                 *next_stage = ((id + 1) >= this->size) != stage;
                 return customer_check_id_valid(*next_id);
             }
+            
+            virtual void customer_foreach(std::function<bool(uint32_t, const T&)> func)
+            {
+                if(!customer_is_empty())
+                {
+                    auto cur = rptr.get();
+                    auto cur_stage = rstage.get();
+    
+                    while(true)
+                    {
+                        auto item = buffer[cur].get();
+                        
+                        if(!func(cur, item))
+                        {
+                            break;
+                        }
+        
+                        cur++;
+        
+                        if(cur >= size)
+                        {
+                            cur = 0;
+                            cur_stage = !cur_stage;
+                        }
+        
+                        if((cur == wptr.get()) && (cur_stage == wstage.get()))
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
 
             uint32_t get_size()
             {
@@ -340,7 +372,7 @@ namespace cycle_model::component
                 json ret = json::array();
                 if_print_t *if_print;
 
-                if(!producer_is_empty())
+                if(!customer_is_empty())
                 {
                     auto cur = rptr.get();
                     auto cur_stage = rstage.get();
@@ -359,7 +391,7 @@ namespace cycle_model::component
                             cur_stage = !cur_stage;
                         }
 
-                        if((cur == wptr) && (cur_stage == wstage))
+                        if((cur == wptr.get()) && (cur_stage == wstage.get()))
                         {
                             break;
                         }

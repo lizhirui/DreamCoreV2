@@ -40,6 +40,21 @@ namespace DreamCoreV2_model_controller
             MessageBox.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
+        public static uint Onehot2Binary(uint onehot)
+        {
+            for(var i = 0;i < 32;i++)
+            {
+                if((onehot & (1 << i)) != 0)
+                {
+                    return (uint)(i + 1);
+                }
+            }
+            
+            return 0U;
+        }
+
+        private static object conn_stream_lock = new object();
+
         public static bool SendCommand(string prefix, string cmd, bool ignoreRunning = false)
         {
             if(!connected)
@@ -60,9 +75,14 @@ namespace DreamCoreV2_model_controller
             var str = prefix + " " + cmd;
             var bytes = Encoding.UTF8.GetBytes(str);
             var send_bytes = Encoding.Convert(Encoding.UTF8, Encoding.GetEncoding("GB2312"), bytes);
-            var stream = conn.GetStream();
-            stream.Write(BitConverter.GetBytes((uint)send_bytes.Length), 0, 4);
-            stream.Write(send_bytes, 0, send_bytes.Length);
+            
+            lock(conn_stream_lock)
+            {
+                var stream = conn.GetStream();
+                stream.Write(BitConverter.GetBytes((uint)send_bytes.Length), 0, 4);
+                stream.Write(send_bytes, 0, send_bytes.Length);
+            }
+            
             return true;
         }
 
@@ -227,10 +247,10 @@ namespace DreamCoreV2_model_controller
                     {
                         SendCommand("protocol", "heart", true);
                         
-                        if(Environment.TickCount64 - heartLastRecvTime > 2000)
+                        /*if(Environment.TickCount64 - heartLastRecvTime > 2000)
                         {
                             connected.Value = false;
-                        }
+                        }*/
                     }
 
                     Thread.Sleep(1000);

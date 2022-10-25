@@ -64,5 +64,6 @@ namespace DreamCoreV2_model_controller.Model
         public string? op_unit { get; set; }
         [JsonProperty("sub_op")]
         public string? sub_op { get; set; }
+        public string Instruction = "";
     }
 }

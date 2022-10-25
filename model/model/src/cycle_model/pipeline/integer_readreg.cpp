@@ -95,17 +95,17 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
-                                    if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs1_phy)
+                                    if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
-                                        send_pack.src1_value = execute_feedback_pack.channel[i].value;
+                                        send_pack.src1_value = execute_feedback_pack.channel[j].value;
                                         break;
                                     }
                                     
-                                    if(wb_feedback_pack.channel[i].enable && wb_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs1_phy)
+                                    if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
-                                        send_pack.src1_value = wb_feedback_pack.channel[i].value;
+                                        send_pack.src1_value = wb_feedback_pack.channel[j].value;
                                         break;
                                     }
                                 }
@@ -120,17 +120,17 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;i++)
                                 {
-                                    if(execute_feedback_pack.channel[i].enable && execute_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs2_phy)
+                                    if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
-                                        send_pack.src2_value = execute_feedback_pack.channel[i].value;
+                                        send_pack.src2_value = execute_feedback_pack.channel[j].value;
                                         break;
                                     }
                                     
-                                    if(wb_feedback_pack.channel[i].enable && wb_feedback_pack.channel[i].phy_id == rev_pack.op_info[i].rs2_phy)
+                                    if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
-                                        send_pack.src2_value = wb_feedback_pack.channel[i].value;
+                                        send_pack.src2_value = wb_feedback_pack.channel[j].value;
                                         break;
                                     }
                                 }
@@ -160,7 +160,7 @@ namespace cycle_model::pipeline
                                 break;
                                 
                             default:
-                                verify(0);
+                                verify_only(0);
                                 break;
                         }
                     }
@@ -181,7 +181,7 @@ namespace cycle_model::pipeline
                                 break;
                                 
                             default:
-                                verify(0);
+                                verify_only(0);
                                 break;
                         }
                     }

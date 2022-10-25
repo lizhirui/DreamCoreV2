@@ -58,17 +58,20 @@ namespace cycle_model::component
             T init_value;
             T cur_value;
             T new_value;
+            bool changed = false;
 
         protected:
             virtual void sync()
             {
                 this->cur_value = this->new_value;
+                this->changed = false;
             }
         
             virtual void reset()
             {
                 this->cur_value = this->init_value;
                 this->new_value = this->init_value;
+                this->changed = false;
             }
 
         public:
@@ -95,6 +98,7 @@ namespace cycle_model::component
             void set(T new_value)
             {
                 this->new_value = new_value;
+                this->changed = true;
             }
 
             T get()
@@ -114,7 +118,7 @@ namespace cycle_model::component
             
             bool is_changed()
             {
-                return this->cur_value != this->new_value;
+                return this->changed;
             }
 
             operator T()

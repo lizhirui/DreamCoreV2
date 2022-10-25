@@ -79,7 +79,7 @@ namespace cycle_model::component
             
             virtual bool pop(uint32_t index)
             {
-                verify(valid[index]);
+                verify_only(valid[index]);
                 verify(id_free_list.push(index));
                 valid[index].set(false);
                 return true;
