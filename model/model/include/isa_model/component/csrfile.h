@@ -23,11 +23,12 @@ namespace isa_model::component
 		private:
 			typedef struct csr_item_t
 			{
+                bool enable = false;
 				bool readonly = false;
 				std::shared_ptr<csr_base> csr;
 			}csr_item_t;
 
-			std::unordered_map<uint32_t, csr_item_t> csr_map_table;
+            std::vector<csr_item_t> csr_map_table;
 
 			static bool csr_out_list_cmp(const std::pair<std::string, std::string> &a, const std::pair<std::string, std::string> &b)
 			{
@@ -91,21 +92,29 @@ namespace isa_model::component
 		public:
 			csrfile()
 			{
-			
+			    for(auto i = 0;i < (1 << 12);i++)
+                {
+                    csr_map_table.push_back({.enable = false, .readonly = false, .csr = nullptr});
+                }
 			}
 
 			virtual void reset()
 			{
-				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
-				{
-					iter->second.csr->reset();
-				}
+				for(size_t i = 0;i < csr_map_table.size();i++)
+                {
+                    if(csr_map_table[i].enable)
+                    {
+                        csr_map_table[i].csr->reset();
+                    }
+                }
 			}
 
 			void map(uint32_t addr, bool readonly, std::shared_ptr<csr_base> csr)
 			{
-				verify_only(csr_map_table.find(addr) == csr_map_table.end());
+				verify_only(addr < csr_map_table.size());
+                verify_only(!csr_map_table[addr].enable);
 				csr_item_t t_item;
+                t_item.enable = true;
 				t_item.readonly = readonly;
 				t_item.csr = csr;
 				csr_map_table[addr] = t_item;
@@ -113,19 +122,21 @@ namespace isa_model::component
 
 			void write_sys(uint32_t addr, uint32_t value)
 			{
-				verify_only(!(csr_map_table.find(addr) == csr_map_table.end()));
+				verify_only(addr < csr_map_table.size());
+                verify_only(csr_map_table[addr].enable);
 				csr_map_table[addr].csr->write(value);
 			}
 
 			uint32_t read_sys(uint32_t addr)
 			{
-				verify_only(!(csr_map_table.find(addr) == csr_map_table.end()));
+                verify_only(addr < csr_map_table.size());
+                verify_only(csr_map_table[addr].enable);
 				return csr_map_table[addr].csr->read();
 			}
 
 			bool write_check(uint32_t addr, uint32_t value)
 			{
-				if(csr_map_table.find(addr) == csr_map_table.end())
+				if((addr >= csr_map_table.size()) || !csr_map_table[addr].enable)
 				{
 					return false;
 				}
@@ -151,10 +162,10 @@ namespace isa_model::component
 
 			bool read(uint32_t addr, uint32_t *value)
 			{
-				if(csr_map_table.find(addr) == csr_map_table.end())
-				{
-					return false;
-				}
+                if((addr >= csr_map_table.size()) || !csr_map_table[addr].enable)
+                {
+                    return false;
+                }
 
 				*value = csr_map_table[addr].csr->read();
 				return true;
@@ -165,12 +176,15 @@ namespace isa_model::component
 				std::cout << indent << "CSR List:" << std::endl;
 				std::vector<std::pair<std::string, std::string>> out_list;
 
-				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
-				{
-					std::ostringstream stream;
-					stream << indent << std::setw(15) << iter->second.csr->get_name() << "\t[0x" << fillzero(3) << outhex(iter->first) << ", " << (iter->second.readonly ? "RO" : "RW") << "] = 0x" << fillzero(8) << outhex(iter->second.csr->read()) << std::endl;
-					out_list.emplace_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
-				}
+				for(size_t i = 0;i < csr_map_table.size();i++)
+                {
+                    if(csr_map_table[i].enable)
+                    {
+                        std::ostringstream stream;
+                        stream << indent << std::setw(15) << csr_map_table[i].csr->get_name() << "\t[0x" << fillzero(3) << outhex(i) << ", " << (csr_map_table[i].readonly ? "RO" : "RW") << "] = 0x" << fillzero(8) << outhex(csr_map_table[i].csr->read()) << std::endl;
+                        out_list.emplace_back(std::pair<std::string, std::string>(csr_map_table[i].csr->get_name(), stream.str()));
+                    }
+                }
 
 				std::sort(out_list.begin(), out_list.end(), csr_out_list_cmp);
 
@@ -186,11 +200,14 @@ namespace isa_model::component
 
 				std::vector<std::pair<std::string, std::string>> out_list;
 
-				for(auto iter = csr_map_table.begin();iter != csr_map_table.end();iter++)
+				for(size_t i = 0;i < csr_map_table.size();i++)
 				{
-					std::ostringstream stream;
-					stream << outhex(iter->second.csr->read());
-					out_list.emplace_back(std::pair<std::string, std::string>(iter->second.csr->get_name(), stream.str()));
+                    if(csr_map_table[i].enable)
+                    {
+                        std::ostringstream stream;
+                        stream << outhex(csr_map_table[i].csr->read());
+                        out_list.emplace_back(std::pair<std::string, std::string>(csr_map_table[i].csr->get_name(), stream.str()));
+                    }
 				}
 
 				std::sort(out_list.begin(), out_list.end(), csr_out_list_cmp);

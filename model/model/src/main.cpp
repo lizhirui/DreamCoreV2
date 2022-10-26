@@ -136,6 +136,12 @@ static void pause_event()
 
 static void run(const command_line_arg_t &arg)
 {
+#if NEED_ISA_MODEL
+#ifdef NDEBUG
+    isa_model_inst->profile(INIT_PC);
+    reset();
+#endif
+#endif
     while(true)
     {
         if(arg.no_controller && !arg.no_telnet)

@@ -27,6 +27,7 @@
 #include "asio.hpp"
 #include "json.hpp"
 #include "boost/lockfree/spsc_queue.hpp"
+#include "boost/core/null_deleter.hpp"
 #include "tclap/CmdLine.h"
 
 #include "trace/trace.h"
@@ -35,7 +36,7 @@ using json = nlohmann::json;
 
 #undef assert
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
     #define verify(cond) \

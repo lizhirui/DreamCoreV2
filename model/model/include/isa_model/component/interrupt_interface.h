@@ -13,6 +13,7 @@
 #include "config.h"
 #include "csrfile.h"
 #include "csr_all.h"
+#include "isa_model/csr_inst.h"
 
 namespace isa_model::component
 {
@@ -37,12 +38,12 @@ namespace isa_model::component
             
             }
             
-            bool get_cause(riscv_interrupt_t *cause)
+            bool get_cause(riscv_interrupt_t *cause) const
             {
                 csr::mie mie;
                 csr::mstatus mstatus;
-                mie.load(csr_file->read_sys(CSR_MIE));
-                mstatus.load(csr_file->read_sys(CSR_MSTATUS));
+                mie.load(csr_inst::mie.read());
+                mstatus.load(csr_inst::mstatus.read());
                 
                 if(!mstatus.get_mie())
                 {
@@ -69,12 +70,12 @@ namespace isa_model::component
                 return true;
             }
             
-            bool has_interrupt()
+            bool has_interrupt() const
             {
                 csr::mie mie;
                 csr::mstatus mstatus;
-                mie.load(csr_file->read_sys(CSR_MIE));
-                mstatus.load(csr_file->read_sys(CSR_MSTATUS));
+                mie.load(csr_inst::mie.read());
+                mstatus.load(csr_inst::mstatus.read());
                 return mstatus.get_mie() && ((meip && mie.get_meie()) || (msip && mie.get_msie()) || (mtip && mie.get_mtie()));
             }
             
@@ -100,14 +101,14 @@ namespace isa_model::component
                 }
             }
             
-            void run()
+            void run() const
             {
                 csr::mip mip;
-                mip.load(csr_file->read_sys(CSR_MIP));
+                mip.load(csr_inst::mip.read());
                 mip.set_meip(meip);
                 mip.set_msip(msip);
                 mip.set_mtip(mtip);
-                csr_file->write_sys(CSR_MIP, mip.get_value());
+                csr_inst::mip.write(mip.get_value());
             }
     };
 }

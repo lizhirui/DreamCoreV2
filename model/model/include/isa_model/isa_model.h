@@ -166,27 +166,7 @@ namespace isa_model
         csrrw
     };
     
-    typedef struct fetch_decode_pack_t : public if_print_t
-    {
-        uint32_t pc = 0;
-        uint32_t value = 0;
-        bool has_exception = false;
-        riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
-        uint32_t exception_value = 0;
-        
-        virtual json get_json()
-        {
-            json t;
-            t["pc"] = pc;
-            t["value"] = value;
-            t["has_exception"] = has_exception;
-            t["exception_id"] = outenum(exception_id);
-            t["exception_value"] = exception_value;
-            return t;
-        }
-    }fetch_decode_pack_t;
-    
-    typedef struct decode_execute_pack_t : public if_print_t
+    typedef struct isa_state_t : public if_print_t
     {
         uint32_t value = 0;
         bool valid = false;
@@ -315,15 +295,16 @@ namespace isa_model
             void load(void *mem, size_t size);
             void reset();
             void pause_event();
+            void profile(uint32_t pc);
             void run();
-            fetch_decode_pack_t fetch();
-            decode_execute_pack_t decode(const fetch_decode_pack_t &fetch_decode_pack);
-            void execute(decode_execute_pack_t &decode_execute_pack);
-            void execute_alu(decode_execute_pack_t &decode_execute_pack);
-            void execute_bru(decode_execute_pack_t &decode_execute_pack);
-            void execute_csr(decode_execute_pack_t &decode_execute_pack);
-            void execute_div(decode_execute_pack_t &decode_execute_pack);
-            void execute_mul(decode_execute_pack_t &decode_execute_pack);
-            void execute_lsu(decode_execute_pack_t &decode_execute_pack);
+            void fetch(isa_state_t &isa_state);
+            void decode(isa_state_t &isa_state);
+            void execute(isa_state_t &isa_state);
+            void execute_alu(isa_state_t &isa_state);
+            void execute_bru(isa_state_t &isa_state);
+            void execute_csr(isa_state_t &isa_state);
+            void execute_div(isa_state_t &isa_state);
+            void execute_mul(isa_state_t &isa_state);
+            void execute_lsu(isa_state_t &isa_state);
     };
 }
