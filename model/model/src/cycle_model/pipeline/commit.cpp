@@ -19,6 +19,7 @@
 #include "cycle_model/component/interrupt_interface.h"
 #include "cycle_model/pipeline/wb_commit.h"
 #include "cycle_model/component/csr_all.h"
+#include "breakpoint.h"
 
 namespace cycle_model::pipeline
 {
@@ -117,6 +118,7 @@ namespace cycle_model::pipeline
                                     retire_rat->commit_map(rob_item.rd, rob_item.new_phy_reg_id);
                                     retire_rat->release_map(rob_item.old_phy_reg_id);
                                     phy_regfile->write(rob_item.old_phy_reg_id, 0, false);
+                                    phy_id_free_list->push(rob_item.old_phy_reg_id);
                                 }
             
                                 rob->set_committed(true);
@@ -125,6 +127,7 @@ namespace cycle_model::pipeline
                                 if(rob_item.csr_newvalue_valid)
                                 {
                                     csr_file->write(rob_item.csr_addr, rob_item.csr_newvalue);
+                                    breakpoint_csr_trigger(rob_item.csr_addr, rob_item.csr_newvalue, true);
                                 }
             
                                 //branch handle

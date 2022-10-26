@@ -153,9 +153,25 @@ static void run(const command_line_arg_t &arg)
         }
         
 #if NEED_CYCLE_MODEL
-
+        uint32_t breakpoint_pc[FETCH_WIDTH];
+        uint32_t pc_num = 0;
+        
+        {
+            auto item = cycle_model_inst->fetch1_fetch2_port.get();
+            
+            for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+            {
+                if(item.op_info[i].enable)
+                {
+                    breakpoint_pc[pc_num++] = item.op_info[i].pc;
+                }
+            }
+        }
+        
+        if(breakpoint_check(cycle_model_inst->cpu_clock_cycle, cycle_model_inst->committed_instruction_num, breakpoint_pc, pc_num))
 #else
-        if(breakpoint_check(isa_model_inst->cpu_clock_cycle, isa_model_inst->committed_instruction_num, isa_model_inst->pc))
+        if(breakpoint_check(isa_model_inst->cpu_clock_cycle, isa_model_inst->committed_instruction_num, &isa_model_inst->pc, 1))
+#endif
         {
             set_pause_detected(true);
             send_cmd("main", "breakpoint_trigger", "");
@@ -188,7 +204,6 @@ static void run(const command_line_arg_t &arg)
                 exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
             }
         }
-#endif
 #if NEED_CYCLE_MODEL
         if(pause_detected || (step_state && (!wait_commit || cycle_model_inst->rob.get_committed())))
 #else
@@ -210,6 +225,9 @@ static void run(const command_line_arg_t &arg)
 #if NEED_ISA_MODEL
                 clear_queue(isa_model_inst->bus.error_msg_queue);
 #endif
+#if NEED_CYCLE_MODEL
+                clear_queue(cycle_model_inst->bus.error_msg_queue);
+#endif
                 
                 if(get_program_stop())
                 {
@@ -226,22 +244,42 @@ static void run(const command_line_arg_t &arg)
         }
 
 #if NEED_CYCLE_MODEL
+        auto model_cycle = cycle_model_inst->cpu_clock_cycle;
+        auto model_pc = get_current_pc();
         cycle_model_inst->rob.set_committed(false);
         cycle_model_inst->run();
+        
+#if NEED_ISA_MODEL
+        while(!isa_model_inst->bus.error_msg_queue.empty())
+        {
+            isa_model_inst->bus.error_msg_queue.pop();
+        }
+#endif
+    
+        if(!cycle_model_inst->bus.error_msg_queue.empty())
 #else
-        auto isa_model_cycle = isa_model_inst->cpu_clock_cycle;
-        auto isa_model_pc = isa_model_inst->pc;
+        auto model_cycle = isa_model_inst->cpu_clock_cycle;
+        auto model_pc = isa_model_inst->pc;
         isa_model_inst->run();
         
         if(!isa_model_inst->bus.error_msg_queue.empty())
+#endif
         {
-            std::cout << MESSAGE_OUTPUT_PREFIX "cycle = " << isa_model_cycle << ", pc = " << outhex(isa_model_pc) << " error detected!" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX "cycle = " << model_cycle << ", pc = 0x" << outhex(model_pc) << " error detected!" << std::endl;
             set_pause_detected(true);
-            
+            send_cmd("main", "breakpoint_trigger", "");
+
+#if NEED_CYCLE_MODEL
+            while(!cycle_model_inst->bus.error_msg_queue.empty())
+            {
+                auto msg = cycle_model_inst->bus.error_msg_queue.front();
+                cycle_model_inst->bus.error_msg_queue.pop();
+#else
             while(!isa_model_inst->bus.error_msg_queue.empty())
             {
                 auto msg = isa_model_inst->bus.error_msg_queue.front();
                 isa_model_inst->bus.error_msg_queue.pop();
+#endif
                 
                 if(msg.is_fetch)
                 {
@@ -251,7 +289,7 @@ static void run(const command_line_arg_t &arg)
                 if(msg.is_write)
                 {
                     std::cout << MESSAGE_OUTPUT_PREFIX "memory write error: ";
-                    std::cout << MESSAGE_OUTPUT_PREFIX "address = " << outhex(msg.addr) << ", size = " << msg.size << ", value = " << outhex(msg.value) << std::endl;
+                    std::cout << MESSAGE_OUTPUT_PREFIX "address = 0x" << outhex(msg.addr) << ", size = " << msg.size << ", value = 0x" << outhex(msg.value) << std::endl;
                 }
                 else
                 {
@@ -260,11 +298,10 @@ static void run(const command_line_arg_t &arg)
                         std::cout << MESSAGE_OUTPUT_PREFIX "memory read error: ";
                     }
                     
-                    std::cout << MESSAGE_OUTPUT_PREFIX "address = " << outhex(msg.addr) << ", size = " << msg.size << std::endl;
+                    std::cout << MESSAGE_OUTPUT_PREFIX "address = 0x" << outhex(msg.addr) << ", size = " << msg.size << std::endl;
                 }
             }
         }
-#endif
     }
 }
 

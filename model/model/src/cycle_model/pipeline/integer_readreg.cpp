@@ -111,6 +111,10 @@ namespace cycle_model::pipeline
                                 }
                             }
                         }
+                        else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
+                        {
+                            send_pack.src1_value = rev_pack.op_info[i].imm;
+                        }
         
                         if(rev_pack.op_info[i].rs2_need_map)
                         {
@@ -120,7 +124,7 @@ namespace cycle_model::pipeline
                             }
                             else
                             {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;i++)
+                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -135,6 +139,10 @@ namespace cycle_model::pipeline
                                     }
                                 }
                             }
+                        }
+                        else if(rev_pack.op_info[i].arg2_src == arg_src_t::imm)
+                        {
+                            send_pack.src2_value = rev_pack.op_info[i].imm;
                         }
                     }
                     

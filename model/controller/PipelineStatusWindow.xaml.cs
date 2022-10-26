@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DreamCoreV2_model_controller.Model;
+using Newtonsoft.Json;
 
 namespace DreamCoreV2_model_controller
 {
@@ -21,12 +22,22 @@ namespace DreamCoreV2_model_controller
         private static PipelineStatusWindow? instance = null;
         private MainWindow mainWindow;
         private Model.PipelineStatus? pipelineStatus = null;
+        
+        struct PipelineStatusHistoryItem
+        {
+            public int cpuCycle;
+            public string pipelineStatusString;
+        };
+
+        private FixedSizeBuffer<PipelineStatusHistoryItem> pipelineStatusHistory = new(100);
+        private int curHistoryIndex = 0;
 
         private PipelineStatusWindow(MainWindow mainWindow)
         {
             InitializeComponent();
             this.mainWindow = mainWindow;
             this.mainWindow.PipelineStatusReceivedEvent += MainWindow_PipelineStatusReceived;
+            this.mainWindow.PipelineStatusResetEvent += MainWindow_PipelineStatusResetEvent;
 
             if(int.TryParse(Config.Get("PipelineStatus_Left", ""), out var left) && int.TryParse(Config.Get("PipelineStatus_Top", ""), out var top))
             {
@@ -35,9 +46,15 @@ namespace DreamCoreV2_model_controller
             }
         }
 
+        private void MainWindow_PipelineStatusResetEvent()
+        {
+            pipelineStatusHistory.Clear();
+        }
+
         ~PipelineStatusWindow()
         {
-            this.mainWindow.PipelineStatusReceivedEvent -= MainWindow_PipelineStatusReceived;
+            mainWindow.PipelineStatusReceivedEvent -= MainWindow_PipelineStatusReceived;
+            mainWindow.PipelineStatusResetEvent -= MainWindow_PipelineStatusResetEvent;
         }
 
         public static PipelineStatusWindow CreateInstance(MainWindow mainWindow)
@@ -51,11 +68,46 @@ namespace DreamCoreV2_model_controller
             return instance;
         }
 
-        private void MainWindow_PipelineStatusReceived(Model.PipelineStatus PipelineStatus)
+        private void MainWindow_PipelineStatusReceived(string str, Model.PipelineStatus PipelineStatus)
         {
-            this.pipelineStatus = PipelineStatus;
+            var item_exist = false;
+
+            if(pipelineStatusHistory.Count() > 0)
+            {
+                var item = pipelineStatusHistory.Get(pipelineStatusHistory.Count() - 1);
+
+                if(item.cpuCycle == Global.cpuCycle.Value && item.pipelineStatusString == str)
+                {
+                    item_exist = true;        
+                }
+            }
+
+            if(!item_exist)
+            {
+                pipelineStatusHistory.Push(new PipelineStatusHistoryItem{cpuCycle = Global.cpuCycle.Value, pipelineStatusString = str});
+            }
+
+            curHistoryIndex = pipelineStatusHistory.Count() - 1;
+            loadHistory(true);
+            pipelineStatus = PipelineStatus;
             updateInstruction();
             refreshDisplay();
+        }
+
+        private void loadHistory(bool headerOnly = false)
+        {
+            var item = pipelineStatusHistory.Get(curHistoryIndex);
+            label_Cycle.Content = "Cycle: " + item.cpuCycle;
+            label_History.Content = "History: " + ("" + (curHistoryIndex + 1)).PadLeft(2, '0') + "/" + ("" + pipelineStatusHistory.Count()).PadLeft(2, '0') + ((curHistoryIndex >= (pipelineStatusHistory.Count() - 1)) ? "(Current)" : "(Old)    ");
+            label_History_Prev.Background = (curHistoryIndex > 0) ? Brushes.Green : Brushes.Red;
+            label_History_Next.Background = (curHistoryIndex < (pipelineStatusHistory.Count() - 1)) ? Brushes.Green : Brushes.Red;
+
+            if(!headerOnly)
+            {
+                pipelineStatus = JsonConvert.DeserializeObject<Model.PipelineStatus>(item.pipelineStatusString);
+                updateInstruction();
+                refreshDisplay();
+            }
         }
 
         private string getInstructionText(uint Value, uint PC)
@@ -142,6 +194,34 @@ namespace DreamCoreV2_model_controller
                 for(var i = 0;i < pipelineStatus.dispatch_lsu_issue.Length;i++)
                 {
                     var item = pipelineStatus.dispatch_lsu_issue[i];
+
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.integer_issue.hold_rev_pack.Length;i++)
+                {
+                    var item = pipelineStatus.integer_issue.hold_rev_pack[i];
+
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.lsu_issue.hold_rev_pack.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_issue.hold_rev_pack[i];
 
                     if(item.enable)
                     {
@@ -532,6 +612,22 @@ namespace DreamCoreV2_model_controller
                     listView_Dispatch_LSU_Issue.Items.Add(new{Highlight = false, Value = getDisplayText(item.Instruction, item.pc)});
                 }
 
+                listView_Integer_Issue_Input.Items.Clear();
+
+                for(var i = 0;i < pipelineStatus.integer_issue.hold_rev_pack.Length;i++)
+                {
+                    var item = pipelineStatus.integer_issue.hold_rev_pack[i];
+                    listView_Integer_Issue_Input.Items.Add(new{Highlight = false, Value = getDisplayText(item.Instruction, item.pc)});
+                }
+
+                listView_LSU_Issue_Input.Items.Clear();
+
+                for(var i = 0;i < pipelineStatus.lsu_issue.hold_rev_pack.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_issue.hold_rev_pack[i];
+                   listView_LSU_Issue_Input.Items.Add(new{Highlight = false, Value = getDisplayText(item.Instruction, item.pc)});
+                }
+
                 listView_Integer_Issue_Readreg.Items.Clear();
 
                 for(var i = 0;i < pipelineStatus.integer_issue_readreg.Length;i++)
@@ -649,7 +745,30 @@ namespace DreamCoreV2_model_controller
                     if(pipelineStatus.integer_issue.issue_q.valid[i])
                     {
                         var item = pipelineStatus.integer_issue.issue_q.value[i];
-                        listView_Integer_Issue_Queue.Items.Add(new{Highlight = false, ID = i, Value = i + ": " + ((pipelineStatus.integer_issue.src1_ready[i] && pipelineStatus.integer_issue.src2_ready[i]) ? "<ready>" : "<notready>") + getDisplayText(item.Instruction, item.pc)});
+                        var ready_string = "<";
+
+                        if(pipelineStatus.integer_issue.src1_ready[i])
+                        {
+                            ready_string += "ready";
+                        }
+                        else
+                        {
+                            ready_string += Global.Onehot2Binary(pipelineStatus.integer_issue.wakeup_shift_src1[i]);
+                        }
+
+                        ready_string += ",";
+
+                        if(pipelineStatus.integer_issue.src2_ready[i])
+                        {
+                            ready_string += "ready";
+                        }
+                        else
+                        {
+                            ready_string += Global.Onehot2Binary(pipelineStatus.integer_issue.wakeup_shift_src2[i]);
+                        }
+
+                        ready_string += ">";
+                        listView_Integer_Issue_Queue.Items.Add(new{Highlight = false, ID = i, Value = i + ": " + ready_string + getDisplayText(item.Instruction, item.pc)});
                     }
                 }
 
@@ -658,7 +777,30 @@ namespace DreamCoreV2_model_controller
                 for(var i = 0;i < pipelineStatus.lsu_issue.issue_q.Length;i++)
                 {
                     var item = pipelineStatus.lsu_issue.issue_q[i];
-                    listView_LSU_Issue_Queue.Items.Add(new{Highlight = false, Value = ((pipelineStatus.lsu_issue.src1_ready[i] && pipelineStatus.lsu_issue.src2_ready[i]) ? "<ready>" : "<notready>") + getDisplayText(item.Instruction, item.pc)});
+                    var ready_string = "<";
+
+                    if(pipelineStatus.lsu_issue.src1_ready[i])
+                    {
+                        ready_string += "ready";
+                    }
+                    else
+                    {
+                        ready_string += Global.Onehot2Binary(pipelineStatus.lsu_issue.wakeup_shift_src1[i]);
+                    }
+
+                    ready_string += ",";
+
+                    if(pipelineStatus.lsu_issue.src2_ready[i])
+                    {
+                        ready_string += "ready";
+                    }
+                    else
+                    {
+                        ready_string += Global.Onehot2Binary(pipelineStatus.lsu_issue.wakeup_shift_src2[i]);
+                    }
+
+                    ready_string += ">";
+                    listView_LSU_Issue_Queue.Items.Add(new{Highlight = false, Value = ready_string + getDisplayText(item.Instruction, item.pc)});
                 }
             }
         }
@@ -839,6 +981,56 @@ namespace DreamCoreV2_model_controller
                 {
                     HighlightROBItem(pipelineStatus.dispatch_lsu_issue[id].rob_id, true);
                     DisplayDetail(pipelineStatus.dispatch_lsu_issue[id]);
+                }
+                else
+                {
+                    HighlightROBItem(0, false);
+                    DisplayDetail(null);
+                }
+            }
+            catch
+            {
+                HighlightROBItem(0, false);
+                DisplayDetail(null);
+            }
+        }
+
+        private void listView_Integer_Issue_Input_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var list = sender as ListView;
+            var id = list.SelectedIndex;
+
+            try
+            {
+                if(id >= 0)
+                {
+                    HighlightROBItem(pipelineStatus.integer_issue.hold_rev_pack[id].rob_id, true);
+                    DisplayDetail(pipelineStatus.integer_issue.hold_rev_pack[id]);
+                }
+                else
+                {
+                    HighlightROBItem(0, false);
+                    DisplayDetail(null);
+                }
+            }
+            catch
+            {
+                HighlightROBItem(0, false);
+                DisplayDetail(null);
+            }
+        }
+
+        private void listView_LSU_Issue_Input_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var list = sender as ListView;
+            var id = list.SelectedIndex;
+
+            try
+            {
+                if(id >= 0)
+                {
+                    HighlightROBItem(pipelineStatus.lsu_issue.hold_rev_pack[id].rob_id, true);
+                    DisplayDetail(pipelineStatus.lsu_issue.hold_rev_pack[id]);
                 }
                 else
                 {
@@ -1076,5 +1268,41 @@ namespace DreamCoreV2_model_controller
             }
         }
         #pragma warning restore CS8602
+
+        private void label_History_Prev_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if(curHistoryIndex > 0)
+            {
+                curHistoryIndex--;
+                loadHistory();
+            }
+        }
+
+        private void label_History_Next_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if(curHistoryIndex < (pipelineStatusHistory.Count() - 1))
+            {
+                curHistoryIndex++;
+                loadHistory();
+            }
+        }
+
+        private void Left_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if(curHistoryIndex > 0)
+            {
+                curHistoryIndex--;
+                loadHistory();
+            }
+        }
+
+        private void Right_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if(curHistoryIndex < (pipelineStatusHistory.Count() - 1))
+            {
+                curHistoryIndex++;
+                loadHistory();
+            }
+        }
     }
 }

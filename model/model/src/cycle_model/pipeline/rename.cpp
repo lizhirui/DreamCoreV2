@@ -109,6 +109,17 @@ namespace cycle_model::pipeline
                             //generate rob items
                             if(rev_pack.enable)
                             {
+                                //start to map source registers
+                                if(rev_pack.rs1_need_map)
+                                {
+                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
+                                }
+    
+                                if(rev_pack.rs2_need_map)
+                                {
+                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
+                                }
+                                
                                 phy_id_free_list->save(&rob_item.old_phy_id_free_list_rptr, &rob_item.old_phy_id_free_list_rstage);
                                 
                                 if(rev_pack.valid)
@@ -147,17 +158,6 @@ namespace cycle_model::pipeline
                                 verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
                                 verify(rob->get_new_id_stage(&send_pack.op_info[i].rob_id_stage));
                                 verify(rob->push(rob_item));
-                                
-                                //start to map source registers
-                                if(rev_pack.rs1_need_map)
-                                {
-                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs1, &send_pack.op_info[i].rs1_phy));
-                                }
-                                
-                                if(rev_pack.rs2_need_map)
-                                {
-                                    verify(speculative_rat->producer_get_phy_id(rev_pack.rs2, &send_pack.op_info[i].rs2_phy));
-                                }
                             }
                             
                             if(ready_to_stop_rename)

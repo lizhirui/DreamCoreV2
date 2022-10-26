@@ -27,7 +27,7 @@ namespace DreamCoreV2_model_controller.Model
         [JsonProperty("has_exception")]
         public bool has_exception { get; set; }
         [JsonProperty("exception_id")]
-        public string exception_id { get; set; }
+        public string? exception_id { get; set; }
         [JsonProperty("exception_value")]
         public uint exception_value { get; set; }
         [JsonProperty("bru_op")]

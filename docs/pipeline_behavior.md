@@ -94,11 +94,11 @@
   * 若需要分发整数指令，则分为两种情况：
     * 若integer_issue不处于堵塞状态，则将该指令送入dispatch_integer_issue_port
     * 否则，将integer_issue_pack暂存到hold_integer_issue_pack中，并置整数队列繁忙标志有效
-  * 若不需要分发整数指令，则将空包送入dispatch_integer_issue_port
+  * 若不需要分发整数指令，但若integer_issue处于堵塞状态，则保持dispatch_integer_issue_port不变，否则将空包送入dispatch_integer_issue_port
   * 若需要分发LSU指令，则分为两种情况：
     * 若lsu_issue不处于堵塞状态，则将该指令送入dispatch_lsu_issue_port
     * 否则，将lsu_issue_pack暂存到hold_lsu_issue_pack中，并置LSU队列繁忙标志有效
-  * 若不需要分发LSU指令，则将空包送入dispatch_lsu_issue_port
+  * 若不需要分发LSU指令，但若lsu_issue处于堵塞状态，则保持dispatch_lsu_issue_port不变，否则将空包送入dispatch_lsu_issue_port
 
 在指令等待状态下（无来自commit流水级的flush信号，可能同时处于Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 

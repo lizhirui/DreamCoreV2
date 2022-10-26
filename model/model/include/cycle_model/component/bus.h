@@ -72,6 +72,17 @@ namespace cycle_model::component
             }
         
         public:
+            typedef struct error_msg_t
+            {
+                uint32_t addr = 0;
+                uint32_t size = 0;
+                uint32_t value = 0;
+                bool is_write = false;
+                bool is_fetch = false;
+            }error_msg_t;
+        
+            std::queue<error_msg_t> error_msg_queue;
+            
             bus() : instruction_value_valid(false), data_value_valid(false), tdb(TRACE_BUS)
             {
                 this->bus::reset();
@@ -161,6 +172,16 @@ namespace cycle_model::component
                 {
                     slave_info_list[slave_index].slave->write8(addr - slave_info_list[slave_index].base, value);
                 }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 1;
+                    error_msg.value = value;
+                    error_msg.is_write = true;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
+                }
             }
             
             void write8_sync(uint32_t addr, uint8_t value)
@@ -178,6 +199,16 @@ namespace cycle_model::component
                 if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->write16(addr - slave_info_list[slave_index].base, value);
+                }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 2;
+                    error_msg.value = value;
+                    error_msg.is_write = true;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
                 }
             }
             
@@ -197,6 +228,16 @@ namespace cycle_model::component
                 {
                     slave_info_list[slave_index].slave->write32(addr - slave_info_list[slave_index].base, value);
                 }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 4;
+                    error_msg.value = value;
+                    error_msg.is_write = true;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
+                }
             }
             
             void write32_sync(uint32_t addr, uint32_t value)
@@ -215,6 +256,16 @@ namespace cycle_model::component
                 {
                     slave_info_list[slave_index].slave->read8(addr - slave_info_list[slave_index].base);
                 }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 1;
+                    error_msg.value = 0;
+                    error_msg.is_write = false;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
+                }
             }
             
             void read16(uint32_t addr)
@@ -223,6 +274,16 @@ namespace cycle_model::component
                 {
                     slave_info_list[slave_index].slave->read16(addr - slave_info_list[slave_index].base);
                 }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 2;
+                    error_msg.value = 0;
+                    error_msg.is_write = false;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
+                }
             }
             
             void read32(uint32_t addr)
@@ -230,6 +291,16 @@ namespace cycle_model::component
                 if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->read32(addr - slave_info_list[slave_index].base);
+                }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 4;
+                    error_msg.value = 0;
+                    error_msg.is_write = false;
+                    error_msg.is_fetch = false;
+                    error_msg_queue.push(error_msg);
                 }
             }
             
@@ -249,7 +320,7 @@ namespace cycle_model::component
                 {
                     return slave_info_list[slave_index].slave->read16_sys(addr - slave_info_list[slave_index].base);
                 }
-    
+                
                 return 0;
             }
         
@@ -268,6 +339,16 @@ namespace cycle_model::component
                 if(auto slave_index = find_slave_info(addr, true);slave_index >= 0)
                 {
                     slave_info_list[slave_index].slave->read_instruction(addr - slave_info_list[slave_index].base);
+                }
+                else
+                {
+                    error_msg_t error_msg;
+                    error_msg.addr = addr;
+                    error_msg.size = 4;
+                    error_msg.value = 0;
+                    error_msg.is_write = false;
+                    error_msg.is_fetch = true;
+                    error_msg_queue.push(error_msg);
                 }
             }
             

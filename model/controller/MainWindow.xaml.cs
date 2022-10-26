@@ -22,8 +22,10 @@ namespace DreamCoreV2_model_controller
     /// </summary>
     public partial class MainWindow : Window
     {
-        public delegate void PipelineStatusReceivedHandler(Model.PipelineStatus PipelineStatus);
+        public delegate void PipelineStatusReceivedHandler(string str, Model.PipelineStatus PipelineStatus);
         public event PipelineStatusReceivedHandler? PipelineStatusReceivedEvent;
+        public delegate void PipelineStatusResetHandler();
+        public event PipelineStatusResetHandler? PipelineStatusResetEvent;
         public MainWindow()
         {
             InitializeComponent();
@@ -46,6 +48,7 @@ namespace DreamCoreV2_model_controller
                 Global.SendCommand("main", "pause", true);
                 Global.SendCommand("main", "get_mode", true);
                 Global.running.Value = true;
+                PipelineStatusResetEvent?.Invoke();
             }
             catch
             {
@@ -88,6 +91,7 @@ namespace DreamCoreV2_model_controller
         {
             Global.SendCommand("main", "reset");
             refreshGlobalStatus();
+            PipelineStatusResetEvent?.Invoke();
         }
         
         private void CommandReceivedEvent(string prefix, string cmd, string result)
@@ -161,7 +165,7 @@ namespace DreamCoreV2_model_controller
 
                     if(pack != null)
                     {
-                        PipelineStatusReceivedEvent?.Invoke(pack);
+                        PipelineStatusReceivedEvent?.Invoke(result, pack);
                     }
 
                     break;

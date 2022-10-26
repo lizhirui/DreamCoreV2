@@ -107,7 +107,7 @@ std::optional<uint32_t> breakpoint_get_finish()
     return std::nullopt;
 }
 
-bool breakpoint_check(uint32_t cycle, uint32_t instruction_num, uint32_t pc)
+bool breakpoint_check(uint32_t cycle, uint32_t instruction_num, uint32_t pc[], size_t pc_num)
 {
     if(breakpoint_found)
     {
@@ -136,9 +136,12 @@ bool breakpoint_check(uint32_t cycle, uint32_t instruction_num, uint32_t pc)
                 break;
                 
             case breakpoint_type_t::pc:
-                if(pc == breakpoint_info_list[i].value)
+                for(size_t j = 0;j < pc_num;j++)
                 {
-                    return true;
+                    if(pc[j] == breakpoint_info_list[i].value)
+                    {
+                        return true;
+                    }
                 }
                 
                 break;

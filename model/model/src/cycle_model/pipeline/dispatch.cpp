@@ -47,6 +47,7 @@ namespace cycle_model::pipeline
     
         dispatch_feedback_pack_t feedback_pack;
     
+        //generate inst_waiting_ok signal
         auto inst_waiting_ok = false;
         
         for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
@@ -58,14 +59,21 @@ namespace cycle_model::pipeline
             }
         }
         
+        //generate stall signal
         feedback_pack.stall = this->integer_busy || this->lsu_busy || this->busy || (this->is_inst_waiting && !inst_waiting_ok) || (this->is_stbuf_empty_waiting && !store_buffer->customer_is_empty());
         
         if(!commit_feedback_pack.flush)
         {
             if((!is_inst_waiting || inst_waiting_ok) && (!is_stbuf_empty_waiting || store_buffer->customer_is_empty()))
             {
+                //remove all waiting state
+                this->is_inst_waiting = false;
+                this->is_stbuf_empty_waiting = false;
+                
+                //if integer and lsu issue are all not busy
                 if(!(this->integer_busy || this->lsu_busy))
                 {
+                    //if it's busy state, then old rev_pack should be used to re-generate issue pack
                     if(!this->busy)
                     {
                         rev_pack = rename_dispatch_port->get();
@@ -221,7 +229,10 @@ namespace cycle_model::pipeline
                         }
                         else
                         {
-                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                            if(!integer_issue_feedback_pack.stall)
+                            {
+                                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                            }
                         }
                         
                         if(lsu_issue_id > 0)
@@ -238,7 +249,10 @@ namespace cycle_model::pipeline
                         }
                         else
                         {
-                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            if(!lsu_issue_feedback_pack.stall)
+                            {
+                                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            }
                         }
                     }
                 }

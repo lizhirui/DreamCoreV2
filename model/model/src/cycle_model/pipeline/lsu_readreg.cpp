@@ -121,6 +121,10 @@ namespace cycle_model::pipeline
                                 }
                             }
                         }
+                        else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
+                        {
+                            send_pack.src1_value = rev_pack.op_info[i].imm;
+                        }
                     
                         if(rev_pack.op_info[i].rs2_need_map)
                         {
@@ -145,6 +149,10 @@ namespace cycle_model::pipeline
                                     }
                                 }
                             }
+                        }
+                        else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
+                        {
+                            send_pack.src2_value = rev_pack.op_info[i].imm;
                         }
                     }
                 

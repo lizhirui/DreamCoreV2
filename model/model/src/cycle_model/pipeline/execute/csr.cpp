@@ -14,6 +14,7 @@
 #include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/execute.h"
+#include "breakpoint.h"
 
 namespace cycle_model::pipeline::execute
 {
@@ -89,6 +90,11 @@ namespace cycle_model::pipeline::execute
                     }
                     else
                     {
+                        if(rev_pack.need_rename)
+                        {
+                            breakpoint_csr_trigger(rev_pack.csr, csr_value, false);
+                        }
+                        
                         send_pack.rd_value = csr_value;
                         send_pack.csr_newvalue_valid = false;
                         
