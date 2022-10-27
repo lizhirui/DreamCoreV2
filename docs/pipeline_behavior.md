@@ -116,13 +116,12 @@
 在整数队列繁忙或LSU队列繁忙等待状态下（无来自commit流水级的flush信号，不处于指令等待状态或Store Buffer空等待状态，该状态的包不可能包含csr/mret或fence指令）：
 
 * 分别从hold_integer_issue_pack与hold_lsu_issue_pack中取出保留的指令包
-* 若需要分发整数指令，则分为两种情况：
-    * 若integer_issue不处于堵塞状态，则将该指令送入dispatch_integer_issue_port
-    * 否则，将integer_issue_pack暂存到hold_integer_issue_pack中，并置整数队列繁忙标志有效
+* 若integer_issue处于堵塞状态，则保持dispatch_integer_issue_port不变
+* 否则，分为如下两种情况：
+  * 若需要分发整数指令，则将该指令送入dispatch_integer_issue_port，并解除整数队列繁忙等待状态
   * 若不需要分发整数指令，则将空包送入dispatch_integer_issue_port
-  * 若需要分发LSU指令，则分为两种情况：
-    * 若lsu_issue不处于堵塞状态，则将该指令送入dispatch_lsu_issue_port
-    * 否则，将lsu_issue_pack暂存到hold_lsu_issue_pack中，并置LSU队列繁忙标志有效
+* 若lsu_issue处于堵塞状态，则保持dispatch_lsu_issue_port不变
+  * 若需要分发LSU指令，则将该指令送入dispatch_lsu_issue_port，并解除LSU队列繁忙等待状态
   * 若不需要分发LSU指令，则将空包送入dispatch_lsu_issue_port
 
 收到来自commit流水级的flush信号时：
@@ -150,7 +149,7 @@
   * 指令无效
   * 指令发生了异常
   * 源操作数不需要映射（为x0或立即数或不存在该源操作数）
-* 对于ALU/MUL指令，需要进行仲裁出口分配，这里使用Round-Robin算法进行分配
+* 对于ALU/MUL指令，需要进行仲裁出口分配，这里使用Round-Robin算法进行分配，对于DIV指令，将仲裁出口指定为1，对于其它指令，将仲裁出口指定为0
 * 将指令的所属执行单元类型转换为one-hot单独保留用于仲裁
 * 单独保存指令的rob_id/rob_id_stage用于年龄计算
 * 单独保存指令的rd/rd_valid用于更短路径的唤醒

@@ -52,7 +52,7 @@ using json = nlohmann::json;
     #define verify_only(cond) verify(cond)
 #else
     #define verify(cond) cond
-    #define verify_only(cond)
+    #define verify_only(cond) do{}while(0)
 #endif
 
 //machine types

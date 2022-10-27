@@ -114,7 +114,7 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
 
     for(auto addr = address;addr < (address + size);addr++)
     {
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
         result << "," << std::hex << (uint32_t)cycle_model_inst->bus.read8_sys(addr);
 #else
         result << "," << std::hex << (uint32_t)isa_model_inst->bus.read8(addr, false);
@@ -145,7 +145,7 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
         hex_str.setf(std::ios::hex);
         uint32_t value = 0;
         hex_str >> value;
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
         cycle_model_inst->bus.write8(address + offset, (uint8_t)value);
 #else
         isa_model_inst->bus.write8(address + offset, (uint8_t)value);
@@ -172,11 +172,11 @@ static std::string socket_cmd_read_archreg(std::vector<std::string> args)
         }
         else
         {
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
             uint32_t phy_id = 0;
             cycle_model_inst->retire_rat.customer_get_phy_id(i, &phy_id);
             auto v = cycle_model_inst->phy_regfile.read(phy_id);
-            verify(cycle_model_inst->phy_regfile.read_data_valid(phy_id));
+            verify_only(cycle_model_inst->phy_regfile.read_data_valid(phy_id));
             result << "," << std::hex << v;
 #else
             result << "," << std::hex << isa_model_inst->arch_regfile.read(i);
@@ -194,7 +194,7 @@ static std::string socket_cmd_read_csr(std::vector<std::string> args)
         return "argerror";
     }
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     return cycle_model_inst->csr_file.get_info_packet();
 #else
     return isa_model_inst->csr_file.get_info_packet();
@@ -221,7 +221,7 @@ static std::string socket_cmd_get_cycle(std::vector<std::string> args)
     }
 
     std::stringstream result;
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     result << cycle_model_inst->cpu_clock_cycle;
 #else
     result << isa_model_inst->cpu_clock_cycle;
@@ -229,7 +229,7 @@ static std::string socket_cmd_get_cycle(std::vector<std::string> args)
     return result.str();
 }
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
 static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
 {
     if(!args.empty())
@@ -394,7 +394,7 @@ static std::string socket_cmd_get_commit_num(std::vector<std::string> args)
     }
 
     std::stringstream result;
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     result << cycle_model_inst->rob.get_commit_num();
     cycle_model_inst->rob.clear_commit_num();
 #else
@@ -412,7 +412,7 @@ static std::string socket_cmd_get_finish(std::vector<std::string> args)
     }
 
     std::stringstream result;
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     result << (int)cycle_model_inst->csr_file.read_sys(CSR_FINISH);
 #else
     result << (int)isa_model_inst->csr_file.read_sys(CSR_FINISH);
@@ -524,7 +524,7 @@ void network_command_init()
     register_socket_cmd("read_csr", socket_cmd_read_csr);
     register_socket_cmd("get_pc", socket_cmd_get_pc);
     register_socket_cmd("get_cycle", socket_cmd_get_cycle);
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     register_socket_cmd("get_pipeline_status", socket_cmd_get_pipeline_status);
 #endif
     register_socket_cmd("get_commit_num", socket_cmd_get_commit_num);

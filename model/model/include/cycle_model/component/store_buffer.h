@@ -27,6 +27,7 @@ namespace cycle_model::component
         uint32_t addr = 0;
         uint32_t data = 0;
         uint32_t size = 0;
+        uint64_t cycle = 0;//only for debug
     }store_buffer_item_t;
     
     typedef struct store_buffer_state_pack_t

@@ -175,6 +175,7 @@ namespace DreamCoreV2_model_controller
                     {
                         case "isa_model_only":
                         case "cycle_model_only":
+                        case "isa_and_cycle_model_compare":
                             Global.model_mode.Value = result;
                             refreshGlobalStatus(true);
                             break;

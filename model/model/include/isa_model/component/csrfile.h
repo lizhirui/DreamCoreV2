@@ -119,6 +119,13 @@ namespace isa_model::component
 				t_item.csr = csr;
 				csr_map_table[addr] = t_item;
 			}
+            
+            std::string get_name(uint32_t addr)
+            {
+                verify_only(addr < csr_map_table.size());
+                verify_only(csr_map_table[addr].enable);
+                return csr_map_table[addr].csr->get_name();
+            }
 
 			void write_sys(uint32_t addr, uint32_t value)
 			{

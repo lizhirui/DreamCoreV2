@@ -258,24 +258,30 @@ namespace cycle_model::pipeline
                 }
                 else
                 {
-                    if(this->integer_busy && !integer_issue_feedback_pack.stall)
+                    if(!integer_issue_feedback_pack.stall)
                     {
-                        dispatch_integer_issue_port->set(this->hold_integer_issue_pack);
-                        this->integer_busy = false;
-                    }
-                    else
-                    {
-                        dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                        if(this->integer_busy)
+                        {
+                            dispatch_integer_issue_port->set(this->hold_integer_issue_pack);
+                            this->integer_busy = false;
+                        }
+                        else
+                        {
+                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                        }
                     }
                     
-                    if(this->lsu_busy && !lsu_issue_feedback_pack.stall)
+                    if(!lsu_issue_feedback_pack.stall)
                     {
-                        dispatch_lsu_issue_port->set(this->hold_lsu_issue_pack);
-                        this->lsu_busy = false;
-                    }
-                    else
-                    {
-                        dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                        if(this->lsu_busy)
+                        {
+                            dispatch_lsu_issue_port->set(this->hold_lsu_issue_pack);
+                            this->lsu_busy = false;
+                        }
+                        else
+                        {
+                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                        }
                     }
                 }
             }

@@ -89,31 +89,31 @@ namespace cycle_model::pipeline::execute
                 switch(l2_rev_pack.sub_op.lsu_op)
                 {
                     case lsu_op_t::lb:
-                        load_stall = bus->get_data_value(&bus_value);
+                        load_stall = !bus->get_data_value(&bus_value);
                         feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
                         send_pack.rd_value = sign_extend(feedback_value, 8);
                         break;
                     
                     case lsu_op_t::lbu:
-                        load_stall = bus->get_data_value(&bus_value);
+                        load_stall = !bus->get_data_value(&bus_value);
                         feedback_value = store_buffer->get_feedback_value(l2_addr, 1, bus_value);
                         send_pack.rd_value = feedback_value;
                         break;
                     
                     case lsu_op_t::lh:
-                        load_stall = bus->get_data_value(&bus_value);
+                        load_stall = !bus->get_data_value(&bus_value);
                         feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
                         send_pack.rd_value = sign_extend(feedback_value, 16);
                         break;
                     
                     case lsu_op_t::lhu:
-                        load_stall = bus->get_data_value(&bus_value);
+                        load_stall = !bus->get_data_value(&bus_value);
                         feedback_value = store_buffer->get_feedback_value(l2_addr, 2, bus_value);
                         send_pack.rd_value = feedback_value;
                         break;
                     
                     case lsu_op_t::lw:
-                        load_stall = bus->get_data_value(&bus_value);
+                        load_stall = !bus->get_data_value(&bus_value);
                         feedback_value = store_buffer->get_feedback_value(l2_addr, 4, bus_value);
                         send_pack.rd_value = feedback_value;
                         break;
@@ -132,6 +132,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
                         
@@ -151,6 +152,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
                         
@@ -170,6 +172,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
                         
@@ -246,17 +249,20 @@ namespace cycle_model::pipeline::execute
                                 case lsu_op_t::lbu:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 1);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 1) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    bus->read8(l2_addr);
                                     break;
                                     
                                 case lsu_op_t::lh:
                                 case lsu_op_t::lhu:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 2);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 2) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    bus->read16(l2_addr);
                                     break;
                                     
                                 case lsu_op_t::lw:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 4);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 4) ? riscv_exception_t::load_address_misaligned : riscv_exception_t::load_access_fault;
+                                    bus->read32(l2_addr);
                                     break;
                                     
                                 case lsu_op_t::sb:

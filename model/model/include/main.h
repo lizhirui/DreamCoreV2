@@ -12,12 +12,12 @@
 #include "common.h"
 #include "breakpoint.h"
 
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
 #include "isa_model/isa_model.h"
 extern isa_model::isa_model *isa_model_inst;
 #endif
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
 #include "cycle_model/cycle_model.h"
 extern cycle_model::cycle_model *cycle_model_inst;
 #endif
@@ -34,6 +34,10 @@ typedef struct command_line_arg_t
     std::vector<breakpoint_info_t> breakpoint_list;
 }command_line_arg_t;
 
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+charfifo_rev_fifo_t *get_isa_model_charfifo_rev_fifo();
+charfifo_rev_fifo_t *get_cycle_model_charfifo_rev_fifo();
+#endif
 void set_pause_state(bool value);
 void set_step_state(bool value);
 void set_wait_commit(bool value);

@@ -325,23 +325,23 @@ namespace cycle_model::pipeline
                 switch(op_unit_seq[selected_issue_id[0]])
                 {
                     case 1 << ALU_SHIFT:
-                        alu_idle_shift[0] = new_idle_shift[0];
-                        alu_busy_shift[0] = new_busy_shift[0];
+                        alu_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
+                        alu_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
                         break;
                         
                     case 1 << BRU_SHIFT:
-                        bru_idle_shift[0] = new_idle_shift[0];
-                        bru_busy_shift[0] = new_busy_shift[0];
+                        bru_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
+                        bru_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
                         break;
                         
                     case 1 << CSR_SHIFT:
-                        csr_idle_shift[0] = new_idle_shift[0];
-                        csr_busy_shift[0] = new_busy_shift[0];
+                        csr_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
+                        csr_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
                         break;
     
                     case 1 << MUL_SHIFT:
-                        mul_idle_shift[0] = new_idle_shift[0];
-                        mul_busy_shift[0] = new_busy_shift[0];
+                        mul_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
+                        mul_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
                         break;
                         
                     default:
@@ -355,18 +355,18 @@ namespace cycle_model::pipeline
                 switch(op_unit_seq[selected_issue_id[1]])
                 {
                     case 1 << ALU_SHIFT:
-                        alu_idle_shift[1] = new_idle_shift[1];
-                        alu_busy_shift[1] = new_busy_shift[1];
+                        alu_idle_shift[1] = new_idle_shift[selected_issue_id[1]];
+                        alu_busy_shift[1] = new_busy_shift[selected_issue_id[1]];
                         break;
             
                     case 1 << DIV_SHIFT:
-                        div_idle_shift[0] = new_idle_shift[1];
-                        div_busy_shift[0] = new_busy_shift[1];
+                        div_idle_shift[0] = new_idle_shift[selected_issue_id[1]];
+                        div_busy_shift[0] = new_busy_shift[selected_issue_id[1]];
                         break;
             
                     case 1 << MUL_SHIFT:
-                        mul_idle_shift[1] = new_idle_shift[1];
-                        mul_busy_shift[1] = new_busy_shift[1];
+                        mul_idle_shift[1] = new_idle_shift[selected_issue_id[1]];
+                        mul_busy_shift[1] = new_busy_shift[selected_issue_id[1]];
                         break;
             
                     default:
@@ -380,6 +380,41 @@ namespace cycle_model::pipeline
         else
         {
             integer_issue_readreg_port->set(integer_issue_readreg_pack_t());
+            
+            for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+            {
+                alu_idle[i] = true;
+                alu_idle_shift[i] = 0;
+                alu_busy_shift[i] = 0;
+            }
+            
+            for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+            {
+                bru_idle[i] = true;
+                bru_idle_shift[i] = 0;
+                bru_busy_shift[i] = 0;
+            }
+            
+            for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+            {
+                csr_idle[i] = true;
+                csr_idle_shift[i] = 0;
+                csr_busy_shift[i] = 0;
+            }
+            
+            for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+            {
+                div_idle[i] = true;
+                div_idle_shift[i] = 0;
+                div_busy_shift[i] = 0;
+            }
+            
+            for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+            {
+                mul_idle[i] = true;
+                mul_idle_shift[i] = 0;
+                mul_busy_shift[i] = 0;
+            }
         }
         
         return feedback_pack;
@@ -483,6 +518,7 @@ namespace cycle_model::pipeline
             if(this->busy)
             {
                 rev_pack = this->hold_rev_pack;
+                this->hold_rev_pack = dispatch_issue_pack_t();
                 this->busy = false;
             }
             else
@@ -625,7 +661,16 @@ namespace cycle_model::pipeline
                         }
                         else
                         {
-                            port_index[issue_id] = 0;
+                            switch(rev_pack.op_info[i].op_unit)
+                            {
+                                case op_unit_t::div:
+                                    port_index[issue_id] = 1;
+                                    break;
+                                
+                                default:
+                                    port_index[issue_id] = 0;
+                                    break;
+                            }
                         }
                         
                         //op_unit_seq generation

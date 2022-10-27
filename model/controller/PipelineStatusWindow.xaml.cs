@@ -1131,8 +1131,8 @@ namespace DreamCoreV2_model_controller
             {
                 if(id >= 0)
                 {
-                    HighlightROBItem(pipelineStatus.lsu_issue.issue_q[id].rob_id, true);
-                    DisplayDetail(pipelineStatus.lsu_issue.issue_q[id]);
+                    HighlightROBItem(pipelineStatus.lsu_readreg_execute[id].rob_id, true);
+                    DisplayDetail(pipelineStatus.lsu_readreg_execute[id]);
                 }
                 else
                 {

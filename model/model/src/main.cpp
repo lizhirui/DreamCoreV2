@@ -5,12 +5,12 @@
 #include "breakpoint.h"
 #include "elf_loader.h"
 
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
 #include "isa_model/isa_model.h"
 isa_model::isa_model *isa_model_inst;
 #endif
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
 #include "cycle_model/cycle_model.h"
 cycle_model::cycle_model *cycle_model_inst;
 #endif
@@ -23,6 +23,28 @@ static bool wait_commit = false;
 static bool load_program = false;
 static std::shared_ptr<uint8_t[]> program_buffer = nullptr;
 static size_t program_size = 0;
+
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+static charfifo_send_fifo_t isa_model_charfifo_send_fifo, cycle_model_charfifo_send_fifo;
+static charfifo_rev_fifo_t isa_model_charfifo_rev_fifo, cycle_model_charfifo_rev_fifo;
+
+charfifo_rev_fifo_t *get_isa_model_charfifo_rev_fifo()
+{
+    return &isa_model_charfifo_rev_fifo;
+}
+
+charfifo_rev_fifo_t *get_cycle_model_charfifo_rev_fifo()
+{
+    return &cycle_model_charfifo_rev_fifo;
+}
+#endif
+
+#ifdef NEED_CYCLE_MODEL
+uint64_t get_cpu_clock_cycle()
+{
+    return cycle_model_inst->cpu_clock_cycle;
+}
+#endif
 
 void set_pause_state(bool value)
 {
@@ -46,7 +68,7 @@ void set_pause_detected(bool value)
 
 uint32_t get_current_pc()
 {
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     cycle_model::component::rob_item_t rob_item;
     
     if(cycle_model_inst->rob.customer_get_front(&rob_item))
@@ -84,11 +106,19 @@ uint32_t get_current_pc()
 static void init(const command_line_arg_t &arg)
 {
     network_init(arg);
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+    isa_model_inst = isa_model::isa_model::create(&isa_model_charfifo_send_fifo, &isa_model_charfifo_rev_fifo);
+#else
     isa_model_inst = isa_model::isa_model::create(get_charfifo_send_fifo(), get_charfifo_rev_fifo());
 #endif
-#if NEED_CYCLE_MODEL
+#endif
+#ifdef NEED_CYCLE_MODEL
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+    cycle_model_inst = cycle_model::cycle_model::create(&cycle_model_charfifo_send_fifo, &cycle_model_charfifo_rev_fifo);
+#else
     cycle_model_inst = cycle_model::cycle_model::create(get_charfifo_send_fifo(), get_charfifo_rev_fifo());
+#endif
 #endif
     
     for(auto item : arg.breakpoint_list)
@@ -103,10 +133,10 @@ void load(std::shared_ptr<uint8_t[]>buf, size_t size)
     program_buffer = buf;
     program_size = size;
     
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
     isa_model_inst->load(buf.get(), size);
     #endif
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     cycle_model_inst->reset();
     cycle_model_inst->load(buf.get(), size);
 #endif
@@ -114,10 +144,10 @@ void load(std::shared_ptr<uint8_t[]>buf, size_t size)
 
 void reset()
 {
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
     isa_model_inst->reset();
 #endif
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     cycle_model_inst->reset();
 #endif
     
@@ -129,30 +159,33 @@ void reset()
 
 static void pause_event()
 {
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
     isa_model_inst->pause_event();
 #endif
 }
 
 static void run(const command_line_arg_t &arg)
 {
-#if NEED_ISA_MODEL
+#ifdef NEED_CYCLE_MODEL
+    uint32_t last_retire_cycle = 0;
+#endif
+#ifdef NEED_ISA_MODEL
 #ifdef NDEBUG
-    isa_model_inst->profile(INIT_PC);
-    reset();
+    /*isa_model_inst->profile(INIT_PC);
+    reset();*/
 #endif
 #endif
     while(true)
     {
         if(arg.no_controller && !arg.no_telnet)
         {
-            if(get_charfifo_recv_thread_stopped())
+            while(get_charfifo_recv_thread_stopped())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
         
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
         uint32_t breakpoint_pc[FETCH_WIDTH];
         uint32_t pc_num = 0;
         
@@ -204,7 +237,12 @@ static void run(const command_line_arg_t &arg)
                 exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
             }
         }
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
+        if(cycle_model_inst->rob.get_committed())
+        {
+            last_retire_cycle = cycle_model_inst->cpu_clock_cycle;
+        }
+        
         if(pause_detected || (step_state && (!wait_commit || cycle_model_inst->rob.get_committed())))
 #else
         if(pause_detected || step_state)
@@ -222,11 +260,16 @@ static void run(const command_line_arg_t &arg)
             while(pause_state)
             {
                 debug_event_handle();
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
                 clear_queue(isa_model_inst->bus.error_msg_queue);
 #endif
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
                 clear_queue(cycle_model_inst->bus.error_msg_queue);
+                
+                if(last_retire_cycle > cycle_model_inst->cpu_clock_cycle)
+                {
+                    last_retire_cycle = cycle_model_inst->cpu_clock_cycle;
+                }
 #endif
                 
                 if(get_program_stop())
@@ -243,13 +286,184 @@ static void run(const command_line_arg_t &arg)
             break;
         }
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
         auto model_cycle = cycle_model_inst->cpu_clock_cycle;
         auto model_pc = get_current_pc();
         cycle_model_inst->rob.set_committed(false);
         cycle_model_inst->run();
         
-#if NEED_ISA_MODEL
+#ifdef NEED_ISA_MODEL
+        auto compare_error = false;
+        std::vector<std::pair<uint32_t, cycle_model::component::rob_item_t>> compare_error_item;
+        
+        while(!cycle_model_inst->commit_stage.rob_retire_queue.empty())
+        {
+            auto rob_item = cycle_model_inst->commit_stage.rob_retire_queue.front();
+            cycle_model_inst->commit_stage.rob_retire_queue.pop();
+            
+            if(compare_error)
+            {
+                //pop csr item only
+                if(!cycle_model_inst->execute_csr_stage[0]->csr_read_queue.empty())
+                {
+                    auto csr_item = cycle_model_inst->execute_csr_stage[0]->csr_read_queue.front();
+    
+                    if(csr_item.rob_id == rob_item.first)
+                    {
+                        cycle_model_inst->execute_csr_stage[0]->csr_read_queue.pop();
+                    }
+                }
+                
+                continue;
+            }
+            else
+            {
+                compare_error_item.push_back(rob_item);
+            }
+            
+            //hpmcounter sync
+            if(!cycle_model_inst->execute_csr_stage[0]->csr_read_queue.empty())
+            {
+                auto csr_item = cycle_model_inst->execute_csr_stage[0]->csr_read_queue.front();
+                
+                if(csr_item.rob_id == rob_item.first)
+                {
+                    cycle_model_inst->execute_csr_stage[0]->csr_read_queue.pop();
+                    std::vector<uint32_t> hpmcounter_list = {CSR_MCYCLE, CSR_MCYCLEH, CSR_MINSTRET, CSR_MINSTRETH,
+                                                             CSR_BRANCHNUM, CSR_BRANCHNUMH, CSR_BRANCHPREDICTED, CSR_BRANCHPREDICTEDH,
+                                                             CSR_BRANCHHIT, CSR_BRANCHHITH, CSR_BRANCHMISS, CSR_BRANCHMISSH};
+                    
+                    for(auto hpmcounter_id : hpmcounter_list)
+                    {
+                        if(csr_item.csr == hpmcounter_id)
+                        {
+                            isa_model_inst->csr_file.write_sys(hpmcounter_id, csr_item.value);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if(!compare_error)
+            {
+                isa_model_inst->run();
+            }
+            
+            if(!cycle_model_charfifo_send_fifo.empty())
+            {
+                auto v = cycle_model_charfifo_send_fifo.front();
+                while(!get_charfifo_send_fifo()->push(v));
+                while(!cycle_model_charfifo_send_fifo.pop());
+            }
+            
+            if(!isa_model_charfifo_send_fifo.empty())
+            {
+                while(!isa_model_charfifo_send_fifo.pop());
+            }
+        }
+    
+        std::vector<uint32_t> compare_csr_list = {CSR_MVENDORID, CSR_MARCHID, CSR_MIMPID, CSR_MHARTID, CSR_MCONFIGPTR, CSR_MSTATUS, CSR_MISA, CSR_MIE,
+                                                  CSR_MTVEC, CSR_MCOUNTEREN, CSR_MSTATUSH, CSR_MSCRATCH, CSR_MEPC, CSR_MCAUSE, CSR_MTVAL, //CSR_MIP,
+                                                  CSR_FINISH, CSR_MINSTRET, CSR_MINSTRETH};
+    
+        for(uint32_t i = 1;i < ARCH_REG_NUM;i++)
+        {
+            uint32_t phy_id = 0;
+            cycle_model_inst->retire_rat.customer_get_phy_id(i, &phy_id);
+            auto v = cycle_model_inst->phy_regfile.read(phy_id);
+        
+            if(!cycle_model_inst->phy_regfile.read_data_valid(phy_id))
+            {
+                std::cout << MESSAGE_OUTPUT_PREFIX << "Error: GPR " << i << " is not valid!" << std::endl;
+                compare_error = true;
+            }
+            else
+            {
+                auto v2 = isa_model_inst->arch_regfile.read(i);
+            
+                if(v != v2)
+                {
+                    std::cout << MESSAGE_OUTPUT_PREFIX << "Error: GPR " << i << " is not consistent, cycle model value is 0x" << outhex(v) << ", isa model value is 0x" << outhex(v2) << std::endl;
+                    compare_error = true;
+                }
+            }
+        }
+    
+        for(auto csr_id : compare_csr_list)
+        {
+            auto v = cycle_model_inst->csr_file.read_sys(csr_id);
+            auto v2 = isa_model_inst->csr_file.read_sys(csr_id);
+        
+            if(v != v2)
+            {
+                std::cout << MESSAGE_OUTPUT_PREFIX << "Error: CSR " << isa_model_inst->csr_file.get_name(csr_id) << " is not consistent, cycle model value is 0x" << outhex(v) << ", isa model value is 0x" << outhex(v2) << std::endl;
+                compare_error = true;
+            }
+        }
+    
+        if(isa_model_charfifo_send_fifo.empty() != cycle_model_charfifo_send_fifo.empty())
+        {
+            std::cout << MESSAGE_OUTPUT_PREFIX << "Error: charfifo send fifo empty property is not consistent, cycle model is " << cycle_model_charfifo_send_fifo.empty() << ", isa model is " << isa_model_charfifo_send_fifo.empty() << std::endl;
+            compare_error = true;
+        }
+        else if(!cycle_model_charfifo_send_fifo.empty())
+        {
+            auto v = cycle_model_charfifo_send_fifo.front();
+            auto v2 = isa_model_charfifo_send_fifo.front();
+        
+            if(v != v2)
+            {
+                std::cout << MESSAGE_OUTPUT_PREFIX << "Error: charfifo send fifo front value is not consistent, cycle model is 0x" << outhex(v) << ", isa model is 0x" << outhex(v2) << std::endl;
+                compare_error = true;
+            }
+        }
+    
+        //dump compare result
+        if(compare_error)
+        {
+            std::cout << MESSAGE_OUTPUT_PREFIX "cycle = " << model_cycle << ", pc = 0x" << outhex(model_pc) << " compare error detected!" << std::endl;
+            set_pause_detected(true);
+            send_cmd("main", "breakpoint_trigger", "");
+        
+            for(const auto &item : compare_error_item)
+            {
+                auto rob_id = item.first;
+                auto rob_item = item.second;
+            
+                std::cout << MESSAGE_OUTPUT_PREFIX << "rob_id = " << rob_id << ", pc = 0x" << outhex(rob_item.pc) << ", inst = 0x" << outhex(rob_item.inst_value) << std::endl;
+            }
+            
+            compare_error_item.clear();
+            std::cout << MESSAGE_OUTPUT_PREFIX << "Compare Result:" << std::endl;
+            std::cout << MESSAGE_OUTPUT_PREFIX << "Cycle Model\tISA Model" << std::endl;
+        
+            for(uint32_t i = 1;i < ARCH_REG_NUM;i++)
+            {
+                std::cout << MESSAGE_OUTPUT_PREFIX << "x" << i << " = ";
+                uint32_t phy_id = 0;
+                cycle_model_inst->retire_rat.customer_get_phy_id(i, &phy_id);
+                auto v = cycle_model_inst->phy_regfile.read(phy_id);
+            
+                if(!cycle_model_inst->phy_regfile.read_data_valid(phy_id))
+                {
+                    std::cout << "<Invalid>\t";
+                }
+                else
+                {
+                    std::cout << "0x" << outhex(isa_model_inst->arch_regfile.read(i)) << "\t";
+                }
+            
+                std::cout << "0x" << outhex(isa_model_inst->arch_regfile.read(i)) << std::endl;
+            }
+        
+            for(auto csr_id : compare_csr_list)
+            {
+                auto v = cycle_model_inst->csr_file.read_sys(csr_id);
+                auto v2 = isa_model_inst->csr_file.read_sys(csr_id);
+                std::cout << MESSAGE_OUTPUT_PREFIX << "CSR[" << isa_model_inst->csr_file.get_name(csr_id) << "] = 0x" << outhex(v) << "\t0x" << outhex(v2) << std::endl;
+            }
+        }
+        
         while(!isa_model_inst->bus.error_msg_queue.empty())
         {
             isa_model_inst->bus.error_msg_queue.pop();
@@ -269,7 +483,7 @@ static void run(const command_line_arg_t &arg)
             set_pause_detected(true);
             send_cmd("main", "breakpoint_trigger", "");
 
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
             while(!cycle_model_inst->bus.error_msg_queue.empty())
             {
                 auto msg = cycle_model_inst->bus.error_msg_queue.front();
@@ -302,6 +516,16 @@ static void run(const command_line_arg_t &arg)
                 }
             }
         }
+        
+#ifdef NEED_CYCLE_MODEL
+        if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle > 1000)
+        {
+            last_retire_cycle = cycle_model_inst->cpu_clock_cycle;
+            std::cout << MESSAGE_OUTPUT_PREFIX << "Error: Retire Timeout!" << std::endl;
+            set_pause_detected(true);
+            send_cmd("main", "breakpoint_trigger", "");
+        }
+#endif
     }
 }
 
@@ -463,7 +687,7 @@ static void atexit_func()
 {
     std::cout << std::endl;
     std::cout << "***********************************************" << std::endl;
-#if NEED_CYCLE_MODEL
+#ifdef NEED_CYCLE_MODEL
     if(cycle_model_inst != nullptr)
     {
         std::cout << "Cycle: " << cycle_model_inst->cpu_clock_cycle << std::endl;
@@ -483,6 +707,7 @@ static void atexit_func()
 
 int main(int argc, char **argv)
 {
+    std::cout.setf(std::ios::unitbuf);
     std::cout << MESSAGE_OUTPUT_PREFIX << "main thread tid: " << gettid() << std::endl;
     std::atexit(atexit_func);
     show_copyright();

@@ -88,6 +88,9 @@ namespace cycle_model::pipeline
     
                         if(rob_item.finish)
                         {
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                            rob_retire_queue.push(std::pair(rob_item_id, rob_item));
+#endif
                             feedback_pack.next_handle_rob_id_valid = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
                             feedback_pack.committed_rob_id_valid[i] = true;
                             feedback_pack.committed_rob_id[i] = rob_item_id;
@@ -111,7 +114,7 @@ namespace cycle_model::pipeline
                             else
                             {
                                 rob->pop();
-            
+                                
                                 if(rob_item.old_phy_reg_id_valid)
                                 {
                                     speculative_rat->release_map(rob_item.old_phy_reg_id);

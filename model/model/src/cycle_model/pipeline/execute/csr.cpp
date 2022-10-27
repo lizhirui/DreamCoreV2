@@ -93,6 +93,9 @@ namespace cycle_model::pipeline::execute
                         if(rev_pack.need_rename)
                         {
                             breakpoint_csr_trigger(rev_pack.csr, csr_value, false);
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                            csr_read_queue.push({.rob_id = rev_pack.rob_id, .csr = rev_pack.csr, .value = csr_value});
+#endif
                         }
                         
                         send_pack.rd_value = csr_value;

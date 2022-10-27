@@ -216,6 +216,7 @@ namespace cycle_model::pipeline
             if(this->busy)
             {
                 rev_pack = this->hold_rev_pack;
+                this->hold_rev_pack = dispatch_issue_pack_t();
                 this->busy = false;
             }
             else

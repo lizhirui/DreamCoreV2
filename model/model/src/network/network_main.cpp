@@ -23,7 +23,9 @@ static std::atomic<bool> program_stop = false;
 
 static asio::io_context tcp_charfifo_thread_ioc;
 static charfifo_send_fifo_t charfifo_send_fifo;
+#ifndef NEED_ISA_AND_CYCLE_MODEL_COMPARE
 static charfifo_rev_fifo_t charfifo_rev_fifo;
+#endif
 static std::atomic<bool> charfifo_thread_stopped = false;
 static std::atomic<bool> charfifo_recv_thread_stop = false;
 static std::atomic<bool> charfifo_recv_thread_stopped = true;
@@ -74,10 +76,12 @@ charfifo_send_fifo_t *get_charfifo_send_fifo()
     return &charfifo_send_fifo;
 }
 
+#ifndef NEED_ISA_AND_CYCLE_MODEL_COMPARE
 charfifo_rev_fifo_t *get_charfifo_rev_fifo()
 {
     return &charfifo_rev_fifo;
 }
+#endif
 
 void recv_ioc_stop()
 {
@@ -170,7 +174,12 @@ static void tcp_charfifo_recv_thread_entry(asio::ip::tcp::socket &soc)
 
             for(size_t i = 0;i < length;i++)
             {
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                while(!get_isa_model_charfifo_rev_fifo()->push(buf[i]));
+                while(!get_cycle_model_charfifo_rev_fifo()->push(buf[i]));
+#else
                 while(!charfifo_rev_fifo.push(buf[i]));
+#endif
             }
         }
         catch(const std::exception &ex)
