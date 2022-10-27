@@ -12,6 +12,8 @@ namespace DreamCoreV2_model_controller.Model
     {
         [JsonProperty("busy")]
         public bool busy { get; set; }
+        [JsonProperty("hold_rev_pack")]
+        public dispatch_issue_op_info[]? hold_rev_pack { get; set; }
         [JsonProperty("next_port_index")]
         public uint next_port_index { get; set; }
         [JsonProperty("issue_q")]

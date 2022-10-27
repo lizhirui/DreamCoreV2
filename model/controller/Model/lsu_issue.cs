@@ -12,6 +12,8 @@ namespace DreamCoreV2_model_controller.Model
     {
         [JsonProperty("busy")]
         public bool busy { get; set; }
+        [JsonProperty("hold_rev_pack")]
+        public dispatch_issue_op_info[]? hold_rev_pack { get; set; }
         [JsonProperty("issue_q")]
         public lsu_issue_queue_item[]? issue_q { get; set; }
         [JsonProperty("wakeup_shift_src1")]

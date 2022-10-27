@@ -14,5 +14,7 @@ namespace DreamCoreV2_model_controller
         public static RoutedCommand StepCommit = new RoutedCommand();
         public static RoutedCommand Step = new RoutedCommand();
         public static RoutedCommand Reset = new RoutedCommand();
+        public static RoutedCommand Left = new RoutedCommand();
+        public static RoutedCommand Right = new RoutedCommand();
     }
 }
