@@ -52,7 +52,7 @@ namespace cycle_model::pipeline
                     if(!decode_rename_fifo->customer_is_empty())
                     {
                         //start to rename
-                        if(!phy_id_free_list->customer_is_empty() && !rob->customer_is_full())
+                        if(!phy_id_free_list->producer_is_empty() && !rob->producer_is_full())
                         {
                             decode_rename_pack_t rev_pack;
                             verify(decode_rename_fifo->customer_get_front(&rev_pack));
@@ -165,11 +165,11 @@ namespace cycle_model::pipeline
                                 break;
                             }
                         }
-                        else if(phy_id_free_list->customer_is_empty())
+                        else if(phy_id_free_list->producer_is_empty())
                         {
                             //phy_regfile_full_add();
                             
-                            if(rob->customer_is_full())
+                            if(rob->producer_is_full())
                             {
                                 //rob_full_add();
                             }

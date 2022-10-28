@@ -289,6 +289,7 @@ static void run(const command_line_arg_t &arg)
 #ifdef NEED_CYCLE_MODEL
         auto model_cycle = cycle_model_inst->cpu_clock_cycle;
         auto model_pc = get_current_pc();
+        //std::cout << "cycle = " << model_cycle << ", pc = 0x" << outhex(model_pc) << std::endl;
         cycle_model_inst->rob.set_committed(false);
         cycle_model_inst->run();
         
@@ -601,7 +602,8 @@ static void sub_main(const command_line_arg_t &arg)
     {
         //load_bin_file("../../../image/rtthread.bin");
         //load_bin_file("../../../image/coremark_10.bin");
-        load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
+        //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
+        load_bin_file("../../../testcase/base-tests/ipc_test2_12_2.bin");
         //load_elf_file("../../../testcase/compiled/rtthread.elf");
     }
     
@@ -726,9 +728,10 @@ static void atexit_func()
 #ifdef NEED_CYCLE_MODEL
     if(cycle_model_inst != nullptr)
     {
-        std::cout << "Cycle: " << cycle_model_inst->cpu_clock_cycle << std::endl;
-        std::cout << "Instruction Num: " << cycle_model_inst->committed_instruction_num << std::endl;
-        std::cout << "PC: 0x" << outhex(get_current_pc()) << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Cycle: " << cycle_model_inst->cpu_clock_cycle << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Instruction Num: " << cycle_model_inst->committed_instruction_num << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "IPC: " << (double)cycle_model_inst->committed_instruction_num / cycle_model_inst->cpu_clock_cycle << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "PC: 0x" << outhex(get_current_pc()) << std::endl;
     }
 #else
     if(isa_model_inst != nullptr)

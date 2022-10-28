@@ -20,6 +20,8 @@ namespace DreamCoreV2_model_controller.Model
         public bool last_uop { get; set; }
         [JsonProperty("rob_id")]
         public uint rob_id { get; set; }
+        [JsonProperty("rob_id_stage")]
+        public bool rob_id_stage { get; set; }
         [JsonProperty("pc")]
         public uint pc { get; set; }
         [JsonProperty("imm")]

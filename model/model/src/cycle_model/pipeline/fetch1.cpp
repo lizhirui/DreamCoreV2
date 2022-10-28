@@ -115,7 +115,11 @@ namespace cycle_model::pipeline
             }
         }
     
-        this->fetch1_fetch2_port->set(send_pack);
+        if(!fetch2_feedback_pack.stall)
+        {
+            this->fetch1_fetch2_port->set(send_pack);
+        }
+        
         this->bus->read_instruction(this->pc);
     }
     

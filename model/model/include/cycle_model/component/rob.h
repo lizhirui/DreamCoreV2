@@ -194,7 +194,7 @@ namespace cycle_model::component
                     return false;
                 }
                 
-                *new_id_stage = this->wptr.get_new();
+                *new_id_stage = this->wstage.get_new();
                 return true;
             }
             
