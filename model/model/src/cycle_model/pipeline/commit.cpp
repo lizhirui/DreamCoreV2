@@ -45,12 +45,14 @@ namespace cycle_model::pipeline
     {
         commit_feedback_pack_t feedback_pack;
         bool need_flush = false;
+        feedback_pack.idle = true;
     
         //handle output
         if(!rob->customer_is_empty())
         {
             uint32_t rob_item_id = 0;
             verify(rob->get_front_id(&rob_item_id));
+            feedback_pack.idle = false;
             feedback_pack.next_handle_rob_id = rob_item_id;
             feedback_pack.next_handle_rob_id_valid = true;
             auto first_id = rob_item_id;
@@ -69,6 +71,7 @@ namespace cycle_model::pipeline
                 mstatus.set_mie(false);
                 csr_file->write_sys(CSR_MSTATUS, mstatus.get_value());
                 interrupt_interface->set_ack(interrupt_id);
+                feedback_pack.has_exception = true;
                 feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
                 feedback_pack.flush = true;
                 speculative_rat->load(retire_rat);
@@ -100,6 +103,7 @@ namespace cycle_model::pipeline
                                 csr_file->write_sys(CSR_MEPC, rob_item.pc);
                                 csr_file->write_sys(CSR_MTVAL, rob_item.exception_value);
                                 csr_file->write_sys(CSR_MCAUSE, static_cast<uint32_t>(rob_item.exception_id));
+                                feedback_pack.has_exception = true;
                                 feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
                                 feedback_pack.flush = true;
                                 speculative_rat->load(retire_rat);

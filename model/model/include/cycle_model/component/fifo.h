@@ -48,7 +48,7 @@ namespace cycle_model::component
 
             virtual void flush()
             {
-                this->reset();
+                this->fifo::reset();
             }
 
             virtual bool push(T element)

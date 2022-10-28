@@ -81,8 +81,9 @@ namespace cycle_model::pipeline::execute
                 {
                     verify_only(rev_pack.valid);
                     verify_only(rev_pack.op_unit == op_unit_t::csr);
+                    auto read_ret = csr_file->read(rev_pack.csr, &csr_value);
                     
-                    if(rev_pack.need_rename && !csr_file->read(rev_pack.csr, &csr_value))
+                    if(rev_pack.need_rename && !read_ret)
                     {
                         send_pack.has_exception = true;
                         send_pack.exception_id = riscv_exception_t::illegal_instruction;

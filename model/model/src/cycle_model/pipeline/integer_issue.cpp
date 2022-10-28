@@ -41,35 +41,30 @@ namespace cycle_model::pipeline
         {
             this->alu_idle[i] = 1;
             this->alu_idle_shift[i] = 0;
-            this->alu_busy_shift[i] = 0;
         }
         
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             this->bru_idle[i] = 1;
             this->bru_idle_shift[i] = 0;
-            this->bru_busy_shift[i] = 0;
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             this->csr_idle[i] = 1;
             this->csr_idle_shift[i] = 0;
-            this->csr_busy_shift[i] = 0;
         }
         
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             this->div_idle[i] = 1;
             this->div_idle_shift[i] = 0;
-            this->div_busy_shift[i] = 0;
         }
         
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             this->mul_idle[i] = 1;
             this->mul_idle_shift[i] = 0;
-            this->mul_busy_shift[i] = 0;
         }
         
         for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
@@ -87,7 +82,6 @@ namespace cycle_model::pipeline
             this->wakeup_rd_valid[i] = false;
             this->wakeup_shift[i] = 0;
             this->new_idle_shift[i] = 0;
-            this->new_busy_shift[i] = 0;
         }
     
         this->next_port_index = 0;
@@ -181,19 +175,7 @@ namespace cycle_model::pipeline
             //calculate busy
             for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
             {
-                if(alu_idle[i])
-                {
-                    if(alu_busy_shift[i] == 1)
-                    {
-                        alu_idle[i] = false;
-                    }
-                    
-                    if(alu_busy_shift[i] > 0)
-                    {
-                        alu_busy_shift[i]--;
-                    }
-                }
-                else
+                if(!alu_idle[i])
                 {
                     if(alu_idle_shift[i] == 1)
                     {
@@ -202,26 +184,14 @@ namespace cycle_model::pipeline
                     
                     if(alu_idle_shift[i] > 0)
                     {
-                        alu_idle_shift[i]--;
+                        alu_idle_shift[i] >>= 1;
                     }
                 }
             }
     
             for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
-                if(bru_idle[i])
-                {
-                    if(bru_busy_shift[i] == 1)
-                    {
-                        bru_idle[i] = false;
-                    }
-            
-                    if(bru_busy_shift[i] > 0)
-                    {
-                        bru_busy_shift[i]--;
-                    }
-                }
-                else
+                if(!bru_idle[i])
                 {
                     if(bru_idle_shift[i] == 1)
                     {
@@ -230,26 +200,14 @@ namespace cycle_model::pipeline
             
                     if(bru_idle_shift[i] > 0)
                     {
-                        bru_idle_shift[i]--;
+                        bru_idle_shift[i] >>= 1;
                     }
                 }
             }
     
             for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
-                if(csr_idle[i])
-                {
-                    if(csr_busy_shift[i] == 1)
-                    {
-                        csr_idle[i] = false;
-                    }
-            
-                    if(csr_busy_shift[i] > 0)
-                    {
-                        csr_busy_shift[i]--;
-                    }
-                }
-                else
+                if(!csr_idle[i])
                 {
                     if(csr_idle_shift[i] == 1)
                     {
@@ -258,26 +216,14 @@ namespace cycle_model::pipeline
             
                     if(csr_idle_shift[i] > 0)
                     {
-                        csr_idle_shift[i]--;
+                        csr_idle_shift[i] >>= 1;
                     }
                 }
             }
     
             for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
-                if(div_idle[i])
-                {
-                    if(div_busy_shift[i] == 1)
-                    {
-                        div_idle[i] = false;
-                    }
-            
-                    if(div_busy_shift[i] > 0)
-                    {
-                        div_busy_shift[i]--;
-                    }
-                }
-                else
+                if(!div_idle[i])
                 {
                     if(div_idle_shift[i] == 1)
                     {
@@ -286,26 +232,14 @@ namespace cycle_model::pipeline
             
                     if(div_idle_shift[i] > 0)
                     {
-                        div_idle_shift[i]--;
+                        div_idle_shift[i] >>= 1;
                     }
                 }
             }
     
             for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
-                if(mul_idle[i])
-                {
-                    if(mul_busy_shift[i] == 1)
-                    {
-                        mul_idle[i] = false;
-                    }
-            
-                    if(mul_busy_shift[i] > 0)
-                    {
-                        mul_busy_shift[i]--;
-                    }
-                }
-                else
+                if(!mul_idle[i])
                 {
                     if(mul_idle_shift[i] == 1)
                     {
@@ -314,34 +248,34 @@ namespace cycle_model::pipeline
             
                     if(mul_idle_shift[i] > 0)
                     {
-                        mul_idle_shift[i]--;
+                        mul_idle_shift[i] >>= 1;
                     }
                 }
             }
             
             //update idle and busy shift
-            if(selected_valid[0])
+            if(selected_valid[0] && (new_idle_shift[selected_issue_id[0]] > 0))
             {
                 switch(op_unit_seq[selected_issue_id[0]])
                 {
                     case 1 << ALU_SHIFT:
                         alu_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
-                        alu_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
+                        alu_idle[0] = false;
                         break;
                         
                     case 1 << BRU_SHIFT:
                         bru_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
-                        bru_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
+                        bru_idle[0] = false;
                         break;
                         
                     case 1 << CSR_SHIFT:
                         csr_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
-                        csr_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
+                        csr_idle[0] = false;
                         break;
     
                     case 1 << MUL_SHIFT:
                         mul_idle_shift[0] = new_idle_shift[selected_issue_id[0]];
-                        mul_busy_shift[0] = new_busy_shift[selected_issue_id[0]];
+                        mul_idle[0] = false;
                         break;
                         
                     default:
@@ -350,23 +284,23 @@ namespace cycle_model::pipeline
                 }
             }
     
-            if(selected_valid[1])
+            if(selected_valid[1] && (new_idle_shift[selected_issue_id[1]] > 0))
             {
                 switch(op_unit_seq[selected_issue_id[1]])
                 {
                     case 1 << ALU_SHIFT:
                         alu_idle_shift[1] = new_idle_shift[selected_issue_id[1]];
-                        alu_busy_shift[1] = new_busy_shift[selected_issue_id[1]];
+                        alu_idle[1] = false;
                         break;
             
                     case 1 << DIV_SHIFT:
                         div_idle_shift[0] = new_idle_shift[selected_issue_id[1]];
-                        div_busy_shift[0] = new_busy_shift[selected_issue_id[1]];
+                        div_idle[0] = false;
                         break;
             
                     case 1 << MUL_SHIFT:
                         mul_idle_shift[1] = new_idle_shift[selected_issue_id[1]];
-                        mul_busy_shift[1] = new_busy_shift[selected_issue_id[1]];
+                        mul_idle[1] = false;
                         break;
             
                     default:
@@ -385,35 +319,30 @@ namespace cycle_model::pipeline
             {
                 alu_idle[i] = true;
                 alu_idle_shift[i] = 0;
-                alu_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
                 bru_idle[i] = true;
                 bru_idle_shift[i] = 0;
-                bru_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
                 csr_idle[i] = true;
                 csr_idle_shift[i] = 0;
-                csr_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
                 div_idle[i] = true;
                 div_idle_shift[i] = 0;
-                div_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
                 mul_idle[i] = true;
                 mul_idle_shift[i] = 0;
-                mul_busy_shift[i] = 0;
             }
         }
         
@@ -650,7 +579,7 @@ namespace cycle_model::pipeline
                         }
                         else
                         {
-                            src2_ready[i] = true;
+                            src2_ready[issue_id] = true;
                         }
                         
                         //port assignment
@@ -740,23 +669,23 @@ namespace cycle_model::pipeline
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:
-                                latency_to_idle_busy_shift(ALU_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
+                                new_idle_shift[issue_id] = latency_to_idle_shift(ALU_LATENCY);
                                 break;
         
                             case op_unit_t::bru:
-                                latency_to_idle_busy_shift(BRU_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
+                                new_idle_shift[issue_id] = latency_to_idle_shift(BRU_LATENCY);
                                 break;
         
                             case op_unit_t::csr:
-                                latency_to_idle_busy_shift(CSR_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
+                                new_idle_shift[issue_id] = latency_to_idle_shift(CSR_LATENCY);
                                 break;
         
                             case op_unit_t::div:
-                                latency_to_idle_busy_shift(DIV_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
+                                new_idle_shift[issue_id] = latency_to_idle_shift(DIV_LATENCY);
                                 break;
         
                             case op_unit_t::mul:
-                                latency_to_idle_busy_shift(MUL_LATENCY, new_idle_shift[issue_id], new_busy_shift[issue_id]);
+                                new_idle_shift[issue_id] = latency_to_idle_shift(MUL_LATENCY);
                                 break;
         
                             default:
@@ -797,35 +726,30 @@ namespace cycle_model::pipeline
             {
                 alu_idle[i] = 1;
                 alu_idle_shift[i] = 0;
-                alu_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
             {
                 bru_idle[i] = 1;
                 bru_idle_shift[i] = 0;
-                bru_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
             {
                 csr_idle[i] = 1;
                 csr_idle_shift[i] = 0;
-                csr_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
             {
                 div_idle[i] = 1;
                 div_idle_shift[i] = 0;
-                div_busy_shift[i] = 0;
             }
             
             for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
             {
                 mul_idle[i] = 1;
                 mul_idle_shift[i] = 0;
-                mul_busy_shift[i] = 0;
             }
             
             next_port_index = 0;
@@ -839,10 +763,9 @@ namespace cycle_model::pipeline
         return (latency == 1) ? 0 : (1 << (latency - 1));
     }
     
-    void integer_issue::latency_to_idle_busy_shift(uint32_t latency, uint32_t &idle_shift, uint32_t &busy_shift)
+    uint32_t integer_issue::latency_to_idle_shift(uint32_t latency)
     {
-        idle_shift = (latency == 1) ? 0 : (1 << (latency - 1));
-        busy_shift = (latency == 1) ? 0 : (1 << 1);
+        return (latency == 1) ? 0 : (1 << (latency - 1));
     }
     
     void integer_issue::print(std::string indent)
@@ -949,51 +872,6 @@ namespace cycle_model::pipeline
         
         t["mul_idle_shift"] = mul_idle_shift;
         
-        auto alu_busy_shift = json::array();
-        
-        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
-        {
-            alu_busy_shift.push_back(this->alu_busy_shift[i]);
-        }
-        
-        t["alu_busy_shift"] = alu_busy_shift;
-        
-        auto bru_busy_shift = json::array();
-        
-        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
-        {
-            bru_busy_shift.push_back(this->bru_busy_shift[i]);
-        }
-        
-        t["bru_busy_shift"] = bru_busy_shift;
-        
-        auto csr_busy_shift = json::array();
-        
-        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
-        {
-            csr_busy_shift.push_back(this->csr_busy_shift[i]);
-        }
-        
-        t["csr_busy_shift"] = csr_busy_shift;
-        
-        auto div_busy_shift = json::array();
-        
-        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
-        {
-            div_busy_shift.push_back(this->div_busy_shift[i]);
-        }
-        
-        t["div_busy_shift"] = div_busy_shift;
-        
-        auto mul_busy_shift = json::array();
-        
-        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
-        {
-            mul_busy_shift.push_back(this->mul_busy_shift[i]);
-        }
-        
-        t["mul_busy_shift"] = mul_busy_shift;
-        
         auto wakeup_shift_src1 = json::array();
         auto src1_ready = json::array();
         auto wakeup_shift_src2 = json::array();
@@ -1006,7 +884,6 @@ namespace cycle_model::pipeline
         auto wakeup_rd_valid = json::array();
         auto wakeup_shift = json::array();
         auto new_idle_shift = json::array();
-        auto new_busy_shift = json::array();
         
         for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
         {
@@ -1022,7 +899,6 @@ namespace cycle_model::pipeline
             wakeup_rd_valid.push_back(this->wakeup_rd_valid[i]);
             wakeup_shift.push_back(this->wakeup_shift[i]);
             new_idle_shift.push_back(this->new_idle_shift[i]);
-            new_busy_shift.push_back(this->new_busy_shift[i]);
         }
         
         t["wakeup_shift_src1"] = wakeup_shift_src1;
@@ -1037,7 +913,6 @@ namespace cycle_model::pipeline
         t["wakeup_rd_valid"] = wakeup_rd_valid;
         t["wakeup_shift"] = wakeup_shift;
         t["new_idle_shift"] = new_idle_shift;
-        t["new_busy_shift"] = new_busy_shift;
         return t;
     }
 }

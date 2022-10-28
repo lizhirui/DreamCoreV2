@@ -1263,8 +1263,9 @@ namespace isa_model
     {
         verify_only(isa_state.valid && !isa_state.has_exception);
         uint32_t csr_value = 0;
+        auto read_ret = csr_file.read(isa_state.csr, &csr_value);
         
-        if(!csr_file.read(isa_state.csr, &csr_value))
+        if(isa_state.rd_enable && isa_state.rd != 0 && !read_ret)
         {
             isa_state.has_exception = true;
             isa_state.exception_id = riscv_exception_t::illegal_instruction;

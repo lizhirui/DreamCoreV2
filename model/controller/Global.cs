@@ -228,7 +228,7 @@ namespace DreamCoreV2_model_controller
                 catch(IOException)
                 {
                 }
-                catch
+                catch(Exception e)
                 {
                     connected.Value = false;
                 }
@@ -255,7 +255,7 @@ namespace DreamCoreV2_model_controller
 
                     Thread.Sleep(1000);
                 }
-                catch
+                catch(Exception e)
                 {
                     connected.Value = false;
                 }

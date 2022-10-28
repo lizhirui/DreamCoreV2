@@ -38,16 +38,6 @@ namespace DreamCoreV2_model_controller.Model
         public uint[]? div_idle_shift { get; set; }
         [JsonProperty("mul_idle_shift")]
         public uint[]? mul_idle_shift { get; set; }
-        [JsonProperty("alu_busy_shift")]
-        public uint[]? alu_busy_shift { get; set; }
-        [JsonProperty("bru_busy_shift")]
-        public uint[]? bru_busy_shift { get; set; }
-        [JsonProperty("csr_busy_shift")]
-        public uint[]? csr_busy_shift { get; set; }
-        [JsonProperty("div_busy_shift")]
-        public uint[]? div_busy_shift { get; set; }
-        [JsonProperty("mul_busy_shift")]
-        public uint[]? mul_busy_shift { get; set; }
         [JsonProperty("wakeup_shift_src1")]
         public uint[]? wakeup_shift_src1 { get; set; }
         [JsonProperty("src1_ready")]
@@ -72,7 +62,5 @@ namespace DreamCoreV2_model_controller.Model
         public uint[]? wakeup_shift { get; set; }
         [JsonProperty("new_idle_shift")]
         public uint[]? new_idle_shift { get; set; }
-        [JsonProperty("new_busy_shift")]
-        public uint[]? new_busy_shift { get; set; }
     }
 }

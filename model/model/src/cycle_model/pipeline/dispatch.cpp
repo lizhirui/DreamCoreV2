@@ -189,13 +189,29 @@ namespace cycle_model::pipeline
                         if(!(!integer_issue_feedback_pack.stall && commit_feedback_pack.next_handle_rob_id_valid && (commit_feedback_pack.next_handle_rob_id == found_rob_id)))
                         {
                             this->busy = true;
-                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
-                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            
+                            if(!integer_issue_feedback_pack.stall)
+                            {
+                                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                            }
+                            
+                            if(!lsu_issue_feedback_pack.stall)
+                            {
+                                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            }
                         }
                         else
                         {
-                            dispatch_integer_issue_port->set(integer_issue_pack);
-                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            if(!integer_issue_feedback_pack.stall)
+                            {
+                                dispatch_integer_issue_port->set(integer_issue_pack);
+                            }
+    
+                            if(!lsu_issue_feedback_pack.stall)
+                            {
+                                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                            }
+                            
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = found_rob_id;
                         }
@@ -203,8 +219,16 @@ namespace cycle_model::pipeline
                     else if(found_fence && (((integer_issue_id > 0) && integer_issue_feedback_pack.stall) || ((lsu_issue_id > 0) && lsu_issue_feedback_pack.stall)))
                     {
                         this->busy = true;
-                        dispatch_integer_issue_port->set(dispatch_issue_pack_t());
-                        dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                        
+                        if(!integer_issue_feedback_pack.stall)
+                        {
+                            dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                        }
+                        
+                        if(!lsu_issue_feedback_pack.stall)
+                        {
+                            dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                        }
                     }
                     else
                     {
@@ -287,8 +311,15 @@ namespace cycle_model::pipeline
             }
             else if(is_inst_waiting)
             {
-                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
-                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                if(!integer_issue_feedback_pack.stall)
+                {
+                    dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                }
+                
+                if(!lsu_issue_feedback_pack.stall)
+                {
+                    dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                }
                 
                 if(inst_waiting_ok)
                 {
@@ -303,14 +334,21 @@ namespace cycle_model::pipeline
             }
             else if(is_stbuf_empty_waiting && store_buffer->customer_is_empty())
             {
-                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
-                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                if(!integer_issue_feedback_pack.stall)
+                {
+                    dispatch_integer_issue_port->set(dispatch_issue_pack_t());
+                }
+                
+                if(!lsu_issue_feedback_pack.stall)
+                {
+                    dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                }
+                
                 this->is_stbuf_empty_waiting = false;
             }
             else
             {
-                dispatch_integer_issue_port->set(dispatch_issue_pack_t());
-                dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
+                verify_only(0);
             }
         }
         else

@@ -40,7 +40,7 @@ namespace cycle_model::pipeline::execute
         
         if(!commit_feedback_pack.flush)
         {
-            if(!this->busy)
+            if(!this->busy || (this->progress == 0))
             {
                 if(!readreg_div_hdff->is_empty())
                 {
@@ -112,7 +112,8 @@ namespace cycle_model::pipeline::execute
 
                 div_wb_port->set(execute_wb_pack_t());
             }
-            else
+            
+            if(this->busy)
             {
                 if(this->progress == 0)
                 {

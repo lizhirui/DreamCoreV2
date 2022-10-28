@@ -7,7 +7,7 @@
 在正常状态下（无来自commit流水级的flush信号，非跳转等待状态，无来自fetch2的stall信号，非总线等待状态）：
 
 * 若所有的指令都不是fence.i指令及跳转分支指令（一切影响PC的指令），则令PC = PC + 4 * 4
-* 若第i条指令是fence.i指令，则i必须等于0，并且fetch2/decode/rename/commit流水级必须都处于空闲状态，且Store Buffer必须为空，否则该条指令及后续的指令都会被放弃，PC = PC + i * 4
+* 若第i条指令是fence.i指令，则i必须等于0，并且fetch2/decode/rename/commit流水级必须都处于空闲状态，且Store Buffer必须为空，否则该条指令**及**后续的指令都会被放弃，PC = PC + i * 4，若满足上述条件，则该条指令**后续**的指令都会被放弃，PC = PC + i * 4 + 4
 * 若第i条指令是跳转分支指令，则进入跳转等待状态，同时PC = PC + i * 4 + 4
 
 在跳转等待状态下（无来自commit流水级的flush信号）：
@@ -86,9 +86,9 @@
 
 * 若不处于流水级繁忙状态，从rename_dispatch_port中获得指令，否则使用上一个周期获取到的指令，根据指令所属队列分配到integer_issue_pack与lsu_issue_pack中，每个pack的宽度都与rename_dispatch_port宽度一致，以保证送来的指令能够被一次性分发
 * 若遇到csr/mret指令，则处理分为两种情况
-  * 若integer_issue不处于堵塞状态，且该指令是commit流水级的下一个待处理项，则将该指令送入dispatch_integer_issue_port并置该流水级为指令等待状态，等待该指令的完成后再分发下一个指令包
-  * 若不满足上述情况，则向dispatch_integer_issue_port与dispatch_lsu_issue_port送空包，置流水级繁忙状态，暂停本轮整数指令与LSU指令分发
-* 若遇到fence指令，并且有整数指令要分发但是integer_issue处于阻塞状态，或者有LSU指令要分发但是lsu_issue处于阻塞状态，则向dispatch_integer_issue_port与dispatch_lsu_issue_port送空包，置流水级繁忙状态，暂停本轮整数指令与LSU指令分发
+  * 若integer_issue不处于堵塞状态，且该指令是commit流水级的下一个待处理项，则将该指令送入dispatch_integer_issue_port并置该流水级为指令等待状态，等待该指令的完成后再分发下一个指令包，同时若lsu_issue不处于堵塞状态，则向dispatch_lsu_issue_port送空包，否则保持其不变
+  * 若不满足上述情况，则向dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）送空包，置流水级繁忙状态，暂停本轮整数指令与LSU指令分发
+* 若遇到fence指令，并且有整数指令要分发但是integer_issue处于阻塞状态，或者有LSU指令要分发但是lsu_issue处于阻塞状态，则向dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）送空包，置流水级繁忙状态，暂停本轮整数指令与LSU指令分发
 * 若不满足上述情况，则执行如下流程：
   * 若遇到fence指令，则置该流水级为指令等待状态及Store Buffer空等待状态，等待该指令的完成及Store Buffer为空后再分发下一个指令包
   * 若需要分发整数指令，则分为两种情况：
@@ -102,13 +102,13 @@
 
 在指令等待状态下（无来自commit流水级的flush信号，可能同时处于Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
-* 将空包送入dispatch_integer_issue_port与dispatch_lsu_issue_port
+* 将空包送入dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）
 * 若等待的指令已退休，则解除指令等待状态，同时若处于Store Buffer空等待状态且Store Buffer为空，则解除Store Buffer空等待状态
 * 若等待的指令仍未退休，则什么都不做
 
 在Store Buffer空等待状态下（无来自commit流水级的flush信号，不处于指令等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
-* 将空包送入dispatch_integer_issue_port与dispatch_lsu_issue_port
+* 将空包送入dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）
 * 若Store Buffer为空，则解除Store Buffer空等待状态，否则什么都不做
 
 **可以注意到，指令等待状态比Store Buffer空等待状态优先级更高，这是因为fence指令前可能存在LSU指令，这些LSU指令执行完之后Store Buffer就会为空，但是此时还没有执行到fence指令，使得fence指令没有成功阻断LSU指令提前fence指令执行，因此需要先等待fence指令退休，再同时或在之后等待Store Buffer为空**
@@ -154,7 +154,7 @@
 * 单独保存指令的rob_id/rob_id_stage用于年龄计算
 * 单独保存指令的rd/rd_valid用于更短路径的唤醒
 * 计算每条指令的wakeup_shift，公式为(LATENCY == 1) ? 0 : (1 << (LATENCY - 1))
-* 计算执行单元的繁忙延迟（即在几个周期后繁忙，公式为(LATENCY == 1) ? 0 : (1 << 1)）和空闲延迟（即在几个周期后繁忙，公式为(LATENCY == 1) ? 0 : (1 << (LATENCY - 1))），避免仲裁时从反馈网络获得该信息造成过大的组合逻辑延迟
+* 计算执行单元的空闲延迟（即在几个周期后空闲，公式为(LATENCY == 1) ? 0 : (1 << (LATENCY - 2))），避免仲裁时从反馈网络获得该信息造成过大的组合逻辑延迟
 * 将结果推入发射队列
 
 若从commit流水级收到了flush信号，则会重置所有的状态变量到复位值，同时对发射队列执行flush操作
@@ -168,15 +168,19 @@
   * issue -> readreg -> execute
   * 并且只可能在execute处发生停顿，因此，若流水线不发生停顿（LATENCY = 1的情形），则关联的指令可以直接背靠背发射，不需要提前唤醒，而是直接唤醒即可，因此wakeup_shift = 0，而若流水线发生停顿（LATENCY > 1的情形），则关联的指令只需要相应地延迟LATENCY - 1个周期后发射即可
   * 1 << x 只是二进制码到one-hot编码的变换公式，这里之所以是x而不是x - 1是因为，当该one-hot为1时，就会开始执行唤醒操作，并在下一个周期完成唤醒标志位的变化，而唤醒是提前发射一个周期的，因此，这里的x实际上是当前到唤醒时的周期间隔，而不是当前到发射时的周期间隔
-* 繁忙延迟公式：
-  * 考虑如下的情形：
-  * issue -> readreg -> execute
-  * T0 A -> [none] -> [none]
-  * T1 B -> A -> [none]
-  * T2 C -> B -> A
-  * 和上面同样的流水线结构，显然，若执行单元的LATENCY = 1，执行单元也就不存在繁忙的可能性，而若LATENCY > 1，执行单元将会在T2时刻变为繁忙状态，因此将繁忙延迟设置为1，对应的one-hot则为1 << 1
 * 空闲延迟公式：
-  * 流水线情形和上述情况类似，显然，若执行单元的LATENCY = 1，执行单元也就不存在繁忙的可能性，而若LATENCY > 1，执行单元的繁忙持续时间必然是LATENCY - 1，因此将空闲延迟设置为LATENCY - 1，对应的one-hot则为1 << (LATENCY - 1)
+  * 考虑如下的情形：
+  * issue -> readreg -> execute -> wb
+  * T0 A -> [none] -> [none] -> [none]
+  * T1 [none] -> A -> [none] -> [none]
+  * T2 [none] -> [none] -> A -> [none]
+  * T3 [none] -> [none] -> A -> [none]
+  * T4 B -> [none] -> A -> [none]
+  * T5 [none] -> B -> A -> [none]
+  * T6 [none] -> [none] -> B -> A
+  * 和上面同样的流水线结构，显然，若执行单元的LATENCY = 1，执行单元也就不存在繁忙的可能性，而若LATENCY > 1（示例为4），后级流水线从下一时刻开始就不能送入新指令了，否则会造成指令堵在readreg流水级，这是不允许的
+  * 但是，可以观察到，在T4时刻，issue流水级就可以向该指令单元流水线发射新的指令了，因此指令单元的繁忙时间段其实是[T1,T3]
+  * issue流水级在T0时刻假如设置延迟为x，则T1时刻可以观测到x，T2时刻可以观测到x-1，T3时刻可以观测到x-2，如果要确保T4时刻可以发射出指令，那么T4时刻必须观测到功能单元是空闲的，那么在T3时刻就必须设置指令执行单元是空闲的，为了做到这一点，延迟到这个流水级必须递减为1，也就是说x-2=1，即x = 3，而这与预期的LATENCY值（4）正好差1，因此，空闲延迟应当设置为LATENCY - 1，对应的one-hot则为1 << (LATENCY - 1)
 
 输出级负责利用仲裁算法从发射队列中选出至多两条指令，并送入integer_issue_readreg_port
 

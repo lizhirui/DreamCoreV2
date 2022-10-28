@@ -260,12 +260,6 @@ namespace cycle_model::pipeline
             uint32_t csr_idle_shift[CSR_UNIT_NUM] = {0};
             uint32_t div_idle_shift[DIV_UNIT_NUM] = {0};
             uint32_t mul_idle_shift[MUL_UNIT_NUM] = {0};
-        
-            uint32_t alu_busy_shift[ALU_UNIT_NUM] = {0};
-            uint32_t bru_busy_shift[BRU_UNIT_NUM] = {0};
-            uint32_t csr_busy_shift[CSR_UNIT_NUM] = {0};
-            uint32_t div_busy_shift[DIV_UNIT_NUM] = {0};
-            uint32_t mul_busy_shift[MUL_UNIT_NUM] = {0};
             
             uint32_t wakeup_shift_src1[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             bool src1_ready[INTEGER_ISSUE_QUEUE_SIZE] = {false};
@@ -281,14 +275,13 @@ namespace cycle_model::pipeline
             bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
             uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            uint32_t new_busy_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
             uint32_t next_port_index = 0;
             
             trace::trace_database tdb;
             
             static uint32_t latency_to_wakeup_shift(uint32_t latency);
-            static void latency_to_idle_busy_shift(uint32_t latency, uint32_t &idle_shift, uint32_t &busy_shift);
+            static uint32_t latency_to_idle_shift(uint32_t latency);
         
         public:
             integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);

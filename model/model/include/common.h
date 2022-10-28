@@ -36,7 +36,7 @@ using json = nlohmann::json;
 
 #undef assert
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
     #define verify(cond) \
@@ -167,11 +167,11 @@ template<typename T> class if_print_fake : public if_print_t
         {
         }
 
-        if_print_fake(const T& value) : value(value)
+        if_print_fake(const T &value) : value(value)
         {
         }
 
-        bool operator==(const T& x)
+        bool operator==(const T &x)
         {
            return this->value == x; 
         }
@@ -192,11 +192,11 @@ template<typename T> class if_print_direct : public if_print_t
         {
         }
         
-        if_print_direct(const T& value) : value(value)
+        if_print_direct(const T &value) : value(value)
         {
         }
         
-        bool operator==(const T& x)
+        bool operator==(const T &x)
         {
             return this->value == x;
         }

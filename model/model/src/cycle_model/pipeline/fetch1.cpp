@@ -65,7 +65,7 @@ namespace cycle_model::pipeline
                         bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
                         bool fence_i = ((opcode & 0x7f) == 0x0f) && (((opcode >> 12) & 0x07) == 0x01);
     
-                        if(fence_i && ((i != 0) || (!fetch2_feedback_pack.idle) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || commit_feedback_pack.idle || (!store_buffer->customer_is_empty())))
+                        if(fence_i && ((i != 0) || (!fetch2_feedback_pack.idle) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || (!commit_feedback_pack.idle) || (!store_buffer->customer_is_empty())))
                         {
                             break;
                         }
@@ -86,6 +86,11 @@ namespace cycle_model::pipeline
                         send_pack.op_info[i].has_exception = has_exception;
                         send_pack.op_info[i].exception_id = !component::bus::check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
                         send_pack.op_info[i].exception_value = cur_pc;
+    
+                        if(fence_i)
+                        {
+                            break;
+                        }
                         
                         if(jump)
                         {

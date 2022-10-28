@@ -346,6 +346,12 @@ static void run(const command_line_arg_t &arg)
             
             if(!compare_error)
             {
+                if(isa_model_inst->pc != rob_item.second.pc)
+                {
+                    compare_error = true;
+                    std::cout << MESSAGE_OUTPUT_PREFIX "PC is not match, cycle model pc is 0x" << outhex(rob_item.second.pc) << ", isa model pc is 0x" << outhex(isa_model_inst->pc) << std::endl;
+                }
+                
                 isa_model_inst->run();
             }
             
@@ -450,7 +456,7 @@ static void run(const command_line_arg_t &arg)
                 }
                 else
                 {
-                    std::cout << "0x" << outhex(isa_model_inst->arch_regfile.read(i)) << "\t";
+                    std::cout << "0x" << outhex(v) << "\t";
                 }
             
                 std::cout << "0x" << outhex(isa_model_inst->arch_regfile.read(i)) << std::endl;
@@ -461,6 +467,12 @@ static void run(const command_line_arg_t &arg)
                 auto v = cycle_model_inst->csr_file.read_sys(csr_id);
                 auto v2 = isa_model_inst->csr_file.read_sys(csr_id);
                 std::cout << MESSAGE_OUTPUT_PREFIX << "CSR[" << isa_model_inst->csr_file.get_name(csr_id) << "] = 0x" << outhex(v) << "\t0x" << outhex(v2) << std::endl;
+            }
+    
+            if(arg.no_controller)
+            {
+                std::cout << std::endl << MESSAGE_OUTPUT_PREFIX "Current mode is no_controller, so the program will exit!" << std::endl;
+                exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
             }
         }
         
@@ -515,15 +527,30 @@ static void run(const command_line_arg_t &arg)
                     std::cout << MESSAGE_OUTPUT_PREFIX "address = 0x" << outhex(msg.addr) << ", size = " << msg.size << std::endl;
                 }
             }
+        
+            if(arg.no_controller)
+            {
+                std::cout << std::endl << MESSAGE_OUTPUT_PREFIX "Current mode is no_controller, so the program will exit!" << std::endl;
+                exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
+            }
         }
         
 #ifdef NEED_CYCLE_MODEL
-        if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle > 1000)
+        if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle >= 100)
         {
+            std::cout << MESSAGE_OUTPUT_PREFIX << "Error: Retire Timeout, last instruction retire cycle is " << last_retire_cycle << "!" << std::endl;
             last_retire_cycle = cycle_model_inst->cpu_clock_cycle;
-            std::cout << MESSAGE_OUTPUT_PREFIX << "Error: Retire Timeout!" << std::endl;
             set_pause_detected(true);
-            send_cmd("main", "breakpoint_trigger", "");
+    
+            if(arg.no_controller)
+            {
+                std::cout << std::endl << MESSAGE_OUTPUT_PREFIX "Current mode is no_controller, so the program will exit!" << std::endl;
+                exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
+            }
+            else
+            {
+                send_cmd("main", "breakpoint_trigger", "");
+            }
         }
 #endif
     }
@@ -573,7 +600,8 @@ static void sub_main(const command_line_arg_t &arg)
     else
     {
         //load_bin_file("../../../image/rtthread.bin");
-        load_bin_file("../../../image/coremark_10.bin");
+        //load_bin_file("../../../image/coremark_10.bin");
+        load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
         //load_elf_file("../../../testcase/compiled/rtthread.elf");
     }
     
@@ -683,10 +711,18 @@ static void show_copyright()
     std::cout << "***********************************************" << std::endl;
 }
 
+static void print_time()
+{
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::cout << MESSAGE_OUTPUT_PREFIX << "Time: " << std::ctime(&now_time_t) << std::endl;
+}
+
 static void atexit_func()
 {
     std::cout << std::endl;
     std::cout << "***********************************************" << std::endl;
+    print_time();
 #ifdef NEED_CYCLE_MODEL
     if(cycle_model_inst != nullptr)
     {
@@ -707,6 +743,7 @@ static void atexit_func()
 
 int main(int argc, char **argv)
 {
+    print_time();
     std::cout.setf(std::ios::unitbuf);
     std::cout << MESSAGE_OUTPUT_PREFIX << "main thread tid: " << gettid() << std::endl;
     std::atexit(atexit_func);
