@@ -32,22 +32,31 @@ namespace cycle_model::component
                 
                 for(uint32_t i = 0;i < this->size;i++)
                 {
-                    this->push(i);
+                    this->new_push(i);
                     free_list_set.insert(i);
                 }
+    
+                verify_only(new_get_used_space() == this->free_list_set.size());
             }
             
             virtual void flush()
             {
-            
+                reset();
             }
             
             virtual bool push(if_print_direct<uint32_t> data)
             {
                 verify_only(data.get() < size);
                 verify_only(free_list_set.find(data.get()) == free_list_set.end());
-                free_list_set.insert(data.get());
-                return fifo<if_print_direct<uint32_t>>::push(data);
+                auto ret = fifo<if_print_direct<uint32_t>>::push(data);
+                
+                if(ret)
+                {
+                    free_list_set.insert(data.get());
+                }
+    
+                verify_only(new_get_used_space() == this->free_list_set.size());
+                return ret;
             }
             
             virtual bool push(uint32_t data)
@@ -67,6 +76,7 @@ namespace cycle_model::component
                     free_list_set.erase(iter);
                 }
                 
+                verify_only(new_get_used_space() == this->free_list_set.size());
                 return ret;
             }
             
@@ -97,11 +107,12 @@ namespace cycle_model::component
                 
                 uint32_t cur_rptr = rptr;
                 bool cur_rstage = rstage;
+                verify_only(producer_get_used_space() == this->free_list_set.size());
     
                 while((cur_rptr != this->rptr.get()) || (cur_rstage != this->rstage.get()))
                 {
-                    verify(this->free_list_set.find(cur_rptr) == this->free_list_set.end());
-                    this->free_list_set.insert(cur_rptr);
+                    verify_only(this->free_list_set.find(this->buffer[cur_rptr].get().get()) == this->free_list_set.end());
+                    this->free_list_set.insert(this->buffer[cur_rptr].get().get());
                     cur_rptr++;
                     
                     if(cur_rptr >= this->size)
@@ -110,6 +121,8 @@ namespace cycle_model::component
                         cur_rstage = !cur_rstage;
                     }
                 }
+    
+                verify_only(new_get_used_space() == this->free_list_set.size());
             }
     };
 }

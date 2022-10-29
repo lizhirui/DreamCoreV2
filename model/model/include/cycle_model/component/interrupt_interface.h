@@ -163,6 +163,21 @@ namespace cycle_model::component
                 }
             }
             
+            bool get_meip() const
+            {
+                return meip;
+            }
+            
+            bool get_msip() const
+            {
+                return msip;
+            }
+            
+            bool get_mtip() const
+            {
+                return mtip;
+            }
+            
             void run()
             {
                 mei_ack.set(false);

@@ -131,7 +131,7 @@ namespace cycle_model
     commit_stage(&wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface)
     {
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
-        bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint), false);
+        bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
@@ -172,7 +172,7 @@ namespace cycle_model
         {
             readreg_lsu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             lsu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer);
+            execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer, &clint);
         }
     
         csr_file.map(CSR_MVENDORID, true, std::make_shared<component::csr::mvendorid>());

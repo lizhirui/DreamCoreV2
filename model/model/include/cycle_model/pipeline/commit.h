@@ -38,6 +38,9 @@ namespace cycle_model::pipeline
         bool jump = false;
         uint32_t jump_next_pc = 0;
         
+        bool has_interrupt = false;//only for debug
+        riscv_interrupt_t interrupt_id = riscv_interrupt_t::user_software;//only for debug
+        
         virtual json get_json()
         {
             json t;

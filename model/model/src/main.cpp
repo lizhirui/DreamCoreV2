@@ -39,12 +39,14 @@ charfifo_rev_fifo_t *get_cycle_model_charfifo_rev_fifo()
 }
 #endif
 
-#ifdef NEED_CYCLE_MODEL
 uint64_t get_cpu_clock_cycle()
 {
+#ifdef NEED_CYCLE_MODEL
     return cycle_model_inst->cpu_clock_cycle;
-}
+#else
+    return 0;
 #endif
+}
 
 void set_pause_state(bool value)
 {
@@ -330,15 +332,15 @@ static void run(const command_line_arg_t &arg)
                 if(csr_item.rob_id == rob_item.first)
                 {
                     cycle_model_inst->execute_csr_stage[0]->csr_read_queue.pop();
-                    std::vector<uint32_t> hpmcounter_list = {CSR_MCYCLE, CSR_MCYCLEH, CSR_MINSTRET, CSR_MINSTRETH,
+                    std::vector<uint32_t> csr_sync_list = {CSR_MCYCLE, CSR_MCYCLEH, CSR_MINSTRET, CSR_MINSTRETH,
                                                              CSR_BRANCHNUM, CSR_BRANCHNUMH, CSR_BRANCHPREDICTED, CSR_BRANCHPREDICTEDH,
-                                                             CSR_BRANCHHIT, CSR_BRANCHHITH, CSR_BRANCHMISS, CSR_BRANCHMISSH};
+                                                             CSR_BRANCHHIT, CSR_BRANCHHITH, CSR_BRANCHMISS, CSR_BRANCHMISSH, CSR_MIP};
                     
-                    for(auto hpmcounter_id : hpmcounter_list)
+                    for(auto csr_id : csr_sync_list)
                     {
-                        if(csr_item.csr == hpmcounter_id)
+                        if(csr_item.csr == csr_id)
                         {
-                            isa_model_inst->csr_file.write_sys(hpmcounter_id, csr_item.value);
+                            isa_model_inst->csr_file.write_sys(csr_id, csr_item.value);
                             break;
                         }
                     }
@@ -352,6 +354,12 @@ static void run(const command_line_arg_t &arg)
                     compare_error = true;
                     std::cout << MESSAGE_OUTPUT_PREFIX "PC is not match, cycle model pc is 0x" << outhex(rob_item.second.pc) << ", isa model pc is 0x" << outhex(isa_model_inst->pc) << std::endl;
                 }
+                
+                //clint sync only for the instruction
+                auto item = cycle_model_inst->execute_lsu_stage[0]->clint_sync_list[rob_item.first];
+                isa_model_inst->clint.set_mtime(item.mtime);
+                isa_model_inst->clint.set_mtimecmp(item.mtimecmp);
+                isa_model_inst->clint.set_msip(item.msip);
                 
                 isa_model_inst->run();
             }
@@ -369,8 +377,23 @@ static void run(const command_line_arg_t &arg)
             }
         }
     
+        //clint sync
+        isa_model_inst->clint.set_mtime(cycle_model_inst->clint.get_mtime());
+        isa_model_inst->clint.set_mtimecmp(cycle_model_inst->clint.get_mtimecmp());
+        isa_model_inst->clint.set_msip(cycle_model_inst->clint.get_msip());
+        isa_model_inst->clint.run();
+    
+        //interrupt sync
+        isa_model_inst->interrupt_interface.set_meip(cycle_model_inst->interrupt_interface.get_meip());
+        isa_model_inst->interrupt_interface.set_msip(cycle_model_inst->interrupt_interface.get_msip());
+        isa_model_inst->interrupt_interface.set_mtip(cycle_model_inst->interrupt_interface.get_mtip());
+        isa_model_inst->interrupt_sync(cycle_model_inst->commit_feedback_pack.has_interrupt, cycle_model_inst->commit_feedback_pack.interrupt_id);
+        
+        //mip sync
+        isa_model::csr_inst::mip.write(cycle_model_inst->csr_file.read_sys(CSR_MIP));
+    
         std::vector<uint32_t> compare_csr_list = {CSR_MVENDORID, CSR_MARCHID, CSR_MIMPID, CSR_MHARTID, CSR_MCONFIGPTR, CSR_MSTATUS, CSR_MISA, CSR_MIE,
-                                                  CSR_MTVEC, CSR_MCOUNTEREN, CSR_MSTATUSH, CSR_MSCRATCH, CSR_MEPC, CSR_MCAUSE, CSR_MTVAL, //CSR_MIP,
+                                                  CSR_MTVEC, CSR_MCOUNTEREN, CSR_MSTATUSH, CSR_MSCRATCH, CSR_MEPC, CSR_MCAUSE, CSR_MTVAL, CSR_MIP,
                                                   CSR_FINISH, CSR_MINSTRET, CSR_MINSTRETH};
     
         for(uint32_t i = 1;i < ARCH_REG_NUM;i++)
@@ -600,10 +623,11 @@ static void sub_main(const command_line_arg_t &arg)
     }
     else
     {
-        //load_bin_file("../../../image/rtthread.bin");
+        load_bin_file("../../../image/rtthread.bin");
         //load_bin_file("../../../image/coremark_10.bin");
+        //load_bin_file("../../../testcase/benchmark/coremark_10_7_2.bin");
         //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
-        load_bin_file("../../../testcase/base-tests/ipc_test2_12_2.bin");
+        //load_bin_file("../../../testcase/base-tests/ipc_test2_12_2.bin");
         //load_elf_file("../../../testcase/compiled/rtthread.elf");
     }
     
@@ -730,7 +754,7 @@ static void atexit_func()
     {
         std::cout << MESSAGE_OUTPUT_PREFIX << "Cycle: " << cycle_model_inst->cpu_clock_cycle << std::endl;
         std::cout << MESSAGE_OUTPUT_PREFIX << "Instruction Num: " << cycle_model_inst->committed_instruction_num << std::endl;
-        std::cout << MESSAGE_OUTPUT_PREFIX << "IPC: " << (double)cycle_model_inst->committed_instruction_num / cycle_model_inst->cpu_clock_cycle << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "IPC: " << ((long double)cycle_model_inst->committed_instruction_num) / cycle_model_inst->cpu_clock_cycle << std::endl;
         std::cout << MESSAGE_OUTPUT_PREFIX << "PC: 0x" << outhex(get_current_pc()) << std::endl;
     }
 #else

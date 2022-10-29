@@ -144,6 +144,21 @@ namespace cycle_model::component::slave
                 bus_if->set_data_value(value);
             }
             
+            uint64_t get_mtime() const
+            {
+                return mtime.get();
+            }
+            
+            uint64_t get_mtimecmp() const
+            {
+                return mtimecmp.get();
+            }
+            
+            uint32_t get_msip() const
+            {
+                return msip.get();
+            }
+            
             void run_pre()
             {
                 interrupt_interface->set_pending(riscv_interrupt_t::machine_timer, mtime >= mtimecmp);

@@ -101,6 +101,21 @@ namespace isa_model::component
                 }
             }
             
+            void set_meip(bool v)
+            {
+                meip = v;
+            }
+            
+            void set_msip(bool v)
+            {
+                msip = v;
+            }
+            
+            void set_mtip(bool v)
+            {
+                mtip = v;
+            }
+            
             void run() const
             {
                 csr::mip mip;

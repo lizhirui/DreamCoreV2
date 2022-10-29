@@ -145,18 +145,19 @@ namespace cycle_model::component
                 wstage.set(pack.wstage);
             }
             
-            uint32_t get_feedback_value(uint32_t addr, uint32_t size, uint32_t bus_value)
+            std::pair<uint32_t, uint32_t> get_feedback_value(uint32_t addr, uint32_t size)
             {
-                uint32_t result = bus_value;
+                uint32_t result = 0;
                 uint32_t cur_id;
+                uint32_t feedback_mask = 0;
                 
-                if(get_front_id(&cur_id))
+                if(producer_get_front_id(&cur_id))
                 {
                     auto first_id = cur_id;
                     
                     do
                     {
-                        auto cur_item = get_item(cur_id);
+                        auto cur_item = producer_get_item(cur_id);
                         
                         if((cur_item.addr >= addr) && (cur_item.addr < (addr + size)))
                         {
@@ -165,6 +166,7 @@ namespace cycle_model::component
                             uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
                             result &= ~(bit_mask << bit_offset);
                             result |= (cur_item.data & bit_mask) << bit_offset;
+                            feedback_mask |= bit_mask << bit_offset;
                         }
                         else if((cur_item.addr < addr) && ((cur_item.addr + cur_item.size) > addr))
                         {
@@ -173,11 +175,12 @@ namespace cycle_model::component
                             uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
                             result &= ~bit_mask;
                             result |= (cur_item.data >> bit_offset) & bit_mask;
+                            feedback_mask |= bit_mask;
                         }
-                    }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
+                    }while(producer_get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
                 
-                return result;
+                return {result, feedback_mask};
             }
             
             void run(pipeline::commit_feedback_pack_t commit_feedback_pack)

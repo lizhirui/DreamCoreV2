@@ -327,20 +327,30 @@ namespace isa_model
         }
     }
     
-    void isa_model::run()
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+    void isa_model::interrupt_sync(bool has_interrupt, riscv_interrupt_t new_interrupt_id)
+    {
+        interrupt_interface.run();
+    
+        if(has_interrupt)
+        {
+            csr_inst::mepc.write(this->pc);
+            csr_inst::mtval.write(0);
+            csr_inst::mcause.write(0x80000000 | static_cast<uint32_t>(new_interrupt_id));
+            component::csr::mstatus mstatus;
+            mstatus.load(csr_inst::mstatus.read());
+            mstatus.set_mpie(mstatus.get_mie());
+            mstatus.set_mie(false);
+            csr_inst::mstatus.write(mstatus.get_value());
+            this->pc = csr_inst::mtvec.read();
+        }
+    }
+#else
+    void isa_model::interrupt_sync()
     {
         riscv_interrupt_t interrupt_id;
-        isa_state_t isa_state;
-        fetch(isa_state);
-        
-#ifdef BRANCH_DUMP
-        branch_dump_stream << outhex(isa_state.pc) << "," << outhex(isa_state.value) << std::endl;
-#endif
-        decode(isa_state);
-        execute(isa_state);
         interrupt_interface.run();
-        clint.run();
-    
+        
         if(interrupt_interface.get_cause(&interrupt_id))
         {
             csr_inst::mepc.write(this->pc);
@@ -353,7 +363,23 @@ namespace isa_model
             csr_inst::mstatus.write(mstatus.get_value());
             this->pc = csr_inst::mtvec.read();
         }
+    }
+#endif
+    
+    void isa_model::run()
+    {
+        isa_state_t isa_state;
+        fetch(isa_state);
         
+#ifdef BRANCH_DUMP
+        branch_dump_stream << outhex(isa_state.pc) << "," << outhex(isa_state.value) << std::endl;
+#endif
+        decode(isa_state);
+        execute(isa_state);
+        clint.run();
+#ifndef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+        interrupt_sync();
+#endif
         cpu_clock_cycle++;
         committed_instruction_num++;
         commit_num++;//only for debugger

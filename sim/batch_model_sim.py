@@ -137,6 +137,7 @@ if not args.parallel_count is None:
 tb_groups = []
 
 if args.group == "all":
+    tb_groups.append("base-tests")
     tb_groups.append("riscv-tests")
     tb_groups.append("benchmark")
 else:

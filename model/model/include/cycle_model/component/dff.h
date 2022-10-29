@@ -101,12 +101,12 @@ namespace cycle_model::component
                 this->changed = true;
             }
 
-            T get()
+            T get() const
             {
                 return this->cur_value;
             }
 
-            T get_new()
+            T get_new() const
             {
                 return this->new_value;
             }
@@ -116,7 +116,7 @@ namespace cycle_model::component
                 this->new_value = this->cur_value;
             }
             
-            bool is_changed()
+            bool is_changed() const
             {
                 return this->changed;
             }

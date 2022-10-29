@@ -128,6 +128,22 @@ namespace isa_model::component::slave
                 return value;
             }
             
+            void set_mtime(uint64_t v)
+            {
+                mtime = v;
+                mtime_changed = true;
+            }
+            
+            void set_mtimecmp(uint64_t v)
+            {
+                mtimecmp = v;
+            }
+            
+            void set_msip(uint32_t v)
+            {
+                msip = v;
+            }
+            
             void run()
             {
                 if(!mtime_changed)

@@ -279,7 +279,7 @@ namespace isa_model
             uint64_t branch_hit = 0;
             uint64_t branch_miss = 0;
             
-            uint64_t pc = INIT_PC;
+            uint32_t pc = INIT_PC;
             
             uint64_t commit_num = 0;//only for debugger
             
@@ -296,6 +296,11 @@ namespace isa_model
             void reset();
             void pause_event();
             void profile(uint32_t pc);
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+            void interrupt_sync(bool has_interrupt, riscv_interrupt_t new_interrupt_id);
+#else
+            void interrupt_sync();
+#endif
             void run();
             void fetch(isa_state_t &isa_state);
             void decode(isa_state_t &isa_state);

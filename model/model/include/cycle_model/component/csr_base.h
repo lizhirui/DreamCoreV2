@@ -23,12 +23,12 @@ namespace cycle_model::component
 
 			void setbit(uint32_t bit, bool value)
 			{
-				this->write((this->read() & (~(1 << bit))) | ((value ? 1 : 0) << bit));
+				this->write((this->read_new() & (~(1 << bit))) | ((value ? 1 : 0) << bit));
 			}
 
 			bool getbit(uint32_t bit)
 			{
-				return this->read() & (1 << bit);
+				return this->read_new() & (1 << bit);
 			}
 			
 		public:
@@ -54,7 +54,7 @@ namespace cycle_model::component
 
 			uint32_t get_value()
 			{
-				return this->value.get();
+				return this->value.get_new();
 			}
 
 			std::string get_name()

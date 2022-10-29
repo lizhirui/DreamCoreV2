@@ -50,6 +50,28 @@ namespace cycle_model::component
             {
                 this->fifo::reset();
             }
+        
+            virtual bool new_push(T element)
+            {
+                if(new_is_full())
+                {
+                    return false;
+                }
+            
+                buffer[wptr.get_new()].set(element);
+            
+                if(wptr.get_new() >= size - 1)
+                {
+                    wptr.set(0);
+                    wstage.set(!wstage.get_new());
+                }
+                else
+                {
+                    wptr.set(wptr.get_new() + 1);
+                }
+            
+                return true;
+            }
 
             virtual bool push(T element)
             {
@@ -63,7 +85,7 @@ namespace cycle_model::component
                 if(wptr.get_new() >= size - 1)
                 {
                     wptr.set(0);
-                    wstage.set(!wstage);
+                    wstage.set(!wstage.get_new());
                 }
                 else
                 {
@@ -85,7 +107,7 @@ namespace cycle_model::component
                 if(rptr.get_new() >= size - 1)
                 {
                     rptr.set(0);
-                    rstage.set(!rstage);
+                    rstage.set(!rstage.get_new());
                 }
                 else
                 {
@@ -306,6 +328,11 @@ namespace cycle_model::component
             {
                 return customer_is_full() ? this->size : (this->wptr.get() + this->size - this->rptr.get_new()) % this->size;
             }
+        
+            uint32_t new_get_used_space()
+            {
+                return new_is_full() ? this->size : (this->wptr.get_new() + this->size - this->rptr.get_new()) % this->size;
+            }
 
             uint32_t producer_get_free_space()
             {
@@ -326,6 +353,11 @@ namespace cycle_model::component
             {
                 return (this->wptr.get() == this->rptr.get_new()) && (this->wstage.get() == this->rstage.get_new());
             }
+        
+            bool new_is_empty()
+            {
+                return (this->wptr.get_new() == this->rptr.get_new()) && (this->wstage.get_new() == this->rstage.get_new());
+            }
 
             bool producer_is_full()
             {
@@ -335,6 +367,11 @@ namespace cycle_model::component
             bool customer_is_full()
             {
                 return (this->wptr.get() == this->rptr.get_new()) && (this->wstage.get() != this->rstage.get_new());
+            }
+            
+            bool new_is_full()
+            {
+                return (this->wptr.get_new() == this->rptr.get_new()) && (this->wstage.get_new() != this->rstage.get_new());
             }
 
             virtual void print(std::string indent)

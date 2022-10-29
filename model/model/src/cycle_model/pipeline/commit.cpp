@@ -46,6 +46,7 @@ namespace cycle_model::pipeline
         commit_feedback_pack_t feedback_pack;
         bool need_flush = false;
         feedback_pack.idle = true;
+        feedback_pack.has_interrupt = false;//only for debug
     
         //handle output
         if(!rob->customer_is_empty())
@@ -74,6 +75,8 @@ namespace cycle_model::pipeline
                 feedback_pack.has_exception = true;
                 feedback_pack.exception_pc = csr_file->read_sys(CSR_MTVEC);
                 feedback_pack.flush = true;
+                feedback_pack.has_interrupt = true;//only for debug
+                feedback_pack.interrupt_id = interrupt_id;//only for debug
                 speculative_rat->load(retire_rat);
                 rob->flush();
                 phy_regfile->restore(retire_rat);
