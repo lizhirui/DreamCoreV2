@@ -3,10 +3,16 @@ from http.server import executable
 from tqdm import tqdm
 from static_always_jump import static_always_jump
 from static_always_not_jump import static_always_not_jump
+from static_backward_jump_forward_not_jump import static_backward_jump_forward_not_jump
 from gshare import gshare
+from gshare_with_infinite_pht import gshare_with_infinite_pht
 from direct_mapped_simple_btb import direct_mapped_simple_btb
 
-branch_predictor_list = [static_always_jump(), static_always_not_jump(), gshare(6), gshare(8), gshare(10), gshare(15), gshare(20)]
+branch_predictor_list = [static_always_jump(), static_always_not_jump(), static_backward_jump_forward_not_jump(), 
+                         gshare(6), gshare(8), gshare(10), gshare(15), gshare(20), 
+                         gshare_with_infinite_pht(6), gshare_with_infinite_pht(8), gshare_with_infinite_pht(10), 
+                         gshare_with_infinite_pht(15), gshare_with_infinite_pht(20)]
+
 branch_target_buffer_list = [direct_mapped_simple_btb(256)]
 
 dump_path = "../../branch_dump/coremark_10.txt"
@@ -92,7 +98,7 @@ for branch_predictor in branch_predictor_list:
 
         branch_predictor.update(pc, jump, predict == jump)
 
-    print("[" + branch_predictor.get_name() + "] hit: " + str(hit) + ", miss: " + str(miss) + ", total: " + str(hit + miss) + ", hit rate: " + str(hit * 100 / (hit + miss)) + "%")
+    print("[" + branch_predictor.get_name() + "] hit: " + str(hit) + ", miss: " + str(miss) + ", total: " + str(hit + miss) + ", hit rate: " + str(hit * 100 / (hit + miss)) + "%" + branch_predictor.get_state_str())
 
 for branch_target_buffer in branch_target_buffer_list:
     print(branch_target_buffer.get_name() + " is processing...")

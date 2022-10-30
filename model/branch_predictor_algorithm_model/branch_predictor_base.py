@@ -7,3 +7,6 @@ class branch_predictor_base:
 
     def update(self, pc, jump, hit):
         raise Exception("update method not implemented")
+
+    def get_state_str(self):
+        return ""
