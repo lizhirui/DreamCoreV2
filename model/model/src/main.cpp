@@ -27,16 +27,6 @@ static size_t program_size = 0;
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
 static charfifo_send_fifo_t isa_model_charfifo_send_fifo, cycle_model_charfifo_send_fifo;
 static charfifo_rev_fifo_t isa_model_charfifo_rev_fifo, cycle_model_charfifo_rev_fifo;
-
-charfifo_rev_fifo_t *get_isa_model_charfifo_rev_fifo()
-{
-    return &isa_model_charfifo_rev_fifo;
-}
-
-charfifo_rev_fifo_t *get_cycle_model_charfifo_rev_fifo()
-{
-    return &cycle_model_charfifo_rev_fifo;
-}
 #endif
 
 uint64_t get_cpu_clock_cycle()
@@ -287,6 +277,20 @@ static void run(const command_line_arg_t &arg)
         {
             break;
         }
+        
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+        //charfifo input channel sync
+        if(!get_charfifo_rev_fifo()->empty())
+        {
+            auto item = get_charfifo_rev_fifo()->front();
+            
+            if(cycle_model_charfifo_rev_fifo.push(item))
+            {
+                get_charfifo_rev_fifo()->pop();
+                while(!isa_model_charfifo_rev_fifo.push(item));
+            }
+        }
+#endif
 
 #ifdef NEED_CYCLE_MODEL
         auto model_cycle = cycle_model_inst->cpu_clock_cycle;

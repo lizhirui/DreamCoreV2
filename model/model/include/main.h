@@ -34,10 +34,6 @@ typedef struct command_line_arg_t
     std::vector<breakpoint_info_t> breakpoint_list;
 }command_line_arg_t;
 
-#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
-charfifo_rev_fifo_t *get_isa_model_charfifo_rev_fifo();
-charfifo_rev_fifo_t *get_cycle_model_charfifo_rev_fifo();
-#endif
 void set_pause_state(bool value);
 void set_step_state(bool value);
 void set_wait_commit(bool value);
