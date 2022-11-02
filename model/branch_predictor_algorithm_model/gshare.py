@@ -1,9 +1,9 @@
 from branch_predictor_base import branch_predictor_base
 
 class gshare(branch_predictor_base):
-    def __init__(self, global_history_length=12):
-        self.pc_p1_addr_width = global_history_length
-        self.global_history_width = self.pc_p1_addr_width
+    def __init__(self, global_history_length=12, branch_pc_length=13):
+        self.pc_p1_addr_width = branch_pc_length
+        self.global_history_width = global_history_length
         self.pht_addr_width = self.pc_p1_addr_width
         self.pht_size = 1 << self.pht_addr_width
         self.pc_p1_addr_mask = (1 << self.pc_p1_addr_width) - 1
@@ -12,7 +12,7 @@ class gshare(branch_predictor_base):
         self.pht = [0 for x in range(0, self.pht_size)]
 
     def get_name(self):
-        return "gshare(" + str(self.pc_p1_addr_width) + ")"
+        return "gshare(" + str(self.global_history_width) + ", " + str(self.pc_p1_addr_width) + ")"
 
     def get(self, pc):
         pc_p1 = (pc >> 2) & self.pc_p1_addr_mask

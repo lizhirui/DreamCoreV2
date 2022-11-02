@@ -6,12 +6,15 @@ from static_always_not_jump import static_always_not_jump
 from static_backward_jump_forward_not_jump import static_backward_jump_forward_not_jump
 from gshare import gshare
 from gshare_with_infinite_pht import gshare_with_infinite_pht
+from bimode import bimode
 from direct_mapped_simple_btb import direct_mapped_simple_btb
 
 branch_predictor_list = [static_always_jump(), static_always_not_jump(), static_backward_jump_forward_not_jump(), 
-                         gshare(6), gshare(8), gshare(10), gshare(15), gshare(20), 
-                         gshare_with_infinite_pht(6), gshare_with_infinite_pht(8), gshare_with_infinite_pht(10), 
-                         gshare_with_infinite_pht(15), gshare_with_infinite_pht(20)]
+                         gshare(6, 7), gshare(8, 9), gshare(10, 11), gshare(15, 16), gshare(16, 17), gshare(17, 18), gshare(20, 21), 
+                         gshare(7, 7), gshare(9, 9), gshare(11, 11), gshare(16, 16), gshare(17, 17), gshare(18, 18), gshare(21, 21), 
+                         #gshare_with_infinite_pht(6), gshare_with_infinite_pht(8), gshare_with_infinite_pht(10), 
+                         #gshare_with_infinite_pht(15), gshare_with_infinite_pht(20),
+                         bimode(6, 6, 6), bimode(8, 8, 6), bimode(10, 10, 6), bimode(15, 15, 6), bimode(20, 20, 6)]
 
 branch_target_buffer_list = [direct_mapped_simple_btb(256)]
 
