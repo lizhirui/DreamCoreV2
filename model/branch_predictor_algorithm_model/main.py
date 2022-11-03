@@ -7,14 +7,16 @@ from static_backward_jump_forward_not_jump import static_backward_jump_forward_n
 from gshare import gshare
 from gshare_with_infinite_pht import gshare_with_infinite_pht
 from bimode import bimode
+from yags import yags
 from direct_mapped_simple_btb import direct_mapped_simple_btb
 
 branch_predictor_list = [static_always_jump(), static_always_not_jump(), static_backward_jump_forward_not_jump(), 
                          gshare(6, 7), gshare(8, 9), gshare(10, 11), gshare(15, 16), gshare(16, 17), gshare(17, 18), gshare(20, 21), 
-                         gshare(7, 7), gshare(9, 9), gshare(11, 11), gshare(16, 16), gshare(17, 17), gshare(18, 18), gshare(21, 21), 
+                         #gshare(7, 7), gshare(9, 9), gshare(11, 11), gshare(16, 16), gshare(17, 17), gshare(18, 18), gshare(21, 21), 
                          #gshare_with_infinite_pht(6), gshare_with_infinite_pht(8), gshare_with_infinite_pht(10), 
                          #gshare_with_infinite_pht(15), gshare_with_infinite_pht(20),
-                         bimode(6, 6, 6), bimode(8, 8, 6), bimode(10, 10, 6), bimode(15, 15, 6), bimode(20, 20, 6)]
+                         bimode(6, 6, 6), bimode(8, 8, 6), bimode(10, 10, 6), bimode(15, 15, 6), bimode(20, 20, 6),
+                         yags(6, 6, 6, 6), yags(8, 8, 6, 6), yags(10, 10, 6, 6), yags(15, 15, 6, 6), yags(20, 20, 6, 6)]
 
 branch_target_buffer_list = [direct_mapped_simple_btb(256)]
 
@@ -30,6 +32,7 @@ print("Parsing dump file...")
 lines = dump_txt.split('\n')
 condition_branch_info = []
 branch_info = []
+static_branch_set = {}
 
 for i in tqdm(range(0, len(lines) - 1), colour="blue"):
     line = lines[i]
@@ -81,6 +84,9 @@ for i in tqdm(range(0, len(lines) - 1), colour="blue"):
         is_ret = False
     
     branch_info.append([pc, next_pc, is_branch, is_ret])
+    static_branch_set[pc] = True
+
+print("Static Branch: " + str(len(static_branch_set.keys())) + ", Dynamic Branch: " + str(len(branch_info)))
 
 for branch_predictor in branch_predictor_list:
     print(branch_predictor.get_name() + " is processing...")

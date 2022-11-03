@@ -3,7 +3,7 @@ from branch_predictor_base import branch_predictor_base
 class bimode(branch_predictor_base):
     def __init__(self, global_history_length=12, branch_pc_length=13, pht_choice_length=6):
         self.pc_p1_addr_width = branch_pc_length
-        self.global_history_width = self.pc_p1_addr_width
+        self.global_history_width = global_history_length
         self.pht_addr_width = self.pc_p1_addr_width
         self.pht_size = 1 << self.pht_addr_width
         self.pht_choice_addr_width = pht_choice_length
