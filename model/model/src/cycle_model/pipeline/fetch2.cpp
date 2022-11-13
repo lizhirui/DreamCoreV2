@@ -17,10 +17,11 @@
 
 namespace cycle_model::pipeline
 {
-    fetch2::fetch2(component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo) : tdb(TRACE_FETCH2)
+    fetch2::fetch2(component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_FETCH2)
     {
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->fetch2_decode_fifo = fetch2_decode_fifo;
+        this->branch_predictor_set = branch_predictor_set;
         this->fetch2::reset();
     }
     

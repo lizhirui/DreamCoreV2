@@ -26,6 +26,9 @@
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/rob.h"
 #include "cycle_model/component/store_buffer.h"
+#include "cycle_model/component/branch_predictor_base.h"
+#include "cycle_model/component/branch_predictor_set.h"
+#include "cycle_model/component/ras.h"
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/fetch1.h"
 #include "cycle_model/pipeline/fetch1_fetch2.h"
@@ -106,14 +109,14 @@ namespace cycle_model
     wb_commit_port(pipeline::wb_commit_pack_t()),
     phy_id_free_list(PHY_REG_NUM),
     interrupt_interface(&csr_file),
-    speculative_rat(PHY_REG_NUM, ARCH_REG_NUM, false),
-    retire_rat(PHY_REG_NUM, ARCH_REG_NUM, true),
+    speculative_rat(PHY_REG_NUM, ARCH_REG_NUM),
+    retire_rat(PHY_REG_NUM, ARCH_REG_NUM),
     phy_regfile(PHY_REG_NUM),
     rob(ROB_SIZE),
     store_buffer(STORE_BUFFER_SIZE, &bus),
     clint(&bus, &interrupt_interface),
-    fetch1_stage(&bus, &fetch1_fetch2_port, &store_buffer, INIT_PC),
-    fetch2_stage(&fetch1_fetch2_port, &fetch2_decode_fifo),
+    fetch1_stage(&bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
+    fetch2_stage(&fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
     decode_stage(&fetch2_decode_fifo, &decode_rename_fifo),
     rename_stage(&decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list),
     dispatch_stage(&rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
@@ -128,7 +131,7 @@ namespace cycle_model
     execute_mul_stage{nullptr},
     execute_lsu_stage{nullptr},
     wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &wb_commit_port, &phy_regfile),
-    commit_stage(&wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface)
+    commit_stage(&wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set)
     {
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
@@ -299,6 +302,8 @@ namespace cycle_model
         
         speculative_rat.init_finish();
         retire_rat.init_finish();
+        component::branch_predictor_base::batch_reset();
+        branch_predictor_set.main_ras.reset();
         fetch1_fetch2_port.reset();
         fetch2_decode_fifo.reset();
         decode_rename_fifo.reset();

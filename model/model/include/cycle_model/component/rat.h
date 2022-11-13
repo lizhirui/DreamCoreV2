@@ -21,9 +21,7 @@ namespace cycle_model::component
             uint32_t arch_reg_num;
             dff<uint32_t> *phy_map_table;
             dff<bool> *phy_map_table_valid;
-            dff<bool> *phy_map_table_visible;
             bool init_rat;
-            bool retire;
             
             trace::trace_database tdb;
             
@@ -33,21 +31,13 @@ namespace cycle_model::component
                 phy_map_table_valid[phy_id].set(v);
             }
             
-            void set_visible(uint32_t phy_id, bool v)
-            {
-                verify_only(phy_id < phy_reg_num);
-                phy_map_table_visible[phy_id].set(v);
-            }
-            
         public:
-            rat(uint32_t phy_reg_num, uint32_t arch_reg_num, bool retire) : tdb(TRACE_RAT)
+            rat(uint32_t phy_reg_num, uint32_t arch_reg_num) : tdb(TRACE_RAT)
             {
                 this->phy_reg_num = phy_reg_num;
                 this->arch_reg_num = arch_reg_num;
-                this->retire = retire;
                 phy_map_table = new dff<uint32_t>[phy_reg_num];
                 phy_map_table_valid = new dff<bool>[phy_reg_num];
-                phy_map_table_visible = new dff<bool>[phy_reg_num];
                 init_rat = false;
                 this->rat::reset();
             }
@@ -56,7 +46,6 @@ namespace cycle_model::component
             {
                 delete[] phy_map_table;
                 delete[] phy_map_table_valid;
-                delete[] phy_map_table_visible;
             }
             
             void init_start()
@@ -65,7 +54,6 @@ namespace cycle_model::component
                 {
                     phy_map_table[i].set(0);
                     phy_map_table_valid[i].set(false);
-                    phy_map_table_visible[i].set(false);
                 }
                 
                 init_rat = true;
@@ -82,7 +70,6 @@ namespace cycle_model::component
                 {
                     phy_map_table[i].set(0);
                     phy_map_table_valid[i].set(false);
-                    phy_map_table_visible[i].set(false);
                 }
             }
             
@@ -112,18 +99,6 @@ namespace cycle_model::component
                 verify_only(phy_id < phy_reg_num);
                 return phy_map_table_valid[phy_id].get();
             }
-        
-            bool producer_get_visible(uint32_t phy_id)
-            {
-                verify_only(phy_id < phy_reg_num);
-                return phy_map_table_visible[phy_id].get_new();
-            }
-        
-            bool customer_get_visible(uint32_t phy_id)
-            {
-                verify_only(phy_id < phy_reg_num);
-                return phy_map_table_visible[phy_id].get();
-            }
             
             void load(rat *element)
             {
@@ -131,7 +106,6 @@ namespace cycle_model::component
                 {
                     phy_map_table[i].set(element->phy_map_table[i].get_new());
                     phy_map_table_valid[i].set(element->phy_map_table_valid[i].get_new());
-                    phy_map_table_visible[i].set(element->phy_map_table_visible[i].get_new());
                 }
             }
             
@@ -142,7 +116,7 @@ namespace cycle_model::component
                 
                 for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
-                    if(producer_get_valid(i) && producer_get_visible(i) && (phy_map_table[i].get_new() == arch_id))
+                    if(producer_get_valid(i) && (phy_map_table[i].get_new() == arch_id))
                     {
                         *phy_id = i;
                         cnt++;
@@ -160,7 +134,7 @@ namespace cycle_model::component
             
                 for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
-                    if(customer_get_valid(i) && customer_get_visible(i) && (phy_map_table[i].get() == arch_id))
+                    if(customer_get_valid(i) && (phy_map_table[i].get() == arch_id))
                     {
                         *phy_id = i;
                         cnt++;
@@ -187,37 +161,13 @@ namespace cycle_model::component
                 
                 phy_map_table[phy_id].set(arch_id);
                 set_valid(phy_id, true);
-                set_visible(phy_id, true);
                 
                 if(ret)
                 {
-                    set_visible(old_phy_id, false);
+                    set_valid(old_phy_id, false);
                 }
                 
                 return old_phy_id;
-            }
-            
-            void commit_map(uint32_t arch_id, uint32_t phy_id)
-            {
-                uint32_t old_phy_id;
-                verify_only(phy_id < phy_reg_num);
-                verify_only((arch_id > 0) && (arch_id < arch_reg_num));
-                verify_only(!producer_get_valid(phy_id));
-                verify(producer_get_phy_id(arch_id, &old_phy_id));
-                verify_only(producer_get_valid(old_phy_id));
-                
-                phy_map_table[phy_id].set(arch_id);
-                set_valid(phy_id, true);
-                set_visible(phy_id, true);
-            }
-            
-            void release_map(uint32_t phy_id)
-            {
-                verify_only(phy_id < phy_reg_num);
-                verify_only(producer_get_valid(phy_id));
-                verify_only(this->retire || !producer_get_visible(phy_id));
-                phy_map_table[phy_id].set(0);
-                set_valid(phy_id, false);
             }
             
             void restore_map(uint32_t new_phy_id, uint32_t old_phy_id)
@@ -226,13 +176,9 @@ namespace cycle_model::component
                 verify_only(old_phy_id < phy_reg_num);
                 verify_only(producer_get_valid(new_phy_id));
                 verify_only(producer_get_valid(old_phy_id));
-                verify_only(producer_get_visible(new_phy_id));
-                verify_only(!producer_get_visible(old_phy_id));
                 phy_map_table[new_phy_id] = 0;
                 set_valid(new_phy_id, false);
-                set_visible(new_phy_id, false);
                 set_valid(old_phy_id, true);
-                set_visible(old_phy_id, true);
             }
             
             virtual void print(std::string indent)
@@ -252,7 +198,7 @@ namespace cycle_model::component
                         std::cout << "\t\t";
                     }
                     
-                    std::cout << "Phy_ID\tArch_ID\tVisible\tValid";
+                    std::cout << "Phy_ID\tArch_ID\tValid";
                 }
                 
                 std::cout << std::endl;
@@ -276,7 +222,7 @@ namespace cycle_model::component
                                 std::cout << "\t\t";
                             }
                             
-                            std::cout << phy_id << "\t" << phy_map_table[phy_id] << "\t" << outbool(customer_get_visible(phy_id)) << "\t" << outbool(customer_get_valid(phy_id));
+                            std::cout << phy_id << "\t" << phy_map_table[phy_id] << "\t" << outbool(customer_get_valid(phy_id));
                         }
                     }
                     
@@ -289,18 +235,15 @@ namespace cycle_model::component
                 json t;
                 json value = json::array();
                 json valid = json::array();
-                json visible = json::array();
                 
                 for(uint32_t i = 0;i < phy_reg_num;i++)
                 {
                     value.push_back(phy_map_table[i].get());
                     valid.push_back(phy_map_table_valid[i].get());
-                    visible.push_back(phy_map_table_visible[i].get());
                 }
                 
                 t["value"] = value;
                 t["valid"] = valid;
-                t["visible"] = visible;
                 return t;
             }
     };

@@ -19,11 +19,12 @@
 #include "cycle_model/component/interrupt_interface.h"
 #include "cycle_model/pipeline/wb_commit.h"
 #include "cycle_model/component/csr_all.h"
+#include "cycle_model/component/branch_predictor_base.h"
 #include "breakpoint.h"
 
 namespace cycle_model::pipeline
 {
-    commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface) : tdb(TRACE_COMMIT)
+    commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_COMMIT)
     {
         this->wb_commit_port = wb_commit_port;
         this->speculative_rat = speculative_rat;
@@ -33,6 +34,7 @@ namespace cycle_model::pipeline
         this->phy_regfile = phy_regfile;
         this->phy_id_free_list = phy_id_free_list;
         this->interrupt_interface = interrupt_interface;
+        this->branch_predictor_set = branch_predictor_set;
         this->commit::reset();
     }
     
@@ -124,9 +126,7 @@ namespace cycle_model::pipeline
                                 
                                 if(rob_item.old_phy_reg_id_valid)
                                 {
-                                    speculative_rat->release_map(rob_item.old_phy_reg_id);
-                                    retire_rat->commit_map(rob_item.rd, rob_item.new_phy_reg_id);
-                                    retire_rat->release_map(rob_item.old_phy_reg_id);
+                                    retire_rat->set_map(rob_item.rd, rob_item.new_phy_reg_id);
                                     phy_regfile->write(rob_item.old_phy_reg_id, 0, false);
                                     phy_id_free_list->push(rob_item.old_phy_reg_id);
                                 }
@@ -153,16 +153,41 @@ namespace cycle_model::pipeline
                                         csr_file->write_sys(CSR_MSTATUS, mstatus.get_value());
                                     }
                                     
-                                    feedback_pack.jump_enable = true;
-                                    feedback_pack.jump = rob_item.bru_jump;
-                                    feedback_pack.jump_next_pc = rob_item.bru_jump ? rob_item.bru_next_pc : (rob_item.pc + 4);
-                                    break;
+                                    if(rob_item.branch_predictor_info_pack.predicted)
+                                    {
+                                        if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc == rob_item.branch_predictor_info_pack.next_pc))
+                                        {
+                                            //branch_hit_add();
+                                            component::branch_predictor_base::batch_update(rob_item.pc, rob_item.bru_jump, true);
+                                        }
+                                        else
+                                        {
+                                            //branch_miss_add();
+                                            component::branch_predictor_base::batch_update(rob_item.pc, rob_item.bru_jump, false);
+                                            feedback_pack.jump_enable = true;
+                                            feedback_pack.jump_next_pc = rob_item.bru_next_pc;
+                                            feedback_pack.flush = true;
+                                            speculative_rat->load(retire_rat);
+                                            rob->flush();
+                                            phy_regfile->restore(retire_rat);
+                                            phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
+                                            need_flush = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        feedback_pack.jump_enable = true;
+                                        feedback_pack.jump = rob_item.bru_jump;
+                                        feedback_pack.jump_next_pc = rob_item.bru_jump ? rob_item.bru_next_pc : (rob_item.pc + 4);
+                                    }
+                                    
+                                    break;//only handle a bru op
                                 }
                             }
                         }
                         else
                         {
-                            break;
+                            break;//no more finish rob_item
                         }
                     }
                 }

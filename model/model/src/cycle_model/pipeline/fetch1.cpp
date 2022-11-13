@@ -17,11 +17,12 @@
 
 namespace cycle_model::pipeline
 {
-    fetch1::fetch1(component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, uint32_t init_pc) : tdb(TRACE_FETCH1)
+    fetch1::fetch1(component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc) : tdb(TRACE_FETCH1)
     {
         this->bus = bus;
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->store_buffer = store_buffer;
+        this->branch_predictor_set = branch_predictor_set;
         this->init_pc = init_pc;
         this->fetch1::reset();
     }
@@ -64,20 +65,22 @@ namespace cycle_model::pipeline
                         uint32_t opcode = has_exception ? 0 : instruction_value[i];
                         bool jump = ((opcode & 0x7f) == 0x6f) || ((opcode & 0x7f) == 0x67) || ((opcode & 0x7f) == 0x63) || (opcode == 0x30200073);
                         bool fence_i = ((opcode & 0x7f) == 0x0f) && (((opcode >> 12) & 0x07) == 0x01);
+                        uint32_t rd = (opcode >> 7) & 0x1f;
+                        uint32_t funct3 = (opcode >> 12) & 0x07;
+                        uint32_t rs1 = (opcode >> 15) & 0x1f;
+                        uint32_t rs2 = (opcode >> 20) & 0x1f;
+                        uint32_t funct7 = (opcode >> 25) & 0x7f;
+                        uint32_t imm_i = (opcode >> 20) & 0xfff;
+                        uint32_t imm_s = (((opcode >> 7) & 0x1f)) | (((opcode >> 25) & 0x7f) << 5);
+                        uint32_t imm_b = (((opcode >> 8) & 0x0f) << 1) | (((opcode >> 25) & 0x3f) << 5) | (((opcode >> 7) & 0x01) << 11) | (((opcode >> 31) & 0x01) << 12);
+                        uint32_t imm_u = opcode & (~0xfff);
+                        uint32_t imm_j = (((opcode >> 12) & 0xff) << 12) | (((opcode >> 20) & 0x01) << 11) | (((opcode >> 21) & 0x3ff) << 1) | (((opcode >> 31) & 0x01) << 20);
+                        bool rd_is_link = (rd == 1) || (rd == 5);
+                        bool rs1_is_link = (rs1 == 1) || (rs1 == 5);
     
                         if(fence_i && ((i != 0) || (!fetch2_feedback_pack.idle) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || (!commit_feedback_pack.idle) || (!store_buffer->customer_is_empty())))
                         {
                             break;
-                        }
-    
-                        if(jump)
-                        {
-                            this->jump_wait = true;
-                            this->pc = cur_pc + 4;
-                        }
-                        else
-                        {
-                            this->pc = cur_pc + 4;
                         }
 
                         send_pack.op_info[i].enable = true;
@@ -92,8 +95,120 @@ namespace cycle_model::pipeline
                             break;
                         }
                         
+                        component::branch_predictor_base::batch_predict(i, cur_pc);
+                        
+                        switch(opcode & 0x7f)
+                        {
+                            case 0x6f://jal
+                                send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = cur_pc + imm_j;
+                                
+                                if(rd_is_link)
+                                {
+                                    branch_predictor_set->main_ras.push_addr(cur_pc + 4);
+                                }
+                                
+                                break;
+                            
+                            case 0x67://jalr
+                                if(rd_is_link)
+                                {
+                                    if(rs1_is_link)
+                                    {
+                                        if(rs1 == rd)
+                                        {
+                                            //push
+                                            send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                            send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                            send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                            branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+                                            branch_predictor_set->main_ras.push_addr(cur_pc + 4);
+                                        }
+                                        else
+                                        {
+                                            //pop, then push for coroutine context switch
+                                            send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                            send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                            send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->main_ras.pop_addr();
+                                            branch_predictor_set->main_ras.push_addr(cur_pc + 4);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //push
+                                        send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                        branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+                                        branch_predictor_set->main_ras.push_addr(cur_pc + 4);
+                                    }
+                                }
+                                else
+                                {
+                                    if(rs1_is_link)
+                                    {
+                                        //pop
+                                        send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->main_ras.pop_addr();
+                                    }
+                                    else
+                                    {
+                                        //none
+                                        send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.jump = true;
+                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                        branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+                                    }
+                                }
+                                
+                                break;
+    
+                            case 0x63://beq bne blt bge bltu bgeu
+                                send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
+                                send_pack.op_info[i].branch_predictor_info_pack.jump = branch_predictor_set->bi_modal.is_jump(cur_pc);
+                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->bi_modal.get_next_pc(cur_pc);
+                                branch_predictor_set->bi_modal.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+        
+                                switch(funct3)
+                                {
+                                    case 0x0://beq
+                                    case 0x1://bne
+                                    case 0x4://blt
+                                    case 0x5://bge
+                                    case 0x6://bltu
+                                    case 0x7://bgeu
+                                        break;
+            
+                                    default://invalid
+                                        verify_only(false);
+                                        break;
+                                }
+                                
+                                break;
+                                
+                            default:
+                                if(jump)
+                                {
+                                    this->jump_wait = true;
+                                    this->pc = cur_pc + 4;
+                                }
+                                else
+                                {
+                                    this->pc = cur_pc + 4;
+                                }
+                                
+                                break;
+                        }
+                        
                         if(jump)
                         {
+                            if(send_pack.op_info[i].branch_predictor_info_pack.predicted && send_pack.op_info[i].branch_predictor_info_pack.jump && send_pack.op_info[i].branch_predictor_info_pack.next_pc != (cur_pc + 4))
+                            {
+                                this->pc = send_pack.op_info[i].branch_predictor_info_pack.next_pc;
+                            }
+                            
                             break;
                         }
                     }

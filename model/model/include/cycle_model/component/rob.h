@@ -11,6 +11,7 @@
 #pragma once
 #include "common.h"
 #include "fifo.h"
+#include "branch_predictor_base.h"
 
 namespace cycle_model::component
 {
@@ -37,6 +38,7 @@ namespace cycle_model::component
         bool old_phy_id_free_list_rstage = false;
         uint32_t new_phy_id_free_list_rptr = 0;
         bool new_phy_id_free_list_rstage = false;
+        component::branch_predictor_info_pack_t branch_predictor_info_pack;
         
         virtual void print(std::string indent)
         {
