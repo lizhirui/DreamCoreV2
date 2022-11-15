@@ -207,6 +207,11 @@ namespace cycle_model::pipeline
                                 this->pc = send_pack.op_info[i].branch_predictor_info_pack.next_pc;
                                 break;
                             }
+                            
+                            if(!send_pack.op_info[i].branch_predictor_info_pack.predicted)
+                            {
+                                break;
+                            }
                         }
                     }
                 }

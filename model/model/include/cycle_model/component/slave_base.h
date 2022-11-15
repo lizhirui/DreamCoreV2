@@ -20,7 +20,7 @@ namespace cycle_model::component
         private:
             bool check(uint32_t addr, uint32_t access_size)
             {
-                if(!test_mode)
+                /*if(!test_mode)
                 {
                     verify_only(!(addr & (access_size - 1)));//align check
                     verify_only(addr < size);//boundary check
@@ -31,7 +31,8 @@ namespace cycle_model::component
                     has_error = ((addr & (access_size - 1)) || (addr >= size) || ((size - addr) < access_size));
                 }
                 
-                return !has_error;
+                return !has_error;*/
+                return !(((addr & (access_size - 1)) || (addr >= size) || ((size - addr) < access_size)));
             }
         
         protected:
