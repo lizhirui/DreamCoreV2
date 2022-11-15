@@ -24,6 +24,7 @@ namespace cycle_model::pipeline::execute
     class bru : public if_reset_t
     {
         private:
+            global_inst *global;
             uint32_t id = 0;
             component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff;
             component::port<execute_wb_pack_t> *bru_wb_port;
@@ -31,7 +32,7 @@ namespace cycle_model::pipeline::execute
             trace::trace_database tdb;
         
         public:
-            bru(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file);
+            bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
     };

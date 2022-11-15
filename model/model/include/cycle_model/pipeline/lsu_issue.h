@@ -214,6 +214,7 @@ namespace cycle_model::pipeline
                 }
             }issue_queue_item_t;
         
+            global_inst *global;
             component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port;
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
             
@@ -232,7 +233,7 @@ namespace cycle_model::pipeline
             trace::trace_database tdb;
         
         public:
-            lsu_issue(component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
+            lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             void run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);

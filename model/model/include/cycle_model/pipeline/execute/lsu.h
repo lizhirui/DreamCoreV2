@@ -25,6 +25,7 @@ namespace cycle_model::pipeline::execute
     class lsu : if_reset_t
     {
         private:
+            global_inst *global;
             uint32_t id = 0;
             component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff;
             component::port<execute_wb_pack_t> *lsu_wb_port;
@@ -50,7 +51,7 @@ namespace cycle_model::pipeline::execute
             
             clint_sync_info_t clint_sync_list[ROB_SIZE] = {{0, 0, 0}};
             
-            lsu(uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint);
+            lsu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
             virtual json get_json();

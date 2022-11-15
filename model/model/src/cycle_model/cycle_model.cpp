@@ -115,23 +115,23 @@ namespace cycle_model
     rob(ROB_SIZE),
     store_buffer(STORE_BUFFER_SIZE, &bus),
     clint(&bus, &interrupt_interface),
-    fetch1_stage(&bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
-    fetch2_stage(&fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
-    decode_stage(&fetch2_decode_fifo, &decode_rename_fifo),
-    rename_stage(&decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list),
-    dispatch_stage(&rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
-    integer_issue_stage(&dispatch_integer_issue_port, &integer_issue_readreg_port, &phy_regfile),
-    lsu_issue_stage(&dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile),
-    integer_readreg_stage(&integer_issue_readreg_port, readreg_alu_hdff, readreg_bru_hdff, readreg_csr_hdff, readreg_div_hdff, readreg_mul_hdff, &phy_regfile),
-    lsu_readreg_stage(&lsu_issue_readreg_port, readreg_lsu_hdff, &phy_regfile),
+    fetch1_stage(&global, &bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
+    fetch2_stage(&global, &fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
+    decode_stage(&global, &fetch2_decode_fifo, &decode_rename_fifo),
+    rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list),
+    dispatch_stage(&global, &rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
+    integer_issue_stage(&global, &dispatch_integer_issue_port, &integer_issue_readreg_port, &phy_regfile),
+    lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile),
+    integer_readreg_stage(&global, &integer_issue_readreg_port, readreg_alu_hdff, readreg_bru_hdff, readreg_csr_hdff, readreg_div_hdff, readreg_mul_hdff, &phy_regfile),
+    lsu_readreg_stage(&global, &lsu_issue_readreg_port, readreg_lsu_hdff, &phy_regfile),
     execute_alu_stage{nullptr},
     execute_bru_stage{nullptr},
     execute_csr_stage{nullptr},
     execute_div_stage{nullptr},
     execute_mul_stage{nullptr},
     execute_lsu_stage{nullptr},
-    wb_stage(alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &wb_commit_port, &phy_regfile),
-    commit_stage(&wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set)
+    wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &wb_commit_port, &phy_regfile),
+    commit_stage(&global, &wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set)
     {
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
@@ -140,42 +140,42 @@ namespace cycle_model
         {
             readreg_alu_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             alu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_alu_stage[i] = new pipeline::execute::alu(i, readreg_alu_hdff[i], alu_wb_port[i]);
+            execute_alu_stage[i] = new pipeline::execute::alu(&global, i, readreg_alu_hdff[i], alu_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_bru_stage[i] = new pipeline::execute::bru(i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
+            execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
         {
             readreg_csr_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             csr_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_csr_stage[i] = new pipeline::execute::csr(i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
+            execute_csr_stage[i] = new pipeline::execute::csr(&global, i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
         }
         
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
             readreg_div_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             div_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_div_stage[i] = new pipeline::execute::div(i, readreg_div_hdff[i], div_wb_port[i]);
+            execute_div_stage[i] = new pipeline::execute::div(&global, i, readreg_div_hdff[i], div_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
             readreg_mul_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             mul_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_mul_stage[i] = new pipeline::execute::mul(i, readreg_mul_hdff[i], mul_wb_port[i]);
+            execute_mul_stage[i] = new pipeline::execute::mul(&global, i, readreg_mul_hdff[i], mul_wb_port[i]);
         }
         
         for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
             readreg_lsu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             lsu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_lsu_stage[i] = new pipeline::execute::lsu(i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer, &clint);
+            execute_lsu_stage[i] = new pipeline::execute::lsu(&global, i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer, &clint);
         }
     
         csr_file.map(CSR_MVENDORID, true, std::make_shared<component::csr::mvendorid>());
@@ -379,10 +379,10 @@ namespace cycle_model
         cpu_clock_cycle = 0;
         committed_instruction_num = 0;
         
-        branch_num = 1;
-        branch_predicted = 0;
-        branch_hit = 0;
-        branch_miss = 0;
+        global.branch_num = 0;
+        global.branch_predicted = 0;
+        global.branch_hit = 0;
+        global. branch_miss = 0;
     
         component::dff_base::sync_all();
     }
@@ -450,14 +450,14 @@ namespace cycle_model
         csr_file.write_sys(CSR_MCYCLEH, (uint32_t)(cpu_clock_cycle >> 32));
         csr_file.write_sys(CSR_MINSTRET, (uint32_t)(committed_instruction_num & 0xffffffffu));
         csr_file.write_sys(CSR_MINSTRETH, (uint32_t)(committed_instruction_num >> 32));
-        csr_file.write_sys(CSR_BRANCHNUM, (uint32_t)(branch_num & 0xffffffffu));
-        csr_file.write_sys(CSR_BRANCHNUMH, (uint32_t)(branch_num >> 32));
-        csr_file.write_sys(CSR_BRANCHPREDICTED, (uint32_t)(branch_predicted & 0xffffffffu));
-        csr_file.write_sys(CSR_BRANCHPREDICTEDH, (uint32_t)(branch_predicted >> 32));
-        csr_file.write_sys(CSR_BRANCHHIT, (uint32_t)(branch_hit & 0xffffffffu));
-        csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(branch_hit >> 32));
-        csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(branch_miss & 0xffffffffu));
-        csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(branch_miss >> 32));
+        csr_file.write_sys(CSR_BRANCHNUM, (uint32_t)(global.branch_num & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHNUMH, (uint32_t)(global.branch_num >> 32));
+        csr_file.write_sys(CSR_BRANCHPREDICTED, (uint32_t)(global.branch_predicted & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHPREDICTEDH, (uint32_t)(global.branch_predicted >> 32));
+        csr_file.write_sys(CSR_BRANCHHIT, (uint32_t)(global.branch_hit & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(global.branch_hit >> 32));
+        csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(global.branch_miss & 0xffffffffu));
+        csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(global.branch_miss >> 32));
         component::dff_base::sync_all();
     }
 }

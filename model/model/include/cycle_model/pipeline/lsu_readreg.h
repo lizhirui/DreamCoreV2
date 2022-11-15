@@ -36,6 +36,7 @@ namespace cycle_model::pipeline
     class lsu_readreg : public if_reset_t
     {
         private:
+            global_inst *global;
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
             component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff;
             component::regfile<uint32_t> *phy_regfile;
@@ -46,7 +47,7 @@ namespace cycle_model::pipeline
             trace::trace_database tdb;
         
         public:
-            lsu_readreg(component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile);
+            lsu_readreg(global_inst *global, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             lsu_readreg_feedback_pack_t run(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();

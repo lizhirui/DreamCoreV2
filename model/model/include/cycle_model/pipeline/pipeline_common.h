@@ -10,6 +10,7 @@
 
 #pragma once
 #include "common.h"
+#include "../global_inst.h"
 
 namespace cycle_model::pipeline
 {

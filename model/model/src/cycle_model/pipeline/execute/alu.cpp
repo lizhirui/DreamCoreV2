@@ -17,8 +17,9 @@
 
 namespace cycle_model::pipeline::execute
 {
-    alu::alu(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port) : tdb(TRACE_EXECUTE_ALU)
+    alu::alu(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_alu_hdff, component::port<execute_wb_pack_t> *alu_wb_port) : tdb(TRACE_EXECUTE_ALU)
     {
+        this->global = global;
         this->id = id;
         this->readreg_alu_hdff = readreg_alu_hdff;
         this->alu_wb_port = alu_wb_port;

@@ -18,8 +18,9 @@
 
 namespace cycle_model::pipeline
 {
-    wb::wb(component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
+    wb::wb(global_inst *global, component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::port<wb_commit_pack_t> *wb_commit_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
     {
+        this->global = global;
         this->alu_wb_port = alu_wb_port;
         this->bru_wb_port = bru_wb_port;
         this->csr_wb_port = csr_wb_port;

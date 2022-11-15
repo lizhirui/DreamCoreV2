@@ -17,8 +17,9 @@
 
 namespace cycle_model::pipeline
 {
-    decode::decode(component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo) : tdb(TRACE_DECODE)
+    decode::decode(global_inst *global, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo) : tdb(TRACE_DECODE)
     {
+        this->global = global;
         this->fetch2_decode_fifo = fetch2_decode_fifo;
         this->decode_rename_fifo = decode_rename_fifo;
         this->decode::reset();

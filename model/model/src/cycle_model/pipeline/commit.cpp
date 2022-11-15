@@ -24,8 +24,9 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_COMMIT)
+    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_COMMIT)
     {
+        this->global = global;
         this->wb_commit_port = wb_commit_port;
         this->speculative_rat = speculative_rat;
         this->retire_rat = retire_rat;
@@ -143,7 +144,7 @@ namespace cycle_model::pipeline
                                 //branch handle
                                 if(rob_item.bru_op)
                                 {
-                                    //branch_num_add();
+                                    global->branch_num_add();
                 
                                     if(rob_item.is_mret)
                                     {
@@ -155,15 +156,17 @@ namespace cycle_model::pipeline
                                     
                                     if(rob_item.branch_predictor_info_pack.predicted)
                                     {
+                                        global->branch_predicted_add();
+                                        
                                         if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc == rob_item.branch_predictor_info_pack.next_pc))
                                         {
-                                            //branch_hit_add();
+                                            global->branch_hit_add();
                                             branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
                                             branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
                                         }
                                         else
                                         {
-                                            //branch_miss_add();
+                                            global->branch_miss_add();
                                             branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             feedback_pack.jump_enable = true;

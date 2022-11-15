@@ -22,8 +22,9 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_readreg::lsu_readreg(component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_LSU_READREG)
+    lsu_readreg::lsu_readreg(global_inst *global, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_LSU_READREG)
     {
+        this->global = global;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
         this->readreg_lsu_hdff = readreg_lsu_hdff;
         this->phy_regfile = phy_regfile;

@@ -22,6 +22,7 @@ namespace cycle_model::pipeline::execute
     class div : public if_reset_t
     {
         private:
+            global_inst *global;
             uint32_t id = 0;
             component::handshake_dff<integer_readreg_execute_pack_t> *readreg_div_hdff;
             component::port<execute_wb_pack_t> *div_wb_port;
@@ -31,7 +32,7 @@ namespace cycle_model::pipeline::execute
             trace::trace_database tdb;
         
         public:
-            div(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_div_hdff, component::port<execute_wb_pack_t> *div_wb_port);
+            div(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_div_hdff, component::port<execute_wb_pack_t> *div_wb_port);
             virtual void reset();
             execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
             virtual json get_json();

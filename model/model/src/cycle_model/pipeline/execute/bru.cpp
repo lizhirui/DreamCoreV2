@@ -17,8 +17,9 @@
 
 namespace cycle_model::pipeline::execute
 {
-    bru::bru(uint32_t id,component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file) : tdb(TRACE_EXECUTE_BRU)
+    bru::bru(global_inst *global, uint32_t id,component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file) : tdb(TRACE_EXECUTE_BRU)
     {
+        this->global = global;
         this->id = id;
         this->readreg_bru_hdff = readreg_bru_hdff;
         this->bru_wb_port = bru_wb_port;

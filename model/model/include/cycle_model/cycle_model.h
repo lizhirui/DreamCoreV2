@@ -11,6 +11,7 @@
 #pragma once
 #include "common.h"
 #include "config.h"
+#include "cycle_model/global_inst.h"
 #include "cycle_model/component/slave/memory.h"
 #include "cycle_model/component/slave/clint.h"
 #include "cycle_model/component/bus.h"
@@ -74,10 +75,7 @@ namespace cycle_model
         public:
             uint64_t cpu_clock_cycle = 0;
             uint64_t committed_instruction_num = 0;
-            uint64_t branch_num = 0;
-            uint64_t branch_predicted = 0;
-            uint64_t branch_hit = 0;
-            uint64_t branch_miss = 0;
+            global_inst global;
             
             component::port<pipeline::fetch1_fetch2_pack_t> fetch1_fetch2_port;
             component::fifo<pipeline::fetch2_decode_pack_t> fetch2_decode_fifo;

@@ -17,8 +17,9 @@
 
 namespace cycle_model::pipeline
 {
-    fetch1::fetch1(component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc) : tdb(TRACE_FETCH1)
+    fetch1::fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc) : tdb(TRACE_FETCH1)
     {
+        this->global = global;
         this->bus = bus;
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->store_buffer = store_buffer;

@@ -37,6 +37,7 @@ namespace cycle_model::pipeline
     class rename : public if_reset_t
     {
         private:
+            global_inst *global;
             component::fifo<decode_rename_pack_t> *decode_rename_fifo;
             component::port<rename_dispatch_pack_t> *rename_dispatch_port;
             component::rat *speculative_rat;
@@ -46,7 +47,7 @@ namespace cycle_model::pipeline
             trace::trace_database tdb;
         
         public:
-            rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list);
+            rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list);
             virtual void reset();
             rename_feedback_pack_t run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };

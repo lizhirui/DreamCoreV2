@@ -19,8 +19,9 @@
 
 namespace cycle_model::pipeline::execute
 {
-    lsu::lsu(uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint) : tdb(TRACE_EXECUTE_LSU)
+    lsu::lsu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint) : tdb(TRACE_EXECUTE_LSU)
     {
+        this->global = global;
         this->id = id;
         this->readreg_lsu_hdff = readreg_lsu_hdff;
         this->lsu_wb_port = lsu_wb_port;

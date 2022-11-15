@@ -243,6 +243,7 @@ namespace cycle_model::pipeline
                 }
             }issue_queue_item_t;
         
+            global_inst *global;
             component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port;
             component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port;
             
@@ -287,7 +288,7 @@ namespace cycle_model::pipeline
             static uint32_t latency_to_idle_shift(uint32_t latency);
         
         public:
-            integer_issue(component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
+            integer_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             integer_issue_output_feedback_pack_t run_output(const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);

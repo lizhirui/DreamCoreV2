@@ -24,8 +24,9 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_issue::lsu_issue(component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
+    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
     {
+        this->global = global;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
         this->phy_regfile = phy_regfile;

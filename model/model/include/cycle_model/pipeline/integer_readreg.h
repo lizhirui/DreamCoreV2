@@ -24,6 +24,7 @@ namespace cycle_model::pipeline
     class integer_readreg : public if_reset_t
     {
         private:
+            global_inst *global;
             component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port;
             component::handshake_dff<integer_readreg_execute_pack_t> **readreg_alu_hdff;
             component::handshake_dff<integer_readreg_execute_pack_t> **readreg_bru_hdff;
@@ -34,7 +35,7 @@ namespace cycle_model::pipeline
             trace::trace_database tdb;
         
         public:
-            integer_readreg(component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile);
+            integer_readreg(global_inst *global, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_alu_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_bru_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_csr_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_div_hdff, component::handshake_dff<integer_readreg_execute_pack_t> **readreg_mul_hdff, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             void run(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };

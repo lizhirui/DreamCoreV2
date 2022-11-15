@@ -17,8 +17,9 @@
 
 namespace cycle_model::pipeline
 {
-    rename::rename(component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
+    rename::rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
     {
+        this->global = global;
         this->decode_rename_fifo = decode_rename_fifo;
         this->rename_dispatch_port = rename_dispatch_port;
         this->speculative_rat = speculative_rat;

@@ -18,8 +18,9 @@
 
 namespace cycle_model::pipeline::execute
 {
-    csr::csr(uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_csr_hdff, component::port<execute_wb_pack_t> *csr_wb_port, component::csrfile *csr_file) : tdb(TRACE_EXECUTE_CSR)
+    csr::csr(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_csr_hdff, component::port<execute_wb_pack_t> *csr_wb_port, component::csrfile *csr_file) : tdb(TRACE_EXECUTE_CSR)
     {
+        this->global = global;
         this->id = id;
         this->readreg_csr_hdff = readreg_csr_hdff;
         this->csr_wb_port = csr_wb_port;

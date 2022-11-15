@@ -19,8 +19,9 @@
 
 namespace cycle_model::pipeline
 {
-    dispatch::dispatch(component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer) : tdb(TRACE_DISPATCH)
+    dispatch::dispatch(global_inst *global, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer) : tdb(TRACE_DISPATCH)
     {
+        this->global = global;
         this->rename_dispatch_port = rename_dispatch_port;
         this->dispatch_integer_issue_port = dispatch_integer_issue_port;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;

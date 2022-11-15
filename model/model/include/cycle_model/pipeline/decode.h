@@ -32,12 +32,13 @@ namespace cycle_model::pipeline
     class decode : public if_reset_t
     {
         private:
+            global_inst *global;
             component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo;
             component::fifo<decode_rename_pack_t> *decode_rename_fifo;
             trace::trace_database tdb;
         
         public:
-            decode(component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
+            decode(global_inst *global, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
             virtual void reset();
             decode_feedback_pack_t run(const commit_feedback_pack_t &commit_feedback_pack);
     };
