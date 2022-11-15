@@ -112,7 +112,7 @@ class dynamic_check_thread(threading.Thread):
             else:
                 print_lock.acquire()
                 yellow_text("[" + str(self.thread_id + 1) + "-" + str(cnt) + "/" + str(len(self.local_task_list)) + ", " + case_name + "]: Unknown Error[" + str(exit_code) + "] " + elapsed_time)
-                #print(out)
+                print(out)
                 #os._exit(0)
                 unknown_error_cnt += 1
                 print_lock.release()
@@ -165,7 +165,7 @@ for group in tb_groups:
 original_testcase_list.sort(key = file_key)
 
 for item in original_testcase_list:
-    testcase_list.append([testcase_dir, item[0], item[1], 10000000])
+    testcase_list.append([testcase_dir, item[0], item[1], 20000000])
 
 print(str(len(original_testcase_list)) + " testcases are found: ")
 

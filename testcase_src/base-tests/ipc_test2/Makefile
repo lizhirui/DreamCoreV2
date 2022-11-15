@@ -27,7 +27,7 @@ build_7_2/%.elf: $(SRC_LIST)
 	
 build_12_2/%.elf: $(SRC_LIST)
 	mkdir -p ./build_12_2
-	$(TOOLCHAIN_7_2)gcc -Wl,-Map=build_12_2/output.map -g -O3 -funroll-all-loops -I$(src_dir) -mabi=ilp32 -march=rv32im -o $@ startup.S $(RISCV_LINK_OPTS)
+	$(TOOLCHAIN_12_2)gcc -Wl,-Map=build_12_2/output.map -g -O3 -funroll-all-loops -I$(src_dir) -mabi=ilp32 -march=rv32im -o $@ startup.S $(RISCV_LINK_OPTS)
 
 copy: all
 	cp build_7_2/$(COMPILE_NAME)_7_2.bin ../../../testcase/base-tests/$(COMPILE_NAME)_7_2.bin

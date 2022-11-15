@@ -1,34 +1,34 @@
 Archive member included to satisfy reference by file (symbol)
 
 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
-                              /tmp/ccNm1gHB.o (__moddi3)
+                              /tmp/ccc2R4Qd.o (__moddi3)
 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
-                              /tmp/ccNm1gHB.o (__udivdi3)
+                              /tmp/ccc2R4Qd.o (__udivdi3)
 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
-                              /tmp/ccNm1gHB.o (__umoddi3)
+                              /tmp/ccc2R4Qd.o (__umoddi3)
 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
                               /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o) (__clz_tab)
 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libc.a(lib_a-strcmp.o)
-                              /tmp/ccjOJpIz.o (strcmp)
+                              /tmp/cc7q0XUg.o (strcmp)
 
 Allocating common symbols
 Common symbol       size              file
 
-Microseconds        0x8               /tmp/ccNm1gHB.o
+Microseconds        0x8               /tmp/ccc2R4Qd.o
 Dhrystones_Per_Second
-                    0x8               /tmp/ccNm1gHB.o
-User_Time           0x8               /tmp/ccNm1gHB.o
-Begin_Time          0x8               /tmp/ccNm1gHB.o
-Arr_2_Glob          0x2710            /tmp/ccNm1gHB.o
-End_Time            0x8               /tmp/ccNm1gHB.o
-Next_Ptr_Glob       0x4               /tmp/ccNm1gHB.o
-Int_Glob            0x4               /tmp/ccNm1gHB.o
-Ch_1_Glob           0x1               /tmp/ccNm1gHB.o
-Ch_2_Glob           0x1               /tmp/ccNm1gHB.o
-Ptr_Glob            0x4               /tmp/ccNm1gHB.o
-Done                0x4               /tmp/ccNm1gHB.o
-Arr_1_Glob          0xc8              /tmp/ccNm1gHB.o
-Bool_Glob           0x4               /tmp/ccNm1gHB.o
+                    0x8               /tmp/ccc2R4Qd.o
+User_Time           0x8               /tmp/ccc2R4Qd.o
+Begin_Time          0x8               /tmp/ccc2R4Qd.o
+Arr_2_Glob          0x2710            /tmp/ccc2R4Qd.o
+End_Time            0x8               /tmp/ccc2R4Qd.o
+Next_Ptr_Glob       0x4               /tmp/ccc2R4Qd.o
+Int_Glob            0x4               /tmp/ccc2R4Qd.o
+Ch_1_Glob           0x1               /tmp/ccc2R4Qd.o
+Ch_2_Glob           0x1               /tmp/ccc2R4Qd.o
+Ptr_Glob            0x4               /tmp/ccc2R4Qd.o
+Done                0x4               /tmp/ccc2R4Qd.o
+Arr_1_Glob          0xc8              /tmp/ccc2R4Qd.o
+Bool_Glob           0x4               /tmp/ccc2R4Qd.o
 
 Memory Configuration
 
@@ -38,10 +38,10 @@ ICCM             0x0000000080000000 0x0000000000040000 axw !rl
 
 Linker script and memory map
 
-LOAD /tmp/ccxOOpCz.o
-LOAD /tmp/ccjOJpIz.o
-LOAD /tmp/ccNm1gHB.o
-LOAD /tmp/ccd28OdD.o
+LOAD /tmp/ccUz4M8g.o
+LOAD /tmp/cc7q0XUg.o
+LOAD /tmp/ccc2R4Qd.o
+LOAD /tmp/cck4fhsh.o
 LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libm.a
 LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a
 LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a
@@ -54,7 +54,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .text.init      0x0000000080000000       0xdc
  *(.text.init)
- .text.init     0x0000000080000000       0xdc /tmp/ccxOOpCz.o
+ .text.init     0x0000000080000000       0xdc /tmp/ccUz4M8g.o
                 0x0000000080000000                _start
                 0x00000000800000d4                send_char
                 0x00000000800000dc                . = ALIGN (0x4)
@@ -62,18 +62,18 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 .text           0x00000000800000dc     0x5234
  *(.text.unlikely .text.unlikely.*)
  *(.text.startup .text.startup.*)
- .text.startup  0x00000000800000dc      0xa38 /tmp/ccNm1gHB.o
+ .text.startup  0x00000000800000dc      0xa38 /tmp/ccc2R4Qd.o
                 0x00000000800000dc                main
  *(.text .text.*)
- .text          0x0000000080000b14        0x0 /tmp/ccxOOpCz.o
- .text          0x0000000080000b14      0x244 /tmp/ccjOJpIz.o
+ .text          0x0000000080000b14        0x0 /tmp/ccUz4M8g.o
+ .text          0x0000000080000b14      0x244 /tmp/cc7q0XUg.o
                 0x0000000080000b14                Proc_7
                 0x0000000080000b24                Proc_8
                 0x0000000080000b8c                Func_1
                 0x0000000080000bb0                Func_2
                 0x0000000080000c88                Func_3
                 0x0000000080000c94                Proc_6
- .text          0x0000000080000d58      0x6c4 /tmp/ccNm1gHB.o
+ .text          0x0000000080000d58      0x6c4 /tmp/ccc2R4Qd.o
                 0x0000000080000d58                start_instret
                 0x0000000080000de4                stop_instret
                 0x0000000080000e70                get_instret
@@ -89,7 +89,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
                 0x0000000080001274                Proc_1
                 0x00000000800013d4                Proc_4
                 0x0000000080001404                Proc_5
- .text          0x000000008000141c     0x30dc /tmp/ccd28OdD.o
+ .text          0x000000008000141c     0x30dc /tmp/cck4fhsh.o
                 0x0000000080004330                _putchar
                 0x0000000080004368                printf_
                 0x00000000800043bc                sprintf_
@@ -113,9 +113,9 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
  *(.rdata)
  *(.rodata .rodata.*)
  .rodata.str1.4
-                0x0000000080005310      0x694 /tmp/ccNm1gHB.o
+                0x0000000080005310      0x694 /tmp/ccc2R4Qd.o
                                         0x697 (size before relaxing)
- .rodata        0x00000000800059a4      0x1e0 /tmp/ccd28OdD.o
+ .rodata        0x00000000800059a4      0x1e0 /tmp/cck4fhsh.o
  .rodata        0x0000000080005b84      0x100 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
                 0x0000000080005b84                __clz_tab
  *(.gnu.linkonce.r.*)
@@ -130,17 +130,17 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .rela.dyn       0x0000000080005cd4        0x0
  .rela.text.init
-                0x0000000080005cd4        0x0 /tmp/ccxOOpCz.o
- .rela.text     0x0000000080005cd4        0x0 /tmp/ccxOOpCz.o
+                0x0000000080005cd4        0x0 /tmp/ccUz4M8g.o
+ .rela.text     0x0000000080005cd4        0x0 /tmp/ccUz4M8g.o
  .rela.text.startup
-                0x0000000080005cd4        0x0 /tmp/ccxOOpCz.o
+                0x0000000080005cd4        0x0 /tmp/ccUz4M8g.o
 
 .data           0x0000000080005cd4        0x0
  *(.data .data.*)
- .data          0x0000000080005cd4        0x0 /tmp/ccxOOpCz.o
- .data          0x0000000080005cd4        0x0 /tmp/ccjOJpIz.o
- .data          0x0000000080005cd4        0x0 /tmp/ccNm1gHB.o
- .data          0x0000000080005cd4        0x0 /tmp/ccd28OdD.o
+ .data          0x0000000080005cd4        0x0 /tmp/ccUz4M8g.o
+ .data          0x0000000080005cd4        0x0 /tmp/cc7q0XUg.o
+ .data          0x0000000080005cd4        0x0 /tmp/ccc2R4Qd.o
+ .data          0x0000000080005cd4        0x0 /tmp/cck4fhsh.o
  .data          0x0000000080005cd4        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .data          0x0000000080005cd4        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .data          0x0000000080005cd4        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
@@ -161,24 +161,24 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .sbss           0x0000000080005cd8       0x44
  *(.sbss .sbss.* .gnu.linkonce.sb.*)
- .sbss          0x0000000080005cd8       0x44 /tmp/ccNm1gHB.o
+ .sbss          0x0000000080005cd8       0x44 /tmp/ccc2R4Qd.o
                 0x0000000080005d18                Reg
  *(.scommon)
                 0x0000000080005d1c                . = ALIGN (0x4)
 
 .bss            0x0000000080005d20     0x2818
  *(.bss)
- .bss           0x0000000080005d20        0x0 /tmp/ccxOOpCz.o
- .bss           0x0000000080005d20        0x0 /tmp/ccjOJpIz.o
- .bss           0x0000000080005d20        0x0 /tmp/ccNm1gHB.o
- .bss           0x0000000080005d20        0x0 /tmp/ccd28OdD.o
+ .bss           0x0000000080005d20        0x0 /tmp/ccUz4M8g.o
+ .bss           0x0000000080005d20        0x0 /tmp/cc7q0XUg.o
+ .bss           0x0000000080005d20        0x0 /tmp/ccc2R4Qd.o
+ .bss           0x0000000080005d20        0x0 /tmp/cck4fhsh.o
  .bss           0x0000000080005d20        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .bss           0x0000000080005d20        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .bss           0x0000000080005d20        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
  .bss           0x0000000080005d20        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
  .bss           0x0000000080005d20        0x0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libc.a(lib_a-strcmp.o)
                 0x0000000080005d20                . = ALIGN (0x4)
- COMMON         0x0000000080005d20     0x2818 /tmp/ccNm1gHB.o
+ COMMON         0x0000000080005d20     0x2818 /tmp/ccc2R4Qd.o
                 0x0000000080005d20                Microseconds
                 0x0000000080005d28                Dhrystones_Per_Second
                 0x0000000080005d30                User_Time
@@ -204,30 +204,30 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 OUTPUT(build_7_2/dhrystone_500_7_2.elf elf32-littleriscv)
 
 .debug_line     0x0000000000000000     0x3ba3
- .debug_line    0x0000000000000000      0x166 /tmp/ccxOOpCz.o
- .debug_line    0x0000000000000166      0x2bb /tmp/ccjOJpIz.o
- .debug_line    0x0000000000000421      0xf2f /tmp/ccNm1gHB.o
- .debug_line    0x0000000000001350     0x176e /tmp/ccd28OdD.o
+ .debug_line    0x0000000000000000      0x166 /tmp/ccUz4M8g.o
+ .debug_line    0x0000000000000166      0x2bb /tmp/cc7q0XUg.o
+ .debug_line    0x0000000000000421      0xf2f /tmp/ccc2R4Qd.o
+ .debug_line    0x0000000000001350     0x176e /tmp/cck4fhsh.o
  .debug_line    0x0000000000002abe      0x4ab /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_line    0x0000000000002f69      0x495 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .debug_line    0x00000000000033fe      0x488 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
  .debug_line    0x0000000000003886      0x31d /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
 
 .debug_info     0x0000000000000000     0x86be
- .debug_info    0x0000000000000000       0x26 /tmp/ccxOOpCz.o
- .debug_info    0x0000000000000026      0xbaf /tmp/ccjOJpIz.o
- .debug_info    0x0000000000000bd5     0x1aa9 /tmp/ccNm1gHB.o
- .debug_info    0x000000000000267e     0x2145 /tmp/ccd28OdD.o
+ .debug_info    0x0000000000000000       0x26 /tmp/ccUz4M8g.o
+ .debug_info    0x0000000000000026      0xbaf /tmp/cc7q0XUg.o
+ .debug_info    0x0000000000000bd5     0x1aa9 /tmp/ccc2R4Qd.o
+ .debug_info    0x000000000000267e     0x2145 /tmp/cck4fhsh.o
  .debug_info    0x00000000000047c3     0x11ad /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_info    0x0000000000005970     0x112a /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .debug_info    0x0000000000006a9a     0x1187 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
  .debug_info    0x0000000000007c21      0xa9d /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
 
 .debug_abbrev   0x0000000000000000     0x12dc
- .debug_abbrev  0x0000000000000000       0x14 /tmp/ccxOOpCz.o
- .debug_abbrev  0x0000000000000014      0x25e /tmp/ccjOJpIz.o
- .debug_abbrev  0x0000000000000272      0x332 /tmp/ccNm1gHB.o
- .debug_abbrev  0x00000000000005a4      0x389 /tmp/ccd28OdD.o
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccUz4M8g.o
+ .debug_abbrev  0x0000000000000014      0x25e /tmp/cc7q0XUg.o
+ .debug_abbrev  0x0000000000000272      0x332 /tmp/ccc2R4Qd.o
+ .debug_abbrev  0x00000000000005a4      0x389 /tmp/cck4fhsh.o
  .debug_abbrev  0x000000000000092d      0x2b3 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_abbrev  0x0000000000000be0      0x292 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .debug_abbrev  0x0000000000000e72      0x2ac /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
@@ -235,13 +235,13 @@ OUTPUT(build_7_2/dhrystone_500_7_2.elf elf32-littleriscv)
 
 .debug_aranges  0x0000000000000000      0x100
  .debug_aranges
-                0x0000000000000000       0x20 /tmp/ccxOOpCz.o
+                0x0000000000000000       0x20 /tmp/ccUz4M8g.o
  .debug_aranges
-                0x0000000000000020       0x20 /tmp/ccjOJpIz.o
+                0x0000000000000020       0x20 /tmp/cc7q0XUg.o
  .debug_aranges
-                0x0000000000000040       0x28 /tmp/ccNm1gHB.o
+                0x0000000000000040       0x28 /tmp/ccc2R4Qd.o
  .debug_aranges
-                0x0000000000000068       0x20 /tmp/ccd28OdD.o
+                0x0000000000000068       0x20 /tmp/cck4fhsh.o
  .debug_aranges
                 0x0000000000000088       0x20 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_aranges
@@ -251,50 +251,50 @@ OUTPUT(build_7_2/dhrystone_500_7_2.elf elf32-littleriscv)
  .debug_aranges
                 0x00000000000000e8       0x18 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
 
-.debug_str      0x0000000000000000      0xfb2
- .debug_str     0x0000000000000000       0x60 /tmp/ccxOOpCz.o
- .debug_str     0x0000000000000060      0x5e8 /tmp/ccjOJpIz.o
-                                        0x690 (size before relaxing)
- .debug_str     0x0000000000000648      0x387 /tmp/ccNm1gHB.o
-                                        0x948 (size before relaxing)
- .debug_str     0x00000000000009cf      0x16b /tmp/ccd28OdD.o
-                                        0x2e2 (size before relaxing)
- .debug_str     0x0000000000000b3a      0x3d2 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
+.debug_str      0x0000000000000000      0xfaf
+ .debug_str     0x0000000000000000       0x5d /tmp/ccUz4M8g.o
+ .debug_str     0x000000000000005d      0x5e8 /tmp/cc7q0XUg.o
+                                        0x68d (size before relaxing)
+ .debug_str     0x0000000000000645      0x387 /tmp/ccc2R4Qd.o
+                                        0x945 (size before relaxing)
+ .debug_str     0x00000000000009cc      0x16b /tmp/cck4fhsh.o
+                                        0x2df (size before relaxing)
+ .debug_str     0x0000000000000b37      0x3d2 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
                                         0x871 (size before relaxing)
- .debug_str     0x0000000000000f0c        0xa /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
+ .debug_str     0x0000000000000f09        0xa /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
                                         0x872 (size before relaxing)
- .debug_str     0x0000000000000f16        0xa /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
+ .debug_str     0x0000000000000f13        0xa /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
                                         0x872 (size before relaxing)
- .debug_str     0x0000000000000f20       0x92 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
+ .debug_str     0x0000000000000f1d       0x92 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
                                         0x7b9 (size before relaxing)
 
 .debug_loc      0x0000000000000000     0x5f4f
- .debug_loc     0x0000000000000000      0x411 /tmp/ccjOJpIz.o
- .debug_loc     0x0000000000000411      0x83b /tmp/ccNm1gHB.o
- .debug_loc     0x0000000000000c4c     0x33a6 /tmp/ccd28OdD.o
+ .debug_loc     0x0000000000000000      0x411 /tmp/cc7q0XUg.o
+ .debug_loc     0x0000000000000411      0x83b /tmp/ccc2R4Qd.o
+ .debug_loc     0x0000000000000c4c     0x33a6 /tmp/cck4fhsh.o
  .debug_loc     0x0000000000003ff2      0x9c4 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_loc     0x00000000000049b6      0xbf5 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .debug_loc     0x00000000000055ab      0x9a4 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
 
 .debug_ranges   0x0000000000000000      0xac8
- .debug_ranges  0x0000000000000000       0x18 /tmp/ccjOJpIz.o
- .debug_ranges  0x0000000000000018       0xd8 /tmp/ccNm1gHB.o
- .debug_ranges  0x00000000000000f0      0x768 /tmp/ccd28OdD.o
+ .debug_ranges  0x0000000000000000       0x18 /tmp/cc7q0XUg.o
+ .debug_ranges  0x0000000000000018       0xd8 /tmp/ccc2R4Qd.o
+ .debug_ranges  0x00000000000000f0      0x768 /tmp/cck4fhsh.o
  .debug_ranges  0x0000000000000858       0xc0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .debug_ranges  0x0000000000000918       0xf0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .debug_ranges  0x0000000000000a08       0xc0 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
 
 .comment        0x0000000000000000       0x11
- .comment       0x0000000000000000       0x11 /tmp/ccjOJpIz.o
+ .comment       0x0000000000000000       0x11 /tmp/cc7q0XUg.o
                                          0x12 (size before relaxing)
- .comment       0x0000000000000011       0x12 /tmp/ccNm1gHB.o
- .comment       0x0000000000000011       0x12 /tmp/ccd28OdD.o
+ .comment       0x0000000000000011       0x12 /tmp/ccc2R4Qd.o
+ .comment       0x0000000000000011       0x12 /tmp/cck4fhsh.o
  .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_moddi3.o)
  .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_udivdi3.o)
  .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_umoddi3.o)
  .comment       0x0000000000000011       0x12 /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a(_clz.o)
 
 .debug_frame    0x0000000000000000      0x410
- .debug_frame   0x0000000000000000       0xc0 /tmp/ccjOJpIz.o
- .debug_frame   0x00000000000000c0      0x184 /tmp/ccNm1gHB.o
- .debug_frame   0x0000000000000244      0x1cc /tmp/ccd28OdD.o
+ .debug_frame   0x0000000000000000       0xc0 /tmp/cc7q0XUg.o
+ .debug_frame   0x00000000000000c0      0x184 /tmp/ccc2R4Qd.o
+ .debug_frame   0x0000000000000244      0x1cc /tmp/cck4fhsh.o

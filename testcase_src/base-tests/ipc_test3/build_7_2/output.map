@@ -7,14 +7,14 @@ ICCM             0x0000000080000000 0x0000000000040000 axw !rl
 
 Linker script and memory map
 
-LOAD /tmp/ccRXmXR1.o
+LOAD /tmp/ccJqVfc2.o
 LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libm.a
 LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a
                 0x0000000000008000                __stack_size = DEFINED (__stack_size)?__stack_size:0x8000
 
 .text.init      0x0000000080000000     0xa808
  *(.text.init)
- .text.init     0x0000000080000000     0xa808 /tmp/ccRXmXR1.o
+ .text.init     0x0000000080000000     0xa808 /tmp/ccJqVfc2.o
                 0x0000000080000000                _start
                 0x000000008000a808                . = ALIGN (0x4)
 
@@ -22,7 +22,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
  *(.text.unlikely .text.unlikely.*)
  *(.text.startup .text.startup.*)
  *(.text .text.*)
- .text          0x000000008000a808        0x0 /tmp/ccRXmXR1.o
+ .text          0x000000008000a808        0x0 /tmp/ccJqVfc2.o
  *(.gnu.linkonce.t.*)
                 0x000000008000a808                . = ALIGN (0x4)
 
@@ -34,7 +34,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .data           0x000000008000a808        0x0
  *(.data .data.*)
- .data          0x000000008000a808        0x0 /tmp/ccRXmXR1.o
+ .data          0x000000008000a808        0x0 /tmp/ccJqVfc2.o
  *(.gnu.linkonce.d.*)
                 0x000000008000a808                . = ALIGN (0x4)
 
@@ -55,7 +55,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .bss            0x000000008000a808        0x0
  *(.bss)
- .bss           0x000000008000a808        0x0 /tmp/ccRXmXR1.o
+ .bss           0x000000008000a808        0x0 /tmp/ccJqVfc2.o
                 0x000000008000a808                . = ALIGN (0x4)
                 0x000000008000a808                _end = .
 
@@ -68,17 +68,17 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 OUTPUT(build_7_2/ipc_test3_7_2.elf elf32-littleriscv)
 
 .debug_line     0x0000000000000000     0xfc40
- .debug_line    0x0000000000000000     0xfc40 /tmp/ccRXmXR1.o
+ .debug_line    0x0000000000000000     0xfc40 /tmp/ccJqVfc2.o
 
 .debug_info     0x0000000000000000       0x26
- .debug_info    0x0000000000000000       0x26 /tmp/ccRXmXR1.o
+ .debug_info    0x0000000000000000       0x26 /tmp/ccJqVfc2.o
 
 .debug_abbrev   0x0000000000000000       0x14
- .debug_abbrev  0x0000000000000000       0x14 /tmp/ccRXmXR1.o
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccJqVfc2.o
 
 .debug_aranges  0x0000000000000000       0x20
  .debug_aranges
-                0x0000000000000000       0x20 /tmp/ccRXmXR1.o
+                0x0000000000000000       0x20 /tmp/ccJqVfc2.o
 
 .debug_str      0x0000000000000000       0x68
- .debug_str     0x0000000000000000       0x68 /tmp/ccRXmXR1.o
+ .debug_str     0x0000000000000000       0x68 /tmp/ccJqVfc2.o

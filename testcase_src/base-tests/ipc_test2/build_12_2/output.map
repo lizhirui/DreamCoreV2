@@ -7,14 +7,14 @@ ICCM             0x0000000080000000 0x0000000000040000 axw !rl
 
 Linker script and memory map
 
-LOAD /tmp/cc1qvITq.o
-LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/../../../../riscv32-unknown-elf/lib/libm.a
-LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/libgcc.a
+LOAD /tmp/ccxsZnrb.o
+LOAD /opt/riscv-gnu-toolchain_20221011_rv32im/lib/gcc/riscv32-unknown-elf/12.2.0/../../../../riscv32-unknown-elf/lib/libm.a
+LOAD /opt/riscv-gnu-toolchain_20221011_rv32im/lib/gcc/riscv32-unknown-elf/12.2.0/libgcc.a
                 0x0000000000008000                __stack_size = DEFINED (__stack_size)?__stack_size:0x8000
 
 .text.init      0x0000000080000000     0x9d88
  *(.text.init)
- .text.init     0x0000000080000000     0x9d88 /tmp/cc1qvITq.o
+ .text.init     0x0000000080000000     0x9d88 /tmp/ccxsZnrb.o
                 0x0000000080000000                _start
                 0x0000000080009d88                . = ALIGN (0x4)
 
@@ -22,7 +22,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
  *(.text.unlikely .text.unlikely.*)
  *(.text.startup .text.startup.*)
  *(.text .text.*)
- .text          0x0000000080009d88        0x0 /tmp/cc1qvITq.o
+ .text          0x0000000080009d88        0x0 /tmp/ccxsZnrb.o
  *(.gnu.linkonce.t.*)
                 0x0000000080009d88                . = ALIGN (0x4)
 
@@ -34,7 +34,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .data           0x0000000080009d88        0x0
  *(.data .data.*)
- .data          0x0000000080009d88        0x0 /tmp/cc1qvITq.o
+ .data          0x0000000080009d88        0x0 /tmp/ccxsZnrb.o
  *(.gnu.linkonce.d.*)
                 0x0000000080009d88                . = ALIGN (0x4)
 
@@ -55,7 +55,7 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
 
 .bss            0x0000000080009d88        0x0
  *(.bss)
- .bss           0x0000000080009d88        0x0 /tmp/cc1qvITq.o
+ .bss           0x0000000080009d88        0x0 /tmp/ccxsZnrb.o
                 0x0000000080009d88                . = ALIGN (0x4)
                 0x0000000080009d88                _end = .
 
@@ -67,18 +67,28 @@ LOAD /opt/riscv-gnu-toolchain_20171107_rv32im/lib/gcc/riscv32-unknown-elf/7.2.0/
                 0x0000000080011d88                __bss_end = .
 OUTPUT(build_12_2/ipc_test2_12_2.elf elf32-littleriscv)
 
-.debug_line     0x0000000000000000     0xec80
- .debug_line    0x0000000000000000     0xec80 /tmp/cc1qvITq.o
+.riscv.attributes
+                0x0000000000000000       0x23
+ .riscv.attributes
+                0x0000000000000000       0x23 /tmp/ccxsZnrb.o
+
+.debug_line     0x0000000000000000     0xec8c
+ .debug_line    0x0000000000000000     0xec8c /tmp/ccxsZnrb.o
+
+.debug_line_str
+                0x0000000000000000       0x5c
+ .debug_line_str
+                0x0000000000000000       0x5c /tmp/ccxsZnrb.o
 
 .debug_info     0x0000000000000000       0x26
- .debug_info    0x0000000000000000       0x26 /tmp/cc1qvITq.o
+ .debug_info    0x0000000000000000       0x26 /tmp/ccxsZnrb.o
 
 .debug_abbrev   0x0000000000000000       0x14
- .debug_abbrev  0x0000000000000000       0x14 /tmp/cc1qvITq.o
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccxsZnrb.o
 
 .debug_aranges  0x0000000000000000       0x20
  .debug_aranges
-                0x0000000000000000       0x20 /tmp/cc1qvITq.o
+                0x0000000000000000       0x20 /tmp/ccxsZnrb.o
 
 .debug_str      0x0000000000000000       0x68
- .debug_str     0x0000000000000000       0x68 /tmp/cc1qvITq.o
+ .debug_str     0x0000000000000000       0x68 /tmp/ccxsZnrb.o
