@@ -12,6 +12,7 @@
 #include "common.h"
 #include "config.h"
 #include "pipeline_common.h"
+#include "../component/branch_predictor_base.h"
 
 namespace cycle_model::pipeline
 {
@@ -29,6 +30,7 @@ namespace cycle_model::pipeline
         bool has_exception = false;
         riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
         uint32_t exception_value = 0;
+        component::branch_predictor_info_pack_t branch_predictor_info_pack;
         
         uint32_t rs1 = 0;
         arg_src_t arg1_src = arg_src_t::reg;
@@ -157,6 +159,7 @@ namespace cycle_model::pipeline
                 t["has_exception"] = op_info[i].has_exception;
                 t["exception_id"] = outenum(op_info[i].exception_id);
                 t["exception_value"] = op_info[i].exception_value;
+                t["branch_predictor_info_pack"] = op_info[i].branch_predictor_info_pack.get_json();
                 t["rs1"] = op_info[i].rs1;
                 t["arg1_src"] = outenum(op_info[i].arg1_src);
                 t["rs1_need_map"] = op_info[i].rs1_need_map;

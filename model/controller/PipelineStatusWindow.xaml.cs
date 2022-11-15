@@ -802,6 +802,23 @@ namespace DreamCoreV2_model_controller
                     ready_string += ">";
                     listView_LSU_Issue_Queue.Items.Add(new{Highlight = false, Value = ready_string + getDisplayText(item.Instruction, item.pc)});
                 }
+                
+                {
+                    var cur_index = listView_RAT.SelectedIndex;
+                    listView_RAT.Items.Clear();
+
+                    for(var i = 0;i < pipelineStatus.retire_rat.valid.Length;i++)
+                    {
+                        listView_RAT.Items.Add(new{Highlight = false, Value = i + ": x" + pipelineStatus.speculative_rat.value[i] + (pipelineStatus.speculative_rat.valid[i] ? "<valid>" : "<invalid>") + ", x" +
+                                                                              pipelineStatus.retire_rat.value[i] + (pipelineStatus.retire_rat.valid[i] ? "<valid>" : "<invalid>") + ", " +
+                                                                              "0x" + string.Format("{0:X8}", pipelineStatus.phy_regfile.value[i]) + (pipelineStatus.phy_regfile.valid[i] ? "<valid>" : "<invalid>")});
+                    }
+
+                    if(cur_index < pipelineStatus.retire_rat.valid.Length)
+                    {
+                        listView_RAT.SelectedIndex = cur_index;
+                    }
+                }
             }
         }
         #pragma warning restore CS8602

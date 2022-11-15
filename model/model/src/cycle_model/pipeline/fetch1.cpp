@@ -37,7 +37,7 @@ namespace cycle_model::pipeline
     {
         fetch1_fetch2_pack_t send_pack;
         
-        if(!commit_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !fetch2_feedback_pack.pc_redirect)
         {
             if(jump_wait)
             {
@@ -89,20 +89,15 @@ namespace cycle_model::pipeline
                         send_pack.op_info[i].has_exception = has_exception;
                         send_pack.op_info[i].exception_id = !component::bus::check_align(cur_pc, 4) ? riscv_exception_t::instruction_address_misaligned : riscv_exception_t::instruction_access_fault;
                         send_pack.op_info[i].exception_value = cur_pc;
-    
-                        if(fence_i)
-                        {
-                            break;
-                        }
                         
-                        component::branch_predictor_base::batch_predict(i, cur_pc);
+                        component::branch_predictor_base::batch_predict(i, cur_pc, opcode);
                         
                         switch(opcode & 0x7f)
                         {
                             case 0x6f://jal
                                 send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
                                 send_pack.op_info[i].branch_predictor_info_pack.jump = true;
-                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = cur_pc + imm_j;
+                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = cur_pc + sign_extend(imm_j, 21);
                                 
                                 if(rd_is_link)
                                 {
@@ -121,7 +116,7 @@ namespace cycle_model::pipeline
                                             //push
                                             send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
                                             send_pack.op_info[i].branch_predictor_info_pack.jump = true;
-                                            send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                            send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(i);
                                             branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
                                             branch_predictor_set->main_ras.push_addr(cur_pc + 4);
                                         }
@@ -139,7 +134,7 @@ namespace cycle_model::pipeline
                                         //push
                                         send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
                                         send_pack.op_info[i].branch_predictor_info_pack.jump = true;
-                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(i);
                                         branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
                                         branch_predictor_set->main_ras.push_addr(cur_pc + 4);
                                     }
@@ -158,7 +153,7 @@ namespace cycle_model::pipeline
                                         //none
                                         send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
                                         send_pack.op_info[i].branch_predictor_info_pack.jump = true;
-                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(cur_pc);
+                                        send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->l0_btb.get_next_pc(i);
                                         branch_predictor_set->l0_btb.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
                                     }
                                 }
@@ -167,8 +162,8 @@ namespace cycle_model::pipeline
     
                             case 0x63://beq bne blt bge bltu bgeu
                                 send_pack.op_info[i].branch_predictor_info_pack.predicted = true;
-                                send_pack.op_info[i].branch_predictor_info_pack.jump = branch_predictor_set->bi_modal.is_jump(cur_pc);
-                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->bi_modal.get_next_pc(cur_pc);
+                                send_pack.op_info[i].branch_predictor_info_pack.jump = branch_predictor_set->bi_modal.is_jump(i);
+                                send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->bi_modal.get_next_pc(i);
                                 branch_predictor_set->bi_modal.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
         
                                 switch(funct3)
@@ -192,14 +187,16 @@ namespace cycle_model::pipeline
                                 if(jump)
                                 {
                                     this->jump_wait = true;
-                                    this->pc = cur_pc + 4;
-                                }
-                                else
-                                {
-                                    this->pc = cur_pc + 4;
                                 }
                                 
                                 break;
+                        }
+    
+                        this->pc = cur_pc + 4;
+    
+                        if(fence_i)
+                        {
+                            break;
                         }
                         
                         if(jump)
@@ -207,15 +204,19 @@ namespace cycle_model::pipeline
                             if(send_pack.op_info[i].branch_predictor_info_pack.predicted && send_pack.op_info[i].branch_predictor_info_pack.jump && send_pack.op_info[i].branch_predictor_info_pack.next_pc != (cur_pc + 4))
                             {
                                 this->pc = send_pack.op_info[i].branch_predictor_info_pack.next_pc;
+                                break;
                             }
-                            
-                            break;
                         }
                     }
                 }
             }
+    
+            if(!fetch2_feedback_pack.stall)
+            {
+                this->fetch1_fetch2_port->set(send_pack);
+            }
         }
-        else
+        else if(commit_feedback_pack.flush)
         {
             this->jump_wait = false;
             
@@ -228,10 +229,13 @@ namespace cycle_model::pipeline
                 verify_only(commit_feedback_pack.jump);
                 this->pc = commit_feedback_pack.jump_next_pc;
             }
-        }
     
-        if(!fetch2_feedback_pack.stall)
+            this->fetch1_fetch2_port->set(send_pack);
+        }
+        else if(fetch2_feedback_pack.pc_redirect)
         {
+            this->jump_wait = false;
+            this->pc = fetch2_feedback_pack.new_pc;
             this->fetch1_fetch2_port->set(send_pack);
         }
         

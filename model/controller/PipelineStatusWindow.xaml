@@ -238,6 +238,14 @@
                 </GridView>
             </ListView.View>
         </local:ArrowKeyBypassListView>
+        <Label Grid.Row="25" Grid.Column="0" VerticalAlignment="Center" Content="RAT:" />
+        <local:ArrowKeyBypassListView Grid.Row="26" Grid.Column="0" Grid.RowSpan="7" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_RAT">
+            <ListView.View>
+                <GridView ColumnHeaderContainerStyle="{StaticResource ListViewHeaderHidden}">
+                    <GridViewColumn Header="Value" Width="{Binding ElementName=GridCol0Width,Path=ActualWidth}"  DisplayMemberBinding="{Binding Path=Value}" />
+                </GridView>
+            </ListView.View>
+        </local:ArrowKeyBypassListView>
         <Label Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Content="Dispatch->Integer Issue:" />
         <local:ArrowKeyBypassListView Grid.Row="4" Grid.Column="1" Grid.RowSpan="3" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_Dispatch_Integer_Issue" PreviewMouseLeftButtonUp="listView_Dispatch_Integer_Issue_PreviewMouseLeftButtonUp">
             <ListView.View>

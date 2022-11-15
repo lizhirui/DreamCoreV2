@@ -24,6 +24,8 @@ namespace cycle_model::pipeline
     {
         bool idle = false;
         bool stall = false;
+        bool pc_redirect = false;
+        uint32_t new_pc = 0;
         
         virtual json get_json()
         {

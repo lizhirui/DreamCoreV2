@@ -14,7 +14,5 @@ namespace DreamCoreV2_model_controller.Model
         public uint[]? value { get; set; }
         [JsonProperty("valid")]
         public bool[]? valid { get; set; }
-        [JsonProperty("visible")]
-        public bool[]? visible { get; set; }
     }
 }

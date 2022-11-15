@@ -15,6 +15,10 @@ isa_model::isa_model *isa_model_inst;
 cycle_model::cycle_model *cycle_model_inst;
 #endif
 
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+#include "fixed_size_buffer.h"
+#endif
+
 static std::atomic<bool> pause_detected = false;
 static bool pause_state = false;
 static bool step_state = false;
@@ -27,6 +31,7 @@ static size_t program_size = 0;
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
 static charfifo_send_fifo_t isa_model_charfifo_send_fifo, cycle_model_charfifo_send_fifo;
 static charfifo_rev_fifo_t isa_model_charfifo_rev_fifo, cycle_model_charfifo_rev_fifo;
+static fixed_size_buffer<uint32_t> isa_model_pc_history(10);
 #endif
 
 uint64_t get_cpu_clock_cycle()
@@ -141,6 +146,9 @@ void reset()
 #endif
 #ifdef NEED_CYCLE_MODEL
     cycle_model_inst->reset();
+#endif
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+    isa_model_pc_history.clear();
 #endif
     
     if(load_program)
@@ -299,6 +307,11 @@ static void run(const command_line_arg_t &arg)
         cycle_model_inst->rob.set_committed(false);
         cycle_model_inst->run();
         
+        while(!cycle_model_inst->bus.error_msg_queue.empty())
+        {
+            cycle_model_inst->bus.error_msg_queue.pop();
+        }
+        
 #ifdef NEED_ISA_MODEL
         auto compare_error = false;
         std::vector<std::pair<uint32_t, cycle_model::component::rob_item_t>> compare_error_item;
@@ -365,6 +378,7 @@ static void run(const command_line_arg_t &arg)
                 isa_model_inst->clint.set_mtimecmp(item.mtimecmp);
                 isa_model_inst->clint.set_msip(item.msip);
                 
+                isa_model_pc_history.push(isa_model_inst->pc);
                 isa_model_inst->run();
             }
             
@@ -458,6 +472,13 @@ static void run(const command_line_arg_t &arg)
             std::cout << MESSAGE_OUTPUT_PREFIX "cycle = " << model_cycle << ", pc = 0x" << outhex(model_pc) << " compare error detected!" << std::endl;
             set_pause_detected(true);
             send_cmd("main", "breakpoint_trigger", "");
+            
+            std::cout << MESSAGE_OUTPUT_PREFIX << "ISA Model PC History:" << std::endl;
+            
+            for(uint32_t i = 0;i < isa_model_pc_history.count();i++)
+            {
+                std::cout << MESSAGE_OUTPUT_PREFIX << "0x" << outhex(isa_model_pc_history.get(i)) << std::endl;
+            }
         
             for(const auto &item : compare_error_item)
             {
@@ -503,37 +524,27 @@ static void run(const command_line_arg_t &arg)
                 exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
             }
         }
-        
-        while(!isa_model_inst->bus.error_msg_queue.empty())
-        {
-            isa_model_inst->bus.error_msg_queue.pop();
-        }
-#endif
     
-        if(!cycle_model_inst->bus.error_msg_queue.empty())
+        if(!isa_model_inst->bus.error_msg_queue.empty())
+        {
+#endif
 #else
         auto model_cycle = isa_model_inst->cpu_clock_cycle;
         auto model_pc = isa_model_inst->pc;
         isa_model_inst->run();
         
         if(!isa_model_inst->bus.error_msg_queue.empty())
-#endif
         {
+#endif
+#ifdef NEED_ISA_MODEL
             std::cout << MESSAGE_OUTPUT_PREFIX "cycle = " << model_cycle << ", pc = 0x" << outhex(model_pc) << " error detected!" << std::endl;
             set_pause_detected(true);
             send_cmd("main", "breakpoint_trigger", "");
 
-#ifdef NEED_CYCLE_MODEL
-            while(!cycle_model_inst->bus.error_msg_queue.empty())
-            {
-                auto msg = cycle_model_inst->bus.error_msg_queue.front();
-                cycle_model_inst->bus.error_msg_queue.pop();
-#else
             while(!isa_model_inst->bus.error_msg_queue.empty())
             {
                 auto msg = isa_model_inst->bus.error_msg_queue.front();
                 isa_model_inst->bus.error_msg_queue.pop();
-#endif
                 
                 if(msg.is_fetch)
                 {
@@ -562,6 +573,7 @@ static void run(const command_line_arg_t &arg)
                 exit(EXIT_CODE_OTHER_BREAKPOINT_DETECTED);
             }
         }
+#endif
         
 #ifdef NEED_CYCLE_MODEL
         if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle >= 100)
@@ -627,10 +639,10 @@ static void sub_main(const command_line_arg_t &arg)
     }
     else
     {
-        load_bin_file("../../../image/rtthread.bin");
+        //load_bin_file("../../../image/rtthread.bin");
         //load_bin_file("../../../image/coremark_10.bin");
         //load_bin_file("../../../testcase/benchmark/coremark_10_7_2.bin");
-        //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
+        load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
         //load_bin_file("../../../testcase/base-tests/ipc_test2_12_2.bin");
         //load_elf_file("../../../testcase/compiled/rtthread.elf");
     }

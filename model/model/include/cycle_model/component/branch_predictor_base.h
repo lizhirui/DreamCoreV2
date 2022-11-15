@@ -20,6 +20,8 @@ namespace cycle_model::component
         bool predicted = false;
         bool jump = false;
         uint32_t next_pc = 0;
+        bool uncondition_indirect_jump = false;
+        bool condition_jump = false;
     }branch_predictor_info_pack_t;
     
     class branch_predictor_base
@@ -51,9 +53,9 @@ namespace cycle_model::component
                 branch_predictor_base::foreach([](branch_predictor_base *bp){bp->reset();});
             }
             
-            static void batch_update(uint32_t pc, bool jump, bool hit)
+            static void batch_update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
-                branch_predictor_base::foreach([pc, jump, hit](branch_predictor_base *bp){bp->update(pc, jump,hit);});
+                branch_predictor_base::foreach([pc, jump, next_pc, hit, &bp_pack](branch_predictor_base *bp){bp->update(pc, jump, next_pc, hit, bp_pack);});
             }
             
             static void batch_speculative_update(uint32_t pc, bool jump)
@@ -61,15 +63,15 @@ namespace cycle_model::component
                 branch_predictor_base::foreach([pc, jump](branch_predictor_base *bp){bp->speculative_update(pc, jump);});
             }
             
-            static void batch_predict(uint32_t port, uint32_t pc)
+            static void batch_predict(uint32_t port, uint32_t pc, uint32_t inst)
             {
-                branch_predictor_base::foreach([port, pc](branch_predictor_base *bp){bp->predict(port, pc);});
+                branch_predictor_base::foreach([port, pc, inst](branch_predictor_base *bp){bp->predict(port, pc, inst);});
             }
             
             virtual void reset() = 0;
-            virtual void update(uint32_t pc, bool jump, bool hit) = 0;
+            virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack) = 0;
             virtual void speculative_update(uint32_t pc, bool jump) = 0;
-            virtual void predict(uint32_t port, uint32_t pc) = 0;
+            virtual void predict(uint32_t port, uint32_t pc, uint32_t inst) = 0;
             virtual uint32_t get_next_pc(uint32_t port) = 0;
             virtual bool is_jump(uint32_t port) = 0;
             virtual void fill_info_pack(branch_predictor_info_pack_t &pack) = 0;

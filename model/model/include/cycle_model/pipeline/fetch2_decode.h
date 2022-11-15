@@ -11,6 +11,7 @@
 #pragma once
 #include "common.h"
 #include "config.h"
+#include "../component/branch_predictor_base.h"
 
 namespace cycle_model::pipeline
 {
@@ -22,6 +23,7 @@ namespace cycle_model::pipeline
         bool has_exception = false;
         riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
         uint32_t exception_value = 0;
+        component::branch_predictor_info_pack_t branch_predictor_info_pack;
         
         virtual void print(std::string indent)
         {
@@ -44,6 +46,7 @@ namespace cycle_model::pipeline
             t["has_exception"] = has_exception;
             t["exception_id"] = outenum(exception_id);
             t["exception_value"] = exception_value;
+            t["branch_predictor_info_pack"] = branch_predictor_info_pack.get_json();
             return t;
         }
     }fetch2_decode_pack_t;

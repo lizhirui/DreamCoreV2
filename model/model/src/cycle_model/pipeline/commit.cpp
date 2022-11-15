@@ -158,13 +158,16 @@ namespace cycle_model::pipeline
                                         if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc == rob_item.branch_predictor_info_pack.next_pc))
                                         {
                                             //branch_hit_add();
-                                            component::branch_predictor_base::batch_update(rob_item.pc, rob_item.bru_jump, true);
+                                            branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
                                         }
                                         else
                                         {
                                             //branch_miss_add();
-                                            component::branch_predictor_base::batch_update(rob_item.pc, rob_item.bru_jump, false);
+                                            branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             feedback_pack.jump_enable = true;
+                                            feedback_pack.jump = true;
                                             feedback_pack.jump_next_pc = rob_item.bru_next_pc;
                                             feedback_pack.flush = true;
                                             speculative_rat->load(retire_rat);
@@ -205,6 +208,7 @@ namespace cycle_model::pipeline
                             rob_item.has_exception = rev_pack.op_info[i].has_exception;
                             rob_item.exception_id = rev_pack.op_info[i].exception_id;
                             rob_item.exception_value = rev_pack.op_info[i].exception_value;
+                            rob_item.branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
                             rob_item.bru_op = rev_pack.op_info[i].op_unit == op_unit_t::bru;
                             rob_item.bru_jump = rev_pack.op_info[i].bru_jump;
                             rob_item.bru_next_pc = rev_pack.op_info[i].bru_next_pc;

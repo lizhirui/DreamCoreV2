@@ -91,6 +91,7 @@ namespace cycle_model::pipeline
                             send_pack.op_info[i].has_exception = rev_pack.has_exception;
                             send_pack.op_info[i].exception_id = rev_pack.exception_id;
                             send_pack.op_info[i].exception_value = rev_pack.exception_value;
+                            send_pack.op_info[i].branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
                             send_pack.op_info[i].rs1 = rev_pack.rs1;
                             send_pack.op_info[i].arg1_src = rev_pack.arg1_src;
                             send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;

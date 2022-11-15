@@ -89,7 +89,7 @@ namespace cycle_model::component
 
                     if(is_full())
                     {
-                        ras_full_add();
+                        //ras_full_add();
                         throw_push(t_item);
                     }
                     else

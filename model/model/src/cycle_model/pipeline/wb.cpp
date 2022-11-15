@@ -99,6 +99,7 @@ namespace cycle_model::pipeline
                 send_pack.op_info[i].has_exception = rev_pack.has_exception;
                 send_pack.op_info[i].exception_id = rev_pack.exception_id;
                 send_pack.op_info[i].exception_value = rev_pack.exception_value;
+                send_pack.op_info[i].branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
                 
                 send_pack.op_info[i].bru_jump = rev_pack.bru_jump;
                 send_pack.op_info[i].bru_next_pc = rev_pack.bru_next_pc;

@@ -46,6 +46,7 @@ namespace cycle_model::pipeline
             t["has_exception"] = has_exception;
             t["exception_id"] = outenum(exception_id);
             t["exception_value"] = exception_value;
+            t["branch_predictor_info_pack"] = branch_predictor_info_pack.get_json();
             return t;
         }
     }fetch1_fetch2_op_info_t;

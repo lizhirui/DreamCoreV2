@@ -38,6 +38,8 @@ namespace cycle_model::pipeline
     
         feedback_pack.idle = true;//set idle state temporarily
         feedback_pack.stall = this->busy;//if busy state is asserted, stall signal must be asserted too
+        feedback_pack.pc_redirect = false;
+        feedback_pack.new_pc = 0;
         
         if(!commit_feedback_pack.flush)
         {
@@ -45,6 +47,60 @@ namespace cycle_model::pipeline
             if(!this->busy)
             {
                 this->rev_pack = fetch1_fetch2_port->get();
+                uint32_t last_valid_item = FETCH_WIDTH;
+                
+                //level2 branch prediction
+                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                {
+                    if(this->rev_pack.op_info[i].enable && this->rev_pack.op_info[i].branch_predictor_info_pack.predicted)
+                    {
+                        if(this->rev_pack.op_info[i].branch_predictor_info_pack.uncondition_indirect_jump)
+                        {
+                            auto new_next_pc = branch_predictor_set->l1_btb.get_next_pc(i);
+                            
+                            if(new_next_pc != this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc)
+                            {
+                                branch_predictor_set->l0_btb.update(this->rev_pack.op_info[i].pc, true, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
+                                this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc = new_next_pc;
+                                feedback_pack.pc_redirect = true;
+                                feedback_pack.new_pc = new_next_pc;
+                                last_valid_item = i;
+                                break;
+                            }
+                        }
+                        else if(this->rev_pack.op_info[i].branch_predictor_info_pack.condition_jump)
+                        {
+                            auto new_next_pc = branch_predictor_set->bi_mode.get_next_pc(i);
+                            auto new_jump = branch_predictor_set->bi_mode.is_jump(i);
+                            
+                            if(new_jump != this->rev_pack.op_info[i].branch_predictor_info_pack.jump || new_next_pc != this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc)
+                            {
+                                branch_predictor_set->bi_modal.update(this->rev_pack.op_info[i].pc, new_jump, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
+                                this->rev_pack.op_info[i].branch_predictor_info_pack.jump = new_jump;
+                                this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc = new_next_pc;
+                                feedback_pack.pc_redirect = true;
+                                feedback_pack.new_pc = new_next_pc;
+                                last_valid_item = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                //invalid instructions after jump
+                for(uint32_t i = last_valid_item + 1;i < FETCH_WIDTH;i++)
+                {
+                    this->rev_pack.op_info[i].enable = false;
+                }
+                
+                //branch history update
+                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                {
+                    if(this->rev_pack.op_info[i].enable && this->rev_pack.op_info[i].branch_predictor_info_pack.predicted && this->rev_pack.op_info[i].branch_predictor_info_pack.condition_jump)
+                    {
+                        component::branch_predictor_base::batch_speculative_update(this->rev_pack.op_info[i].pc, this->rev_pack.op_info[i].branch_predictor_info_pack.jump);
+                    }
+                }
             }
             
             this->busy = false;//set not busy state temporarily
@@ -58,6 +114,7 @@ namespace cycle_model::pipeline
                 send_pack.has_exception = this->rev_pack.op_info[i].has_exception;
                 send_pack.exception_id = this->rev_pack.op_info[i].exception_id;
                 send_pack.exception_value = this->rev_pack.op_info[i].exception_value;
+                send_pack.branch_predictor_info_pack = this->rev_pack.op_info[i].branch_predictor_info_pack;
                 
                 if(this->rev_pack.op_info[i].enable)
                 {

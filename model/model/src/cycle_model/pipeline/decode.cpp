@@ -70,6 +70,7 @@ namespace cycle_model::pipeline
                         op_info.has_exception = false;
                         op_info.exception_id = riscv_exception_t::instruction_address_misaligned;
                         op_info.exception_value = 0;
+                        op_info.branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
                         op_info.rs1 = 0;
                         op_info.arg1_src = arg_src_t::reg;
                         op_info.rs1_need_map = false;

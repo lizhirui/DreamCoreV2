@@ -107,6 +107,7 @@ namespace cycle_model::pipeline
                                 integer_issue_pack.op_info[integer_issue_id].has_exception = rev_pack.op_info[i].has_exception;
                                 integer_issue_pack.op_info[integer_issue_id].exception_id = rev_pack.op_info[i].exception_id;
                                 integer_issue_pack.op_info[integer_issue_id].exception_value = rev_pack.op_info[i].exception_value;
+                                integer_issue_pack.op_info[integer_issue_id].branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
                                 
                                 integer_issue_pack.op_info[integer_issue_id].rs1 = rev_pack.op_info[i].rs1;
                                 integer_issue_pack.op_info[integer_issue_id].arg1_src = rev_pack.op_info[i].arg1_src;
