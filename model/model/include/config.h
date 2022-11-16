@@ -51,14 +51,23 @@ const uint32_t MEMORY_SIZE = 1048576;
 const uint32_t CLINT_BASE = 0x20000000;
 const uint32_t CLINT_SIZE = 0x10000;
 
-const uint32_t GSHARE_PC_P1_ADDR_WIDTH = 12;
-const uint32_t GSHARE_PC_P2_ADDR_WIDTH = 0;
-const uint32_t GSHARE_GLOBAL_HISTORY_WIDTH = GSHARE_PC_P1_ADDR_WIDTH;
-const uint32_t GSHARE_PHT_ADDR_WIDTH = GSHARE_PC_P1_ADDR_WIDTH;
-const uint32_t GSHARE_PHT_SIZE = 1U << GSHARE_PHT_ADDR_WIDTH;
-const uint32_t GSHARE_PC_P1_ADDR_MASK = (1U << GSHARE_PC_P1_ADDR_WIDTH) - 1U;
-const uint32_t GSHARE_PC_P2_ADDR_MASK = (1U << GSHARE_PC_P2_ADDR_WIDTH) - 1U;
-const uint32_t GSHARE_GLOBAL_HISTORY_MASK = (1U << GSHARE_GLOBAL_HISTORY_WIDTH) - 1U;
+const uint32_t L0_BTB_ADDR_WIDTH = 4;
+const uint32_t L0_BTB_SIZE = 1 << L0_BTB_ADDR_WIDTH;
+const uint32_t L0_BTB_ADDR_MASK = L0_BTB_SIZE - 1;
+const uint32_t BI_MODAL_ADDR_WIDTH = 4;
+const uint32_t BI_MODAL_SIZE = 1 << BI_MODAL_ADDR_WIDTH;
+const uint32_t BI_MODAL_ADDR_MASK = BI_MODAL_SIZE - 1;
+
+const uint32_t BI_MODE_GLOBAL_HISTORY_LENGTH = 12;
+const uint32_t BI_MODE_BRANCH_PC_LENGTH = 12;
+const uint32_t BI_MODE_PHT_CHOICE_LENGTH = 6;
+const uint32_t BI_MODE_PHT_ADDR_WIDTH = BI_MODE_BRANCH_PC_LENGTH;
+const uint32_t BI_MODE_PHT_SIZE = 1 << BI_MODE_PHT_ADDR_WIDTH;
+const uint32_t BI_MODE_PHT_CHOICE_ADDR_WIDTH = BI_MODE_PHT_CHOICE_LENGTH;
+const uint32_t BI_MODE_PHT_CHOICE_SIZE = 1 << BI_MODE_PHT_CHOICE_ADDR_WIDTH;
+const uint32_t BI_MODE_PHT_CHOICE_ADDR_MASK = BI_MODE_PHT_CHOICE_SIZE - 1;
+const uint32_t BI_MODE_BRANCH_PC_MASK = (1 << BI_MODE_BRANCH_PC_LENGTH) - 1;
+const uint32_t BI_MODE_GLOBAL_HISTORY_MASK = (1 << BI_MODE_GLOBAL_HISTORY_LENGTH) - 1;
 
 const uint32_t RAS_SIZE = 256;
 
@@ -91,7 +100,10 @@ typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV
 #endif
 
 //#define BRANCH_DUMP
-const std::string BRANCH_DUMP_FILE = "../../../branch_dump/coremark_10.txt";
+const std::string BRANCH_DUMP_FILE = "../../../branch_dump/coremark_10_7_2.txt";
+
+//#define BRANCH_PREDICTOR_UPDATE_DUMP
+const std::string BRANCH_PREDICTOR_UPDATE_DUMP_FILE = "../../../branch_predictor_update_dump/coremark_10_7_2.txt";
 
 const std::string TRACE_DIR = "../../../trace/coremark_10/";
 

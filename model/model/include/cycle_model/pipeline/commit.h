@@ -84,7 +84,10 @@ namespace cycle_model::pipeline
             component::free_list *phy_id_free_list;
             component::interrupt_interface *interrupt_interface;
             component::branch_predictor_set *branch_predictor_set;
-            
+        
+#ifdef BRANCH_PREDICTOR_UPDATE_DUMP
+            std::ofstream branch_predictor_update_dump_stream;
+#endif
             trace::trace_database tdb;
         
         public:

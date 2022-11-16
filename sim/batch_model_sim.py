@@ -21,8 +21,8 @@ import argparse
 from multiprocessing import cpu_count
 import time
 
-def shell(cmd):
-    p = subprocess.Popen(cmd, shell = False, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+def shell(cmd, cwd):
+    p = subprocess.Popen(cmd, shell = False, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, cwd = cwd)
     out = p.stdout.read().decode()
 
     while p.poll() is None:
@@ -72,10 +72,11 @@ failed_cnt = 0
 unknown_error_cnt = 0
 
 class dynamic_check_thread(threading.Thread):
-    def __init__(self, thread_id, local_task_list):
+    def __init__(self, thread_id, local_task_list, rawdump):
         threading.Thread.__init__(self)
         self.thread_id = thread_id
         self.local_task_list = local_task_list
+        self.rawdump = rawdump
 
     def run(self):
         global passed_cnt, failed_cnt, unknown_error_cnt
@@ -91,11 +92,14 @@ class dynamic_check_thread(threading.Thread):
             else:
                 exe_type = "elf"
 
-            [exit_code, out] = shell(["../model/model/bin/sim", "--nocontroller", "--notelnet", "--load" + exe_type, os.path.join(item[0], item[1], item[2]), "--breakpoint cycle:" + str(item[3])])
+            [exit_code, out] = shell(["./sim", "--nocontroller", "--notelnet", "--load" + exe_type, os.path.join("../../", item[0], item[1], item[2]), "--breakpoint cycle:" + str(item[3])], "../model/model/bin")
 
             end_time = time.time()
             elapsed_time = to_human_friendly_time(end_time - start_time)
             case_name = item[1] + ", " + item[2]
+
+            if self.rawdump:
+                print(out)
 
             if exit_code == 4:
                 print_lock.acquire()
@@ -112,7 +116,9 @@ class dynamic_check_thread(threading.Thread):
             else:
                 print_lock.acquire()
                 yellow_text("[" + str(self.thread_id + 1) + "-" + str(cnt) + "/" + str(len(self.local_task_list)) + ", " + case_name + "]: Unknown Error[" + str(exit_code) + "] " + elapsed_time)
-                print(out)
+                
+                if not self.rawdump:
+                    print(out)
                 #os._exit(0)
                 unknown_error_cnt += 1
                 print_lock.release()
@@ -121,11 +127,13 @@ total_start_time = time.time()
 
 testcase_dir = "../testcase"
 parallel_count = 1
+rawdump = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-g", "--group", help="test group", choices=["riscv-tests", "benchmark", "all"], required=True)
 parser.add_argument("-j", help="parallel count limit, default is 1", nargs="?", type=int, const=0, choices=range(0, cpu_count() + 1), dest="parallel_count")
 parser.add_argument("-t", help="testcase name, default is all testcases", type=str, dest="testcase_name")
+parser.add_argument("--rawdump", help="dump all outputs", action="store_true", dest="rawdump")
 args = parser.parse_args()
 
 if not args.parallel_count is None:
@@ -133,6 +141,8 @@ if not args.parallel_count is None:
         parallel_count = cpu_count()
     else:
         parallel_count = args.parallel_count
+
+rawdump = args.rawdump
 
 tb_groups = []
 
@@ -207,7 +217,7 @@ print("Starting threads...")
 print_lock.acquire()
 
 for i in range(0, actual_parallel_count):
-    task_thread = dynamic_check_thread(i, thread_task_list[i])
+    task_thread = dynamic_check_thread(i, thread_task_list[i], rawdump)
     thread_list.append(task_thread)
     task_thread.start()
 

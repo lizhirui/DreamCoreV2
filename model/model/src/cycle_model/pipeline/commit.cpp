@@ -24,7 +24,11 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_COMMIT)
+    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) :
+#ifdef BRANCH_PREDICTOR_UPDATE_DUMP
+    branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
+#endif
+    tdb(TRACE_COMMIT)
     {
         this->global = global;
         this->wb_commit_port = wb_commit_port;
@@ -144,7 +148,10 @@ namespace cycle_model::pipeline
                                 //branch handle
                                 if(rob_item.bru_op)
                                 {
-                                    global->branch_num_add();
+                                    if(rob_item.branch_predictor_info_pack.condition_jump)
+                                    {
+                                        global->branch_num_add();
+                                    }
                 
                                     if(rob_item.is_mret)
                                     {
@@ -156,19 +163,50 @@ namespace cycle_model::pipeline
                                     
                                     if(rob_item.branch_predictor_info_pack.predicted)
                                     {
-                                        global->branch_predicted_add();
+                                        if(rob_item.branch_predictor_info_pack.condition_jump)
+                                        {
+                                            global->branch_predicted_add();
+                                        }
                                         
                                         if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc == rob_item.branch_predictor_info_pack.next_pc))
                                         {
-                                            global->branch_hit_add();
-                                            branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
-                                            branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                global->branch_hit_add();
+                                            }
+                                            
+#ifdef BRANCH_PREDICTOR_UPDATE_DUMP
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                branch_predictor_update_dump_stream << outhex(rob_item.pc) << "," << outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(true) << std::endl;
+                                            }
+#endif
+                                            branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                        }
+                                        else if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc != rob_item.branch_predictor_info_pack.next_pc) && rob_item.branch_predictor_info_pack.condition_jump)
+                                        {
+                                            verify_only(false);
                                         }
                                         else
                                         {
-                                            global->branch_miss_add();
-                                            branch_predictor_set->bi_mode.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
-                                            branch_predictor_set->l1_btb.update(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                global->branch_miss_add();
+                                            }
+    
+#ifdef BRANCH_PREDICTOR_UPDATE_DUMP
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                branch_predictor_update_dump_stream << outhex(rob_item.pc) << "," << outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(false) << std::endl;
+                                            }
+#endif
+                                            branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             feedback_pack.jump_enable = true;
                                             feedback_pack.jump = true;
                                             feedback_pack.jump_next_pc = rob_item.bru_next_pc;

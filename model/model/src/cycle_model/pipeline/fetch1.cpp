@@ -166,6 +166,7 @@ namespace cycle_model::pipeline
                                 send_pack.op_info[i].branch_predictor_info_pack.jump = branch_predictor_set->bi_modal.is_jump(i);
                                 send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->bi_modal.get_next_pc(i);
                                 branch_predictor_set->bi_modal.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+                                branch_predictor_set->bi_mode.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
         
                                 switch(funct3)
                                 {
@@ -219,6 +220,15 @@ namespace cycle_model::pipeline
     
             if(!fetch2_feedback_pack.stall)
             {
+                //branch history update
+                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                {
+                    if(send_pack.op_info[i].enable && send_pack.op_info[i].branch_predictor_info_pack.predicted && send_pack.op_info[i].branch_predictor_info_pack.condition_jump)
+                    {
+                        component::branch_predictor_base::batch_speculative_update_sync(send_pack.op_info[i].pc, send_pack.op_info[i].branch_predictor_info_pack.jump);
+                    }
+                }
+                
                 this->fetch1_fetch2_port->set(send_pack);
             }
         }

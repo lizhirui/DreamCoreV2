@@ -57,17 +57,17 @@ namespace cycle_model::pipeline
                     {
                         if(this->rev_pack.op_info[i].branch_predictor_info_pack.uncondition_indirect_jump)
                         {
-                            auto new_next_pc = branch_predictor_set->l1_btb.get_next_pc(i);
+                            /*auto new_next_pc = branch_predictor_set->l1_btb.get_next_pc(i);
                             
                             if(new_next_pc != this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc)
                             {
-                                branch_predictor_set->l0_btb.update(this->rev_pack.op_info[i].pc, true, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
+                                branch_predictor_set->l0_btb.update_sync(this->rev_pack.op_info[i].pc, true, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
                                 this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc = new_next_pc;
                                 feedback_pack.pc_redirect = true;
                                 feedback_pack.new_pc = new_next_pc;
                                 last_valid_item = i;
                                 break;
-                            }
+                            }*/
                         }
                         else if(this->rev_pack.op_info[i].branch_predictor_info_pack.condition_jump)
                         {
@@ -76,7 +76,8 @@ namespace cycle_model::pipeline
                             
                             if(new_jump != this->rev_pack.op_info[i].branch_predictor_info_pack.jump || new_next_pc != this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc)
                             {
-                                branch_predictor_set->bi_modal.update(this->rev_pack.op_info[i].pc, new_jump, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
+                                branch_predictor_set->bi_modal.update_sync(this->rev_pack.op_info[i].pc, new_jump, new_next_pc, false, this->rev_pack.op_info[i].branch_predictor_info_pack);
+                                component::branch_predictor_base::batch_restore_sync(this->rev_pack.op_info[i].branch_predictor_info_pack);
                                 this->rev_pack.op_info[i].branch_predictor_info_pack.jump = new_jump;
                                 this->rev_pack.op_info[i].branch_predictor_info_pack.next_pc = new_next_pc;
                                 feedback_pack.pc_redirect = true;
@@ -94,12 +95,15 @@ namespace cycle_model::pipeline
                     this->rev_pack.op_info[i].enable = false;
                 }
                 
-                //branch history update
-                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                if(feedback_pack.pc_redirect)
                 {
-                    if(this->rev_pack.op_info[i].enable && this->rev_pack.op_info[i].branch_predictor_info_pack.predicted && this->rev_pack.op_info[i].branch_predictor_info_pack.condition_jump)
+                    //branch history update
+                    for(uint32_t i = 0;i < FETCH_WIDTH;i++)
                     {
-                        component::branch_predictor_base::batch_speculative_update(this->rev_pack.op_info[i].pc, this->rev_pack.op_info[i].branch_predictor_info_pack.jump);
+                        if(this->rev_pack.op_info[i].enable && this->rev_pack.op_info[i].branch_predictor_info_pack.predicted && this->rev_pack.op_info[i].branch_predictor_info_pack.condition_jump)
+                        {
+                            component::branch_predictor_base::batch_speculative_update_sync(this->rev_pack.op_info[i].pc, this->rev_pack.op_info[i].branch_predictor_info_pack.jump);
+                        }
                     }
                 }
             }

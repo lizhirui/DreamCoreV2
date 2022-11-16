@@ -444,6 +444,7 @@ namespace cycle_model
         store_buffer.run(commit_feedback_pack);
         bus.run();
         bus.sync();
+        component::branch_predictor_base::batch_sync();
         cpu_clock_cycle++;
         committed_instruction_num = rob.get_global_commit_num();
         csr_file.write_sys(CSR_MCYCLE, (uint32_t)(cpu_clock_cycle & 0xffffffffu));

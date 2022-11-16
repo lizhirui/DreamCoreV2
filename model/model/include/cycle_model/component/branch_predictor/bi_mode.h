@@ -20,6 +20,11 @@ namespace cycle_model::component::branch_predictor
         private:
             component::dff<uint32_t> predict_next_pc[FETCH_WIDTH];
             component::dff<bool> predict_jump[FETCH_WIDTH];
+            uint32_t global_history;
+            uint32_t global_history_retired;
+            uint32_t pht_left[BI_MODE_PHT_SIZE];
+            uint32_t pht_right[BI_MODE_PHT_SIZE];
+            uint32_t pht_choice[BI_MODE_PHT_SIZE];
             
         public:
             virtual void reset()
@@ -29,16 +34,88 @@ namespace cycle_model::component::branch_predictor
                     predict_next_pc[i].set(0);
                     predict_jump[i].set(false);
                 }
+                
+                global_history = 0;
+                global_history_retired = 0;
+                memset(pht_left, 0, sizeof(pht_left));
+                memset(pht_right, 0, sizeof(pht_right));
+                memset(pht_choice, 0, sizeof(pht_choice));
             }
             
             virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
-            
+                if(bp_pack.condition_jump)
+                {
+                    uint32_t branch_pc = (pc >> 2) & BI_MODE_BRANCH_PC_MASK;
+                    uint32_t pht_addr = global_history_retired ^ branch_pc;
+                    uint32_t pht_choice_addr = (pc >> 2) & BI_MODE_PHT_CHOICE_ADDR_MASK;
+                    bool is_pht_left = pht_choice[pht_choice_addr] <= 1;
+                    
+                    if(is_pht_left)
+                    {
+                        if(jump)
+                        {
+                            if(pht_left[pht_addr] < 3)
+                            {
+                                pht_left[pht_addr]++;
+                            }
+                        }
+                        else
+                        {
+                            if(pht_left[pht_addr] > 0)
+                            {
+                                pht_left[pht_addr]--;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(jump)
+                        {
+                            if(pht_right[pht_addr] < 3)
+                            {
+                                pht_right[pht_addr]++;
+                            }
+                        }
+                        else
+                        {
+                            if(pht_right[pht_addr] > 0)
+                            {
+                                pht_right[pht_addr]--;
+                            }
+                        }
+                    }
+                    
+                    if(!(((pht_choice[pht_choice_addr] >= 2) != jump) && hit))
+                    {
+                        if(jump)
+                        {
+                            if(pht_choice[pht_choice_addr] < 3)
+                            {
+                                pht_choice[pht_choice_addr]++;
+                            }
+                        }
+                        else
+                        {
+                            if(pht_choice[pht_choice_addr] > 0)
+                            {
+                                pht_choice[pht_choice_addr]--;
+                            }
+                        }
+                    }
+                    
+                    global_history_retired = ((global_history_retired << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                    
+                    if(!hit)
+                    {
+                        global_history = global_history_retired;
+                    }
+                }
             }
             
             virtual void speculative_update(uint32_t pc, bool jump)
             {
-            
+                global_history = ((global_history << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
             }
         
             virtual void predict(uint32_t port, uint32_t pc, uint32_t inst)
@@ -46,8 +123,12 @@ namespace cycle_model::component::branch_predictor
                 verify_only(port < FETCH_WIDTH);
                 uint32_t imm_b = (((inst >> 8) & 0x0f) << 1) | (((inst >> 25) & 0x3f) << 5) | (((inst >> 7) & 0x01) << 11) | (((inst >> 31) & 0x01) << 12);
                 uint32_t target = pc + sign_extend(imm_b, 13);
-                predict_jump[port].set(target < pc);
-                predict_next_pc[port].set((target < pc) ? target : pc + 4);
+                uint32_t branch_pc = (pc >> 2) & BI_MODE_BRANCH_PC_MASK;
+                uint32_t pht_addr = global_history ^ branch_pc;
+                uint32_t pht_choice_addr = (pc >> 2) & BI_MODE_PHT_CHOICE_ADDR_MASK;
+                bool jump = (pht_choice[pht_choice_addr] <= 1) ? (pht_left[pht_addr] >= 2) : (pht_right[pht_addr] >= 2);
+                predict_jump[port].set(jump);
+                predict_next_pc[port].set(jump ? target : (pc + 4));
             }
             
             virtual uint32_t get_next_pc(uint32_t port)
@@ -65,6 +146,12 @@ namespace cycle_model::component::branch_predictor
             virtual void fill_info_pack(branch_predictor_info_pack_t &pack)
             {
                 pack.condition_jump = true;
+                pack.global_history = global_history;
+            }
+            
+            virtual void restore(const branch_predictor_info_pack_t &bp_pack)
+            {
+                global_history = bp_pack.global_history;
             }
     };
 }

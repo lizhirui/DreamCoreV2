@@ -52,5 +52,10 @@ namespace cycle_model::component::branch_predictor
             {
             
             }
+        
+            virtual void restore(const branch_predictor_info_pack_t &bp_pack)
+            {
+            
+            }
     };
 }
