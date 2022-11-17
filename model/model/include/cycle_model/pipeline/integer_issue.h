@@ -9,6 +9,14 @@
  */
 
 #pragma once
+//to prevent from error of clion
+#ifndef __INTEGER_ISSUE_H__
+#define __INTEGER_ISSUE_H__
+namespace cycle_model::pipeline
+{
+    typedef struct lsu_issue_output_feedback_pack_t lsu_issue_output_feedback_pack_t;
+}
+
 #include "common.h"
 #include "config.h"
 #include "../component/branch_predictor_base.h"
@@ -18,6 +26,7 @@
 #include "dispatch_issue.h"
 #include "integer_issue_readreg.h"
 #include "integer_readreg.h"
+#include "lsu_issue.h"
 #include "wb.h"
 #include "commit.h"
 
@@ -291,9 +300,10 @@ namespace cycle_model::pipeline
             integer_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             integer_issue_output_feedback_pack_t run_output(const commit_feedback_pack_t &commit_feedback_pack);
-            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             integer_issue_feedback_pack_t run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };
 }
+#endif

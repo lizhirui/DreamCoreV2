@@ -48,8 +48,9 @@ namespace cycle_model::pipeline
         }
     }
     
-    void lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
+        lsu_issue_output_feedback_pack_t feedback_pack;
         lsu_issue_readreg_pack_t send_pack;
         
         if(!commit_feedback_pack.flush)
@@ -101,6 +102,10 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                         lsu_issue_readreg_port->set(send_pack);
+                        //build feedback_pack
+                        feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
+                        feedback_pack.wakeup_rd[0] = wakeup_rd[issue_id];
+                        feedback_pack.wakeup_shift[0] = wakeup_shift[issue_id];
                     }
                     else
                     {
@@ -117,9 +122,11 @@ namespace cycle_model::pipeline
         {
             lsu_issue_readreg_port->set(lsu_issue_readreg_pack_t());
         }
+        
+        return feedback_pack;
     }
     
-    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
@@ -128,6 +135,27 @@ namespace cycle_model::pipeline
                 if(issue_q.customer_check_id_valid(i))
                 {
                     auto item = issue_q.customer_get_item(i);
+    
+                    //delay wakeup
+                    if(!this->src1_ready[i] && this->wakeup_shift_src1[i] > 0)
+                    {
+                        if(this->wakeup_shift_src1[i] == 1)
+                        {
+                            this->src1_ready[i] = true;
+                        }
+        
+                        this->wakeup_shift_src1[i] >>= 1;
+                    }
+    
+                    if(!this->src2_ready[i] && this->wakeup_shift_src2[i] > 0)
+                    {
+                        if(this->wakeup_shift_src2[i] == 1)
+                        {
+                            this->src2_ready[i] = true;
+                        }
+        
+                        this->wakeup_shift_src2[i] >>= 1;
+                    }
                 
                     //integer_issue_output feedback
                     for(uint32_t j = 0;j < INTEGER_ISSUE_WIDTH;j++)
@@ -169,6 +197,47 @@ namespace cycle_model::pipeline
                             }
                         }
                     }
+    
+                    //lsu_issue_output feedback
+                    for(uint32_t j = 0;j < LSU_ISSUE_WIDTH;j++)
+                    {
+                        if(lsu_issue_output_feedback_pack.wakeup_valid[j])
+                        {
+                            if(!this->src1_ready[i])
+                            {
+                                verify_only(item.arg1_src == arg_src_t::reg);
+                
+                                if(item.rs1_phy == lsu_issue_output_feedback_pack.wakeup_rd[j])
+                                {
+                                    if(lsu_issue_output_feedback_pack.wakeup_shift[j] == 0)
+                                    {
+                                        this->src1_ready[i] = true;
+                                    }
+                                    else
+                                    {
+                                        this->wakeup_shift_src1[i] = lsu_issue_output_feedback_pack.wakeup_shift[j];
+                                    }
+                                }
+                            }
+            
+                            if(!this->src2_ready[i])
+                            {
+                                verify_only(item.arg2_src == arg_src_t::reg);
+                
+                                if(item.rs2_phy == lsu_issue_output_feedback_pack.wakeup_rd[j])
+                                {
+                                    if(lsu_issue_output_feedback_pack.wakeup_shift[j] == 0)
+                                    {
+                                        this->src2_ready[i] = true;
+                                    }
+                                    else
+                                    {
+                                        this->wakeup_shift_src2[i] = lsu_issue_output_feedback_pack.wakeup_shift[j];
+                                    }
+                                }
+                            }
+                        }
+                    }
                 
                     //execute feedback
                     for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
@@ -198,8 +267,6 @@ namespace cycle_model::pipeline
                             }
                         }
                     }
-                
-                    issue_q.set_item(i, item);
                 }
             }
         }
@@ -353,6 +420,11 @@ namespace cycle_model::pipeline
                         {
                             src2_ready[i] = true;
                         }
+                        
+                        //set wakeup information
+                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
+                        wakeup_rd_valid[issue_id] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
+                        wakeup_shift[issue_id] = lsu_issue::latency_to_wakeup_shift(LSU_LATENCY);
                     }
                     else
                     {
@@ -385,6 +457,11 @@ namespace cycle_model::pipeline
         }
         
         return feedback_pack;
+    }
+    
+    uint32_t lsu_issue::latency_to_wakeup_shift(uint32_t latency)
+    {
+        return (latency == 1) ? 0 : (1 << (latency - 1));
     }
     
     void lsu_issue::print(std::string indent)

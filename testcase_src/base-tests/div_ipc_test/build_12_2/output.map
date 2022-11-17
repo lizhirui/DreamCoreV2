@@ -1,0 +1,94 @@
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+ICCM             0x0000000080000000 0x0000000000040000 axw !rl
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /tmp/ccVooPZz.o
+LOAD /opt/riscv-gnu-toolchain_20221011_rv32im/lib/gcc/riscv32-unknown-elf/12.2.0/../../../../riscv32-unknown-elf/lib/libm.a
+LOAD /opt/riscv-gnu-toolchain_20221011_rv32im/lib/gcc/riscv32-unknown-elf/12.2.0/libgcc.a
+                0x0000000000008000                __stack_size = DEFINED (__stack_size)?__stack_size:0x8000
+
+.text.init      0x0000000080000000       0x38
+ *(.text.init)
+ .text.init     0x0000000080000000       0x38 /tmp/ccVooPZz.o
+                0x0000000080000000                _start
+                0x0000000080000038                . = ALIGN (0x4)
+
+.text           0x0000000080000038        0x0
+ *(.text.unlikely .text.unlikely.*)
+ *(.text.startup .text.startup.*)
+ *(.text .text.*)
+ .text          0x0000000080000038        0x0 /tmp/ccVooPZz.o
+ *(.gnu.linkonce.t.*)
+                0x0000000080000038                . = ALIGN (0x4)
+
+.rodata         0x0000000080000038        0x0
+ *(.rdata)
+ *(.rodata .rodata.*)
+ *(.gnu.linkonce.r.*)
+                0x0000000080000038                . = ALIGN (0x4)
+
+.data           0x0000000080000038        0x0
+ *(.data .data.*)
+ .data          0x0000000080000038        0x0 /tmp/ccVooPZz.o
+ *(.gnu.linkonce.d.*)
+                0x0000000080000038                . = ALIGN (0x4)
+
+.sdata          0x0000000080000038        0x0
+                0x0000000080000038                . = ALIGN (0x4)
+                0x0000000080000838                __global_pointer$ = (. + 0x800)
+ *(.sdata .sdata.*)
+ *(.gnu.linkonce.s.*)
+                0x0000000080000038                . = ALIGN (0x4)
+ *(.srodata .srodata.*)
+                0x0000000080000038                . = ALIGN (0x4)
+                0x0000000080000038                __bss_start = .
+
+.sbss           0x0000000080000038        0x0
+ *(.sbss .sbss.* .gnu.linkonce.sb.*)
+ *(.scommon)
+                0x0000000080000038                . = ALIGN (0x4)
+
+.bss            0x0000000080000038        0x0
+ *(.bss)
+ .bss           0x0000000080000038        0x0 /tmp/ccVooPZz.o
+                0x0000000080000038                . = ALIGN (0x4)
+                0x0000000080000038                _end = .
+
+.stack          0x0000000080000038     0x8000
+                0x0000000080000038                _heap_end = .
+                0x0000000080008038                . = (. + __stack_size)
+ *fill*         0x0000000080000038     0x8000 
+                0x0000000080008038                _sp = .
+                0x0000000080008038                __bss_end = .
+OUTPUT(build_12_2/div_ipc_test_12_2.elf elf32-littleriscv)
+
+.riscv.attributes
+                0x0000000000000000       0x23
+ .riscv.attributes
+                0x0000000000000000       0x23 /tmp/ccVooPZz.o
+
+.debug_line     0x0000000000000000       0x94
+ .debug_line    0x0000000000000000       0x94 /tmp/ccVooPZz.o
+
+.debug_line_str
+                0x0000000000000000       0x5f
+ .debug_line_str
+                0x0000000000000000       0x5f /tmp/ccVooPZz.o
+
+.debug_info     0x0000000000000000       0x24
+ .debug_info    0x0000000000000000       0x24 /tmp/ccVooPZz.o
+
+.debug_abbrev   0x0000000000000000       0x14
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccVooPZz.o
+
+.debug_aranges  0x0000000000000000       0x20
+ .debug_aranges
+                0x0000000000000000       0x20 /tmp/ccVooPZz.o
+
+.debug_str      0x0000000000000000       0x6b
+ .debug_str     0x0000000000000000       0x6b /tmp/ccVooPZz.o

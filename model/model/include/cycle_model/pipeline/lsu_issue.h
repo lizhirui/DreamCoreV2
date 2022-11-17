@@ -9,6 +9,14 @@
  */
 
 #pragma once
+//to prevent from error of clion
+#ifndef __LSU_ISSUE_H__
+#define __LSU_ISSUE_H__
+namespace cycle_model::pipeline
+{
+    typedef struct integer_issue_output_feedback_pack_t integer_issue_output_feedback_pack_t;
+}
+
 #include "common.h"
 #include "config.h"
 #include "../component/port.h"
@@ -23,6 +31,33 @@
 
 namespace cycle_model::pipeline
 {
+    typedef struct lsu_issue_output_feedback_pack_t : if_print_t
+    {
+        bool wakeup_valid[LSU_ISSUE_WIDTH] = {false};
+        uint32_t wakeup_rd[LSU_ISSUE_WIDTH] = {0};
+        uint32_t wakeup_shift[LSU_ISSUE_WIDTH] = {0};
+        
+        virtual json get_json()
+        {
+            json t;
+            json t1 = json::array();
+            json t2 = json::array();
+            json t3 = json::array();
+            
+            for(uint32_t i = 0;i < LSU_ISSUE_WIDTH;i++)
+            {
+                t1.push_back(wakeup_valid[i]);
+                t2.push_back(wakeup_rd[i]);
+                t3.push_back(wakeup_shift[i]);
+            }
+            
+            t["wakeup_valid"] = t1;
+            t["wakeup_rd"] = t2;
+            t["wakeup_shift"] = t3;
+            return t;
+        }
+    }lsu_issue_output_feedback_pack_t;
+    
     typedef struct lsu_issue_feedback_pack_t : if_print_t
     {
         bool stall = false;
@@ -229,16 +264,22 @@ namespace cycle_model::pipeline
             
             uint32_t wakeup_shift_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool src2_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
+        
+            uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
             trace::trace_database tdb;
         
         public:
             lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            void run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             lsu_issue_feedback_pack_t run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            uint32_t latency_to_wakeup_shift(uint32_t latency);
             virtual void print(std::string indent);
             virtual json get_json();
     };
 }
+#endif

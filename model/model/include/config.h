@@ -42,6 +42,7 @@ const uint32_t BRU_LATENCY = 1;
 const uint32_t CSR_LATENCY = 1;
 const uint32_t DIV_LATENCY = 8;
 const uint32_t MUL_LATENCY = 1;
+const uint32_t LSU_LATENCY = 2;
 
 const uint32_t INIT_PC = 0x80000000;
 

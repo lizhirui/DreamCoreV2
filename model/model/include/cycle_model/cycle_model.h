@@ -135,6 +135,7 @@ namespace cycle_model
             pipeline::dispatch_feedback_pack_t dispatch_feedback_pack;
             pipeline::integer_issue_feedback_pack_t integer_issue_feedback_pack;
             pipeline::integer_issue_output_feedback_pack_t integer_issue_output_feedback_pack;
+            pipeline::lsu_issue_output_feedback_pack_t lsu_issue_output_feedback_pack;
             pipeline::lsu_issue_feedback_pack_t lsu_issue_feedback_pack;
             pipeline::lsu_readreg_feedback_pack_t lsu_readreg_feedback_pack;
             pipeline::execute_feedback_pack_t execute_feedback_pack;
