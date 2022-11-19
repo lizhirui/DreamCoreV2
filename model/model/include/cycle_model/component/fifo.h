@@ -281,8 +281,34 @@ namespace cycle_model::component
                 *next_stage = ((id + 1) >= this->size) != stage;
                 return customer_check_id_valid(*next_id);
             }
+        
+            void static_get_next_id_stage(uint32_t id, bool stage, uint32_t *next_id, bool *next_stage)
+            {
+                *next_id = (id + 1) % this->size;
+                *next_stage = ((id + 1) >= this->size) != stage;
+            }
             
-            virtual void customer_foreach(std::function<bool(uint32_t, const T&)> func)
+            uint32_t producer_get_wptr() const
+            {
+                return wptr.get_new();
+            }
+            
+            bool producer_get_wstage() const
+            {
+                return wstage.get_new();
+            }
+        
+            uint32_t customer_get_wptr() const
+            {
+                return wptr.get();
+            }
+        
+            bool customer_get_wstage() const
+            {
+                return wstage.get();
+            }
+            
+            virtual void customer_foreach(std::function<bool(uint32_t, bool, const T&)> func)
             {
                 if(!customer_is_empty())
                 {
@@ -293,7 +319,7 @@ namespace cycle_model::component
                     {
                         auto item = buffer[cur].get();
                         
-                        if(!func(cur, item))
+                        if(!func(cur, cur_stage, item))
                         {
                             break;
                         }
@@ -359,7 +385,7 @@ namespace cycle_model::component
                 return (this->wptr.get_new() == this->rptr.get_new()) && (this->wstage.get_new() == this->rstage.get_new());
             }
 
-            bool producer_is_full()
+            virtual bool producer_is_full()
             {
                 return (this->wptr.get_new() == this->rptr.get()) && (this->wstage.get_new() != this->rstage.get());
             }
@@ -372,6 +398,12 @@ namespace cycle_model::component
             bool new_is_full()
             {
                 return (this->wptr.get_new() == this->rptr.get_new()) && (this->wstage.get_new() != this->rstage.get_new());
+            }
+            
+            void update_wptr(uint32_t wptr, bool wstage)
+            {
+                this->wptr.set(wptr);
+                this->wstage.set(wstage);
             }
 
             virtual void print(std::string indent)

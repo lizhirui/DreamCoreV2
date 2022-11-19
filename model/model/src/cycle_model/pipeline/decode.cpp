@@ -30,13 +30,13 @@ namespace cycle_model::pipeline
     
     }
     
-    decode_feedback_pack_t decode::run(const commit_feedback_pack_t &commit_feedback_pack)
+    decode_feedback_pack_t decode::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         decode_feedback_pack_t feedback_pack;
         
         feedback_pack.idle = this->fetch2_decode_fifo->customer_is_empty();
         
-        if(!commit_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush)
         {
             for(uint32_t i = 0;i < DECODE_WIDTH;i++)
             {

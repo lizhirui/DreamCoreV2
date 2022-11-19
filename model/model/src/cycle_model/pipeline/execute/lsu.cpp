@@ -16,6 +16,7 @@
 #include "cycle_model/component/bus.h"
 #include "cycle_model/component/store_buffer.h"
 #include "cycle_model/component/slave/clint.h"
+#include "cycle_model/component/age_compare.h"
 
 namespace cycle_model::pipeline::execute
 {
@@ -38,14 +39,15 @@ namespace cycle_model::pipeline::execute
         this->l2_addr = 0;
     }
     
-    execute_feedback_channel_t lsu::run(commit_feedback_pack_t commit_feedback_pack)
+    execute_feedback_channel_t lsu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         //level 2 pipeline: get memory data/push store_buffer
         execute_wb_pack_t send_pack;
         
         this->l2_stall = false;//cancel l2_stall signal temporarily
         
-        if(l2_rev_pack.enable && !commit_feedback_pack.flush)
+        if(l2_rev_pack.enable && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||
+          (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))))
         {
             verify_only(l2_rev_pack.valid);
             send_pack.enable = l2_rev_pack.enable;
@@ -53,6 +55,7 @@ namespace cycle_model::pipeline::execute
             send_pack.valid = l2_rev_pack.valid;
             send_pack.last_uop = l2_rev_pack.last_uop;
             send_pack.rob_id = l2_rev_pack.rob_id;
+            send_pack.rob_id_stage = l2_rev_pack.rob_id_stage;
             send_pack.pc = l2_rev_pack.pc;
             send_pack.imm = l2_rev_pack.imm;
             send_pack.has_exception = l2_rev_pack.has_exception;
@@ -136,6 +139,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
                             item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
@@ -156,6 +160,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
                             item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
@@ -176,6 +181,7 @@ namespace cycle_model::pipeline::execute
                             item.committed = false;
                             item.pc = l2_rev_pack.pc;
                             item.rob_id = l2_rev_pack.rob_id;
+                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
                             item.cycle = get_cpu_clock_cycle();//only for debug
                             store_buffer->push(item);
                         }
@@ -203,12 +209,20 @@ namespace cycle_model::pipeline::execute
             {
                 if(readreg_lsu_hdff->pop(&rev_pack))
                 {
+                    if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        l2_addr = 0;
+                        l2_rev_pack = {};
+                        return {};
+                    }
+                    
                     l2_addr = 0;
                     l2_rev_pack.enable = rev_pack.enable;
                     l2_rev_pack.value = rev_pack.value;
                     l2_rev_pack.valid = rev_pack.valid;
                     l2_rev_pack.last_uop = rev_pack.last_uop;
                     l2_rev_pack.rob_id = rev_pack.rob_id;
+                    l2_rev_pack.rob_id_stage = rev_pack.rob_id_stage;
                     l2_rev_pack.pc = rev_pack.pc;
                     l2_rev_pack.imm = rev_pack.imm;
                     l2_rev_pack.has_exception = rev_pack.has_exception;

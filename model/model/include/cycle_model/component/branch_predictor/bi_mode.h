@@ -25,32 +25,16 @@ namespace cycle_model::component::branch_predictor
             uint32_t pht_left[BI_MODE_PHT_SIZE];
             uint32_t pht_right[BI_MODE_PHT_SIZE];
             uint32_t pht_choice[BI_MODE_PHT_SIZE];
-            
-        public:
-            virtual void reset()
-            {
-                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
-                {
-                    predict_next_pc[i].set(0);
-                    predict_jump[i].set(false);
-                }
-                
-                global_history = 0;
-                global_history_retired = 0;
-                memset(pht_left, 0, sizeof(pht_left));
-                memset(pht_right, 0, sizeof(pht_right));
-                memset(pht_choice, 0, sizeof(pht_choice));
-            }
-            
-            virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+        
+            void _update(uint32_t &history, uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
                 if(bp_pack.condition_jump)
                 {
                     uint32_t branch_pc = (pc >> 2) & BI_MODE_BRANCH_PC_MASK;
-                    uint32_t pht_addr = global_history_retired ^ branch_pc;
+                    uint32_t pht_addr = history ^ branch_pc;
                     uint32_t pht_choice_addr = (pc >> 2) & BI_MODE_PHT_CHOICE_ADDR_MASK;
                     bool is_pht_left = pht_choice[pht_choice_addr] <= 1;
-                    
+                
                     if(is_pht_left)
                     {
                         if(jump)
@@ -85,7 +69,7 @@ namespace cycle_model::component::branch_predictor
                             }
                         }
                     }
-                    
+                
                     if(!(((pht_choice[pht_choice_addr] >= 2) != jump) && hit))
                     {
                         if(jump)
@@ -103,12 +87,44 @@ namespace cycle_model::component::branch_predictor
                             }
                         }
                     }
-                    
-                    global_history_retired = ((global_history_retired << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
-                    
+                
+                    history = ((history << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                
                     if(!hit)
                     {
-                        global_history = global_history_retired;
+                        global_history = history;
+                    }
+                }
+            }
+            
+        public:
+            virtual void reset()
+            {
+                for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                {
+                    predict_next_pc[i].set(0);
+                    predict_jump[i].set(false);
+                }
+                
+                global_history = 0;
+                global_history_retired = 0;
+                memset(pht_left, 0, sizeof(pht_left));
+                memset(pht_right, 0, sizeof(pht_right));
+                memset(pht_choice, 0, sizeof(pht_choice));
+            }
+        
+            virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+            {
+                _update(global_history_retired, pc, jump, next_pc, hit, bp_pack);
+            }
+        
+            virtual void bru_speculative_update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+            {
+                if(bp_pack.condition_jump)
+                {
+                    if(!hit)
+                    {
+                        global_history = ((bp_pack.bi_mode_global_history << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
                     }
                 }
             }
@@ -146,12 +162,12 @@ namespace cycle_model::component::branch_predictor
             virtual void fill_info_pack(branch_predictor_info_pack_t &pack)
             {
                 pack.condition_jump = true;
-                pack.global_history = global_history;
+                pack.bi_mode_global_history = global_history;
             }
             
             virtual void restore(const branch_predictor_info_pack_t &bp_pack)
             {
-                global_history = bp_pack.global_history;
+                global_history = bp_pack.bi_mode_global_history;
             }
     };
 }

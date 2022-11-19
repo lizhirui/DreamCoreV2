@@ -12,9 +12,11 @@
 #include "common.h"
 #include "fifo.h"
 #include "bus.h"
+#include "../pipeline/execute/bru.h"
 #include "../pipeline/commit.h"
 #include "slave/memory.h"
 #include "slave/clint.h"
+#include "age_compare.h"
 
 namespace cycle_model::component
 {
@@ -23,6 +25,7 @@ namespace cycle_model::component
         bool enable = false;
         bool committed = false;
         uint32_t rob_id = 0;
+        bool rob_id_stage = false;
         uint32_t pc = 0;
         uint32_t addr = 0;
         uint32_t data = 0;
@@ -183,7 +186,7 @@ namespace cycle_model::component
                 return {result, feedback_mask};
             }
             
-            void run(pipeline::commit_feedback_pack_t commit_feedback_pack)
+            void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)
             {
                 if(commit_feedback_pack.flush)
                 {
@@ -230,6 +233,19 @@ namespace cycle_model::component
                             wstage.set(found_stage);
                         }
                     }
+                }
+                else if(bru_feedback_pack.flush)
+                {
+                    customer_foreach([=](uint32_t id, bool stage, const store_buffer_item_t &item)->bool
+                    {
+                        if(component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            update_wptr(id, stage);
+                            return false;
+                        }
+                        
+                        return true;
+                    });
                 }
                 else
                 {

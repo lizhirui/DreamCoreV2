@@ -14,6 +14,7 @@
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/io_issue_queue.h"
 #include "cycle_model/component/regfile.h"
+#include "cycle_model/component/age_compare.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
 #include "cycle_model/pipeline/lsu_issue_readreg.h"
 #include "cycle_model/pipeline/lsu_readreg.h"
@@ -48,7 +49,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_issue_output_feedback_pack_t feedback_pack;
         lsu_issue_readreg_pack_t send_pack;
@@ -67,6 +68,19 @@ namespace cycle_model::pipeline
                     {
                         //build send_pack
                         issue_queue_item_t rev_pack;
+                        
+                        if(bru_feedback_pack.flush)
+                        {
+                            verify(issue_q.customer_get_front(&rev_pack));
+                            
+                            if(component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                            {
+                                //skip this instruction
+                                lsu_issue_readreg_port->set(send_pack);
+                                return feedback_pack;
+                            }
+                        }
+                        
                         verify(issue_q.pop(&rev_pack));
                         verify_only(rev_pack.op_unit == op_unit_t::lsu);
                         
@@ -76,6 +90,7 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].last_uop = rev_pack.last_uop;
     
                         send_pack.op_info[0].rob_id = rev_pack.rob_id;
+                        send_pack.op_info[0].rob_id_stage = rev_pack.rob_id_stage;
                         send_pack.op_info[0].pc = rev_pack.pc;
                         send_pack.op_info[0].imm = rev_pack.imm;
                         send_pack.op_info[0].has_exception = rev_pack.has_exception;
@@ -126,10 +141,24 @@ namespace cycle_model::pipeline
         return feedback_pack;
     }
     
-    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
+            if(bru_feedback_pack.flush)
+            {
+                issue_q.customer_foreach([=](uint32_t id, bool stage, const issue_queue_item_t &item)->bool
+                {
+                    if(component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                    {
+                        issue_q.update_wptr(id, stage);
+                        return false;
+                    }
+                    
+                    return true;
+                });
+            }
+            
             for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
             {
                 if(issue_q.customer_check_id_valid(i))
@@ -272,7 +301,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         lsu_issue_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;//generate stall signal to prevent dispatch from dispatching new instructions
@@ -296,6 +325,11 @@ namespace cycle_model::pipeline
             {
                 if(rev_pack.op_info[i].enable)
                 {
+                    if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        continue;//skip this instruction due to which is younger than the flush age
+                    }
+                    
                     issue_queue_item_t item;
     
                     item.enable = rev_pack.op_info[i].enable;
@@ -304,6 +338,7 @@ namespace cycle_model::pipeline
                     item.last_uop = rev_pack.op_info[i].last_uop;
     
                     item.rob_id = rev_pack.op_info[i].rob_id;
+                    item.rob_id_stage = rev_pack.op_info[i].rob_id_stage;
                     item.pc = rev_pack.op_info[i].pc;
                     item.imm = rev_pack.op_info[i].imm;
                     item.has_exception = rev_pack.op_info[i].has_exception;
@@ -449,7 +484,7 @@ namespace cycle_model::pipeline
                 }
             }
         }
-        else
+        else if(commit_feedback_pack.flush)
         {
             issue_q.flush();
             busy = false;
@@ -482,7 +517,7 @@ namespace cycle_model::pipeline
         auto wakeup_shift_src2 = json::array();
         auto src2_ready = json::array();
     
-        issue_q.customer_foreach([&](uint32_t id, const issue_queue_item_t &item) -> bool
+        issue_q.customer_foreach([&](uint32_t id, bool stage, const issue_queue_item_t &item) -> bool
         {
             wakeup_shift_src1.push_back(this->wakeup_shift_src1[id]);
             src1_ready.push_back(this->src1_ready[id]);

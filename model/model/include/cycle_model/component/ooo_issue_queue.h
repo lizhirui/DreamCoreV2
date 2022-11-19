@@ -21,10 +21,23 @@ namespace cycle_model::component
     {
         private:
             dff<bool> *valid;
-            free_list id_free_list;
+            
+            virtual bool producer_get_new_id(uint32_t *new_id)
+            {
+                for(uint32_t i = 0;i < this->size;i++)
+                {
+                    if(!this->valid[i].get_new())
+                    {
+                        *new_id = i;
+                        return true;
+                    }
+                }
+    
+                return false;
+            }
             
         public:
-            ooo_issue_queue(uint32_t size) : fifo<T>(size), id_free_list(size)
+            ooo_issue_queue(uint32_t size) : fifo<T>(size)
             {
                 valid = new dff<bool>[size];
                 this->reset();
@@ -38,8 +51,6 @@ namespace cycle_model::component
                 {
                     valid[i].set(false);
                 }
-                
-                id_free_list.reset();
             }
             
             virtual void flush()
@@ -50,8 +61,19 @@ namespace cycle_model::component
                 {
                     valid[i].set(false);
                 }
-                
-                id_free_list.flush();
+            }
+        
+            virtual bool producer_is_full()
+            {
+                for(uint32_t i = 0;i < this->size;i++)
+                {
+                    if(!this->valid[i].get_new())
+                    {
+                        return false;
+                    }
+                }
+            
+                return true;
             }
             
             virtual bool push(T data)
@@ -61,9 +83,9 @@ namespace cycle_model::component
             
             virtual bool push(T data, uint32_t *index)
             {
-                if(!id_free_list.customer_is_empty())
+                if(!producer_is_full())
                 {
-                    verify(id_free_list.pop(index));
+                    verify(producer_get_new_id(index));
                     this->set_item(*index, data);
                     valid[*index].set(true);
                     return true;
@@ -80,7 +102,6 @@ namespace cycle_model::component
             virtual bool pop(uint32_t index)
             {
                 verify_only(valid[index]);
-                verify(id_free_list.push(index));
                 valid[index].set(false);
                 return true;
             }
@@ -88,6 +109,11 @@ namespace cycle_model::component
             bool is_valid(uint32_t index)
             {
                 return valid[index];
+            }
+            
+            void set_valid(uint32_t index, bool is_valid)
+            {
+                this->valid[index].set(is_valid);
             }
             
             virtual json get_json()

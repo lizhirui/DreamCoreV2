@@ -14,10 +14,12 @@
 #include "cycle_model/pipeline/rename.h"
 #include "cycle_model/pipeline/integer_issue.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
+#include "cycle_model/component/checkpoint.h"
+#include "cycle_model/component/fifo.h"
 
 namespace cycle_model::pipeline
 {
-    rename::rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list) : tdb(TRACE_RENAME)
+    rename::rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer) : tdb(TRACE_RENAME)
     {
         this->global = global;
         this->decode_rename_fifo = decode_rename_fifo;
@@ -25,6 +27,7 @@ namespace cycle_model::pipeline
         this->speculative_rat = speculative_rat;
         this->rob = rob;
         this->phy_id_free_list = phy_id_free_list;
+        this->checkpoint_buffer = checkpoint_buffer;
         this->rename::reset();
     }
     
@@ -33,7 +36,7 @@ namespace cycle_model::pipeline
     
     }
     
-    rename_feedback_pack_t rename::run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    rename_feedback_pack_t rename::run(const dispatch_feedback_pack_t &dispatch_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         rename_feedback_pack_t feedback_pack;
         rename_dispatch_pack_t send_pack;
@@ -41,7 +44,7 @@ namespace cycle_model::pipeline
         bool found_fence = false;
         feedback_pack.idle = decode_rename_fifo->customer_is_empty();
         
-        if(!commit_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush)
         {
             if(!dispatch_feedback_pack.stall)
             {
@@ -160,6 +163,25 @@ namespace cycle_model::pipeline
                                 verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
                                 verify(rob->get_new_id_stage(&send_pack.op_info[i].rob_id_stage));
                                 verify(rob->push(rob_item));
+                                //generate checkpoint items
+                                if(rev_pack.enable && rev_pack.valid && rev_pack.branch_predictor_info_pack.predicted)
+                                {
+                                    if(!checkpoint_buffer->producer_is_full())
+                                    {
+                                        component::checkpoint_t cp;
+                                        speculative_rat->producer_save_to_checkpoint(cp);
+                                        cp.new_phy_id_free_list_rptr = rob_item.new_phy_id_free_list_rptr;
+                                        cp.new_phy_id_free_list_rstage = rob_item.new_phy_id_free_list_rstage;
+                                        uint32_t new_checkpoint_wptr = checkpoint_buffer->producer_get_wptr();
+                                        bool new_checkpoint_wstage = checkpoint_buffer->producer_get_wstage();
+                                        checkpoint_buffer->static_get_next_id_stage(new_checkpoint_wptr, new_checkpoint_wstage, &new_checkpoint_wptr, &new_checkpoint_wstage);
+                                        cp.new_checkpoint_buffer_wptr = new_checkpoint_wptr;
+                                        cp.new_checkpoint_buffer_wstage = new_checkpoint_wstage;
+                                        verify(checkpoint_buffer->push(cp));
+                                        send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id_valid = true;
+                                        verify(checkpoint_buffer->producer_get_tail_id(&send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id));
+                                    }
+                                }
                             }
                             
                             if(ready_to_stop_rename)

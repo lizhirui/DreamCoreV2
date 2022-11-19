@@ -47,6 +47,11 @@ namespace cycle_model::component::branch_predictor
             
             }
         
+            virtual void bru_speculative_update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+            {
+            
+            }
+        
             virtual void predict(uint32_t port, uint32_t pc, uint32_t inst)
             {
                 uint32_t index = (pc >> 2) & L0_BTB_ADDR_MASK;

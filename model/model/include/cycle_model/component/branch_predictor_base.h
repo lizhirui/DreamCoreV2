@@ -16,12 +16,14 @@ namespace cycle_model::component
 {
     typedef struct branch_predictor_info_pack_t : if_print_t
     {
-        uint32_t global_history = 0;
+        uint32_t bi_mode_global_history = 0;
         bool predicted = false;
         bool jump = false;
         uint32_t next_pc = 0;
         bool uncondition_indirect_jump = false;
         bool condition_jump = false;
+        bool checkpoint_id_valid = false;
+        uint32_t checkpoint_id = 0;
     }branch_predictor_info_pack_t;
     
     class branch_predictor_base
@@ -33,6 +35,7 @@ namespace cycle_model::component
             {
                 update,
                 speculative_update,
+                bru_speculative_update,
                 restore
             };
         
@@ -132,6 +135,18 @@ namespace cycle_model::component
                 req.jump = jump;
                 sync_request_q.push(req);
             }
+        
+            void bru_speculative_update_sync(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+            {
+                sync_request_t req;
+                req.req = sync_request_type_t::bru_speculative_update;
+                req.pc = pc;
+                req.jump = jump;
+                req.next_pc = next_pc;
+                req.hit = hit;
+                req.bp_pack = bp_pack;
+                sync_request_q.push(req);
+            }
             
             void restore_sync(const branch_predictor_info_pack_t &bp_pack)
             {
@@ -157,6 +172,10 @@ namespace cycle_model::component
                         case sync_request_type_t::speculative_update:
                             this->speculative_update(req.pc, req.jump);
                             break;
+    
+                        case sync_request_type_t::bru_speculative_update:
+                            this->bru_speculative_update(req.pc, req.jump, req.next_pc, req.hit, req.bp_pack);
+                            break;
                             
                         case sync_request_type_t::restore:
                             this->restore(req.bp_pack);
@@ -168,6 +187,7 @@ namespace cycle_model::component
             virtual void reset() = 0;
             virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack) = 0;
             virtual void speculative_update(uint32_t pc, bool jump) = 0;
+            virtual void bru_speculative_update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack) = 0;
             virtual void predict(uint32_t port, uint32_t pc, uint32_t inst) = 0;
             virtual uint32_t get_next_pc(uint32_t port) = 0;
             virtual bool is_jump(uint32_t port) = 0;

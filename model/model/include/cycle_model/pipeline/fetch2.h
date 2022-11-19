@@ -16,6 +16,7 @@
 #include "fetch1_fetch2.h"
 #include "fetch2_decode.h"
 #include "fetch2.h"
+#include "execute/bru.h"
 #include "commit.h"
 
 namespace cycle_model::pipeline
@@ -50,7 +51,7 @@ namespace cycle_model::pipeline
         public:
             fetch2(global_inst *global, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::branch_predictor_set *branch_predictor_set);
             virtual void reset();
-            fetch2_feedback_pack_t run(const commit_feedback_pack_t &commit_feedback_pack);
+            fetch2_feedback_pack_t run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();
     };
 }

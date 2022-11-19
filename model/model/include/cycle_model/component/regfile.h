@@ -12,6 +12,7 @@
 #include "common.h"
 #include "dff.h"
 #include "rat.h"
+#include "age_compare.h"
 
 namespace cycle_model::component
 {
@@ -23,6 +24,9 @@ namespace cycle_model::component
         private:
             dff<T> *reg_data;
             dff<bool> *reg_data_valid;
+            dff<uint32_t> *reg_rob_id;
+            dff<bool> *reg_rob_id_stage;
+            dff<bool> *reg_oldest;
             uint32_t size = 0;
         
             trace::trace_database tdb;
@@ -33,6 +37,9 @@ namespace cycle_model::component
                 this->size = size;
                 reg_data = new dff<T>[size];
                 reg_data_valid = new dff<bool>[size];
+                reg_rob_id = new dff<uint32_t>[size];
+                reg_rob_id_stage = new dff<bool>[size];
+                reg_oldest = new dff<bool>[size];
                 this->reset();
             }
         
@@ -40,6 +47,9 @@ namespace cycle_model::component
             {
                 delete[] reg_data;
                 delete[] reg_data_valid;
+                delete[] reg_rob_id;
+                delete[] reg_rob_id_stage;
+                delete[] reg_oldest;
             }
         
             virtual void reset()
@@ -48,6 +58,9 @@ namespace cycle_model::component
                 {
                     reg_data[i].set(0);
                     reg_data_valid[i].set(false);
+                    reg_rob_id[i].set(0);
+                    reg_rob_id_stage[i].set(false);
+                    reg_oldest[i].set(true);
                 }
             }
         
@@ -66,11 +79,14 @@ namespace cycle_model::component
                 return &tdb;
             }
         
-            void write(uint32_t addr, T value, bool valid)
+            void write(uint32_t addr, T value, bool valid, uint32_t rob_id, bool rob_id_stage, bool oldest)
             {
                 verify_only(addr < size);
                 reg_data[addr].set(value);
                 reg_data_valid[addr].set(valid);
+                reg_rob_id[addr].set(rob_id);
+                reg_rob_id_stage[addr].set(rob_id_stage);
+                reg_oldest[addr].set(oldest);
             }
         
             T read(uint32_t addr)
@@ -85,11 +101,40 @@ namespace cycle_model::component
                 return reg_data_valid[addr];
             }
             
+            void write_age_information(uint32_t addr, uint32_t rob_id, bool rob_id_stage, bool oldest)
+            {
+                verify_only(addr < size);
+                reg_rob_id[addr].set(rob_id);
+                reg_rob_id_stage[addr].set(rob_id_stage);
+                reg_oldest[addr].set(oldest);
+            }
+            
+            std::tuple<uint32_t, bool, bool> read_age_information(uint32_t addr)
+            {
+                verify_only(addr < size);
+                return {reg_rob_id[addr], reg_rob_id_stage[addr], reg_oldest[addr]};
+            }
+            
             void restore(rat *element)
             {
                 for(uint32_t i = 0;i < size;i++)
                 {
                     reg_data_valid[i].set(element->producer_get_valid(i));
+                }
+            }
+            
+            void restore(uint32_t rob_id, bool rob_id_stage)
+            {
+                for(uint32_t i = 0;i < size;i++)
+                {
+                    if(reg_data_valid[i].get() && !reg_oldest[i].get())
+                    {
+                        if(age_compare(reg_rob_id[i].get(), reg_rob_id_stage[i].get()) < age_compare(rob_id, rob_id_stage))
+                        {
+                            reg_data_valid[i].set(false);
+                            reg_oldest[i].set(true);
+                        }
+                    }
                 }
             }
             

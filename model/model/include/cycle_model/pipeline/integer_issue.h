@@ -27,6 +27,7 @@ namespace cycle_model::pipeline
 #include "integer_issue_readreg.h"
 #include "integer_readreg.h"
 #include "lsu_issue.h"
+#include "execute/bru.h"
 #include "wb.h"
 #include "commit.h"
 
@@ -82,6 +83,7 @@ namespace cycle_model::pipeline
                 bool last_uop = false;//this is the last uop of an ISA instruction
                 
                 uint32_t rob_id = 0;
+                bool rob_id_stage = false;
                 uint32_t pc = 0;
                 uint32_t imm = 0;
                 bool has_exception = false;
@@ -299,9 +301,9 @@ namespace cycle_model::pipeline
         public:
             integer_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            integer_issue_output_feedback_pack_t run_output(const commit_feedback_pack_t &commit_feedback_pack);
-            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            integer_issue_feedback_pack_t run_input(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            integer_issue_output_feedback_pack_t run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            integer_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };

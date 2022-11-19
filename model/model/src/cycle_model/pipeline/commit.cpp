@@ -24,7 +24,7 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set) :
+    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
@@ -40,6 +40,7 @@ namespace cycle_model::pipeline
         this->phy_id_free_list = phy_id_free_list;
         this->interrupt_interface = interrupt_interface;
         this->branch_predictor_set = branch_predictor_set;
+        this->checkpoint_buffer = checkpoint_buffer;
         this->commit::reset();
     }
     
@@ -132,7 +133,8 @@ namespace cycle_model::pipeline
                                 if(rob_item.old_phy_reg_id_valid)
                                 {
                                     retire_rat->set_map(rob_item.rd, rob_item.new_phy_reg_id);
-                                    phy_regfile->write(rob_item.old_phy_reg_id, 0, false);
+                                    phy_regfile->write(rob_item.old_phy_reg_id, 0, false, 0, false, true);
+                                    phy_regfile->write_age_information(rob_item.new_phy_reg_id, 0, false, true);
                                     phy_id_free_list->push(rob_item.old_phy_reg_id);
                                 }
             
@@ -207,15 +209,25 @@ namespace cycle_model::pipeline
                                             //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
                                             branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
-                                            feedback_pack.jump_enable = true;
-                                            feedback_pack.jump = true;
-                                            feedback_pack.jump_next_pc = rob_item.bru_next_pc;
-                                            feedback_pack.flush = true;
-                                            speculative_rat->load(retire_rat);
-                                            rob->flush();
-                                            phy_regfile->restore(retire_rat);
-                                            phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
-                                            need_flush = true;
+                                            
+                                            if(!rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                            {
+                                                feedback_pack.jump_enable = true;
+                                                feedback_pack.jump = true;
+                                                feedback_pack.jump_next_pc = rob_item.bru_next_pc;
+                                                feedback_pack.flush = true;
+                                                speculative_rat->load(retire_rat);
+                                                rob->flush();
+                                                phy_regfile->restore(retire_rat);
+                                                phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
+                                                need_flush = true;
+                                            }
+                                        }
+                                        
+                                        if(rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                        {
+                                            component::checkpoint_t t_cp;
+                                            checkpoint_buffer->pop(&t_cp);
                                         }
                                     }
                                     else

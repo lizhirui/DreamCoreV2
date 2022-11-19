@@ -17,6 +17,7 @@
 #include "../../component/slave/clint.h"
 #include "../lsu_readreg_execute.h"
 #include "../execute_wb.h"
+#include "bru.h"
 #include "../execute.h"
 #include "../commit.h"
 
@@ -53,7 +54,7 @@ namespace cycle_model::pipeline::execute
             
             lsu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lsu_hdff, component::port<execute_wb_pack_t> *lsu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint);
             virtual void reset();
-            execute_feedback_channel_t run(commit_feedback_pack_t commit_feedback_pack);
+            execute_feedback_channel_t run(const bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();
     };
 }

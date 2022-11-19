@@ -28,6 +28,7 @@
 #include "cycle_model/component/rob.h"
 #include "cycle_model/component/store_buffer.h"
 #include "cycle_model/component/branch_predictor_set.h"
+#include "cycle_model/component/checkpoint.h"
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/fetch1.h"
 #include "cycle_model/pipeline/fetch1_fetch2.h"
@@ -110,6 +111,7 @@ namespace cycle_model
             component::store_buffer store_buffer;
             component::slave::clint clint;
             component::branch_predictor_set branch_predictor_set;
+            component::fifo<component::checkpoint_t> checkpoint_buffer;
             
             pipeline::fetch1 fetch1_stage;
             pipeline::fetch2 fetch2_stage;
@@ -138,6 +140,7 @@ namespace cycle_model
             pipeline::lsu_issue_output_feedback_pack_t lsu_issue_output_feedback_pack;
             pipeline::lsu_issue_feedback_pack_t lsu_issue_feedback_pack;
             pipeline::lsu_readreg_feedback_pack_t lsu_readreg_feedback_pack;
+            pipeline::execute::bru_feedback_pack_t bru_feedback_pack;
             pipeline::execute_feedback_pack_t execute_feedback_pack;
             pipeline::wb_feedback_pack_t wb_feedback_pack;
             pipeline::commit_feedback_pack_t commit_feedback_pack;

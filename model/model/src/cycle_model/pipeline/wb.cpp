@@ -12,6 +12,7 @@
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/regfile.h"
+#include "cycle_model/component/age_compare.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/wb_commit.h"
 #include "cycle_model/pipeline/commit.h"
@@ -70,7 +71,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    wb_feedback_pack_t wb::run(commit_feedback_pack_t commit_feedback_pack)
+    wb_feedback_pack_t wb::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         wb_commit_pack_t send_pack;
     
@@ -89,12 +90,18 @@ namespace cycle_model::pipeline
             {
                 execute_wb_pack_t rev_pack;
                 rev_pack = this->execute_wb_port[i]->get();
+    
+                if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                {
+                    continue;//skip this instruction due to which is younger than the flush age
+                }
                 
                 send_pack.op_info[i].enable = rev_pack.enable;
                 send_pack.op_info[i].value = rev_pack.value;
                 send_pack.op_info[i].valid = rev_pack.valid;
                 send_pack.op_info[i].last_uop = rev_pack.last_uop;
                 send_pack.op_info[i].rob_id = rev_pack.rob_id;
+                send_pack.op_info[i].rob_id_stage = rev_pack.rob_id_stage;
                 send_pack.op_info[i].pc = rev_pack.pc;
                 send_pack.op_info[i].imm = rev_pack.imm;
                 send_pack.op_info[i].has_exception = rev_pack.has_exception;
@@ -132,7 +139,7 @@ namespace cycle_model::pipeline
                 
                 if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && rev_pack.need_rename)
                 {
-                    phy_regfile->write(rev_pack.rd_phy, rev_pack.rd_value, true);
+                    phy_regfile->write(rev_pack.rd_phy, rev_pack.rd_value, true, rev_pack.rob_id, rev_pack.rob_id_stage, false);
                 }
                 
                 feedback_pack.channel[i].enable = rev_pack.enable && rev_pack.valid && rev_pack.need_rename && !rev_pack.has_exception;

@@ -71,6 +71,17 @@ namespace cycle_model::component
                 return true;
             }
             
+            bool get_data(T *element)
+            {
+                if(is_empty())
+                {
+                    return false;
+                }
+                
+                *element = data.get();
+                return true;
+            }
+            
             virtual json get_json()
             {
                 if(is_empty())

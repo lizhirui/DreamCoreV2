@@ -19,6 +19,7 @@
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/handshake_dff.h"
 #include "cycle_model/component/regfile.h"
+#include "cycle_model/component/age_compare.h"
 
 namespace cycle_model::pipeline
 {
@@ -37,13 +38,30 @@ namespace cycle_model::pipeline
         this->hold_rev_pack = lsu_issue_readreg_pack_t();
     }
     
-    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_readreg_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;
     
         if(!commit_feedback_pack.flush)
         {
+            if(bru_feedback_pack.flush)
+            {
+                for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+                {
+                    if(!this->readreg_lsu_hdff[i]->is_empty())
+                    {
+                        lsu_readreg_execute_pack_t tmp_pack;
+                        verify(this->readreg_lsu_hdff[i]->get_data(&tmp_pack));
+                
+                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_lsu_hdff[i]->flush();
+                        }
+                    }
+                }
+            }
+            
             lsu_issue_readreg_pack_t rev_pack;
             
             if(this->busy)
@@ -65,6 +83,7 @@ namespace cycle_model::pipeline
                 send_pack.last_uop = rev_pack.op_info[i].last_uop;
             
                 send_pack.rob_id = rev_pack.op_info[i].rob_id;
+                send_pack.rob_id_stage = rev_pack.op_info[i].rob_id_stage;
                 send_pack.pc = rev_pack.op_info[i].pc;
                 send_pack.imm = rev_pack.op_info[i].imm;
                 send_pack.has_exception = rev_pack.op_info[i].has_exception;
@@ -95,31 +114,39 @@ namespace cycle_model::pipeline
             
                 if(rev_pack.op_info[i].enable)
                 {
+                    if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        continue;//skip this instruction due to which is younger than the flush age
+                    }
+                    
                     //get value from physical register file/execute feedback and wb feedback
                     if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
                     {
                         if(rev_pack.op_info[i].rs1_need_map)
                         {
-                            if(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy))
+                            bool from_prf = true;
+                            send_pack.src1_value = this->phy_regfile->read(rev_pack.op_info[i].rs1_phy);
+                            
+                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                             {
-                                send_pack.src1_value = this->phy_regfile->read(rev_pack.op_info[i].rs1_phy);
-                            }
-                            else
-                            {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                 {
-                                    if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
-                                    {
-                                        send_pack.src1_value = execute_feedback_pack.channel[j].value;
-                                        break;
-                                    }
-                                
-                                    if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
-                                    {
-                                        send_pack.src1_value = wb_feedback_pack.channel[j].value;
-                                        break;
-                                    }
+                                    send_pack.src1_value = execute_feedback_pack.channel[j].value;
+                                    from_prf = false;
+                                    break;
                                 }
+                            
+                                if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
+                                {
+                                    send_pack.src1_value = wb_feedback_pack.channel[j].value;
+                                    from_prf = false;
+                                    break;
+                                }
+                            }
+    
+                            if(from_prf)
+                            {
+                                verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy));
                             }
                         }
                         else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
@@ -129,26 +156,29 @@ namespace cycle_model::pipeline
                     
                         if(rev_pack.op_info[i].rs2_need_map)
                         {
-                            if(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy))
+                            bool from_prf = true;
+                            send_pack.src2_value = this->phy_regfile->read(rev_pack.op_info[i].rs2_phy);
+                            
+                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
                             {
-                                send_pack.src2_value = this->phy_regfile->read(rev_pack.op_info[i].rs2_phy);
-                            }
-                            else
-                            {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                 {
-                                    if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
-                                    {
-                                        send_pack.src2_value = execute_feedback_pack.channel[j].value;
-                                        break;
-                                    }
-                                
-                                    if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
-                                    {
-                                        send_pack.src2_value = wb_feedback_pack.channel[j].value;
-                                        break;
-                                    }
+                                    send_pack.src2_value = execute_feedback_pack.channel[j].value;
+                                    from_prf = false;
+                                    break;
                                 }
+                            
+                                if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
+                                {
+                                    send_pack.src2_value = wb_feedback_pack.channel[j].value;
+                                    from_prf = false;
+                                    break;
+                                }
+                            }
+    
+                            if(from_prf)
+                            {
+                                verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy));
                             }
                         }
                         else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)

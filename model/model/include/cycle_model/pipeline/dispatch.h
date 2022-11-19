@@ -16,6 +16,7 @@
 #include "dispatch_issue.h"
 #include "integer_issue.h"
 #include "lsu_issue.h"
+#include "execute/bru.h"
 #include "commit.h"
 
 namespace cycle_model::pipeline
@@ -50,15 +51,18 @@ namespace cycle_model::pipeline
             
             bool is_inst_waiting = false;
             uint32_t inst_waiting_rob_id = 0;
+            bool inst_waiting_rob_id_stage = false;
             
             bool is_stbuf_empty_waiting = false;
+            uint32_t stbuf_empty_waiting_rob_id = 0;
+            bool stbuf_empty_waiting_rob_id_stage = false;
             
             trace::trace_database tdb;
         
         public:
             dispatch(global_inst *global, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer);
             virtual void reset();
-            dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();
     };
 }

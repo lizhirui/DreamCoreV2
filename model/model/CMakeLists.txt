@@ -20,5 +20,5 @@ endif()
 include_directories(./include ./tools ./include_third_party)
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./include/*.h" "./include/*.hpp" "./tools/*.h" "./tools/*.cpp")
 
-add_executable(sim ${src_files} include/fixed_size_buffer.h include/cycle_model/global_inst.h)
+add_executable(sim ${src_files})
 target_link_libraries(sim pthread)

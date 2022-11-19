@@ -265,6 +265,8 @@ namespace cycle_model::component
                     error_msg.is_write = false;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_value_valid.set(true);
+                    data_value.set(0);
                 }
             }
             
@@ -283,6 +285,8 @@ namespace cycle_model::component
                     error_msg.is_write = false;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_value_valid.set(true);
+                    data_value.set(0);
                 }
             }
             
@@ -301,6 +305,8 @@ namespace cycle_model::component
                     error_msg.is_write = false;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_value_valid.set(true);
+                    data_value.set(0);
                 }
             }
             
@@ -349,6 +355,12 @@ namespace cycle_model::component
                     error_msg.is_write = false;
                     error_msg.is_fetch = true;
                     error_msg_queue.push(error_msg);
+                    instruction_value_valid.set(true);
+                    
+                    for(uint32_t i = 0;i < FETCH_WIDTH;i++)
+                    {
+                        instruction_value[i].set(0);
+                    }
                 }
             }
             

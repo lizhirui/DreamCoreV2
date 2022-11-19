@@ -19,6 +19,7 @@ const uint32_t INTEGER_ISSUE_QUEUE_SIZE = 16;
 const uint32_t LSU_ISSUE_QUEUE_SIZE = 16;
 const uint32_t ROB_SIZE = 64;
 const uint32_t STORE_BUFFER_SIZE = 16;
+const uint32_t CHECKPOINT_BUFFER_SIZE = 64;
 
 const uint32_t ALU_UNIT_NUM = 2;
 const uint32_t BRU_UNIT_NUM = 1;

@@ -22,6 +22,8 @@
 #include <unordered_set>
 #include <cctype>
 #include <thread>
+#include <tuple>
+#include <variant>
 
 #include "magic_enum.h"
 #include "asio.hpp"

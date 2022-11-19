@@ -11,6 +11,7 @@
 #include "common.h"
 #include "cycle_model/pipeline/execute/alu.h"
 #include "cycle_model/component/handshake_dff.h"
+#include "cycle_model/component/age_compare.h"
 #include "cycle_model/pipeline/integer_readreg_execute.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/execute.h"
@@ -31,7 +32,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    execute_feedback_channel_t alu::run(commit_feedback_pack_t commit_feedback_pack)
+    execute_feedback_channel_t alu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         execute_wb_pack_t send_pack;
         
@@ -40,11 +41,17 @@ namespace cycle_model::pipeline::execute
             integer_readreg_execute_pack_t rev_pack;
             verify(readreg_alu_hdff->pop(&rev_pack));
             
+            if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+            {
+                goto exit;
+            }
+            
             send_pack.enable = rev_pack.enable;
             send_pack.value = rev_pack.value;
             send_pack.valid = rev_pack.valid;
             send_pack.last_uop = rev_pack.last_uop;
             send_pack.rob_id = rev_pack.rob_id;
+            send_pack.rob_id_stage = rev_pack.rob_id_stage;
             send_pack.pc = rev_pack.pc;
             send_pack.imm = rev_pack.imm;
             send_pack.has_exception = rev_pack.has_exception;
@@ -163,6 +170,7 @@ namespace cycle_model::pipeline::execute
             }
         }
         
+        exit:
         alu_wb_port->set(send_pack);
 
         execute_feedback_channel_t feedback_pack;

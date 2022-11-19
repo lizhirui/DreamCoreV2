@@ -11,6 +11,8 @@
 #pragma once
 #include "common.h"
 #include "dff.h"
+#include "checkpoint.h"
+#include "fifo.h"
 
 namespace cycle_model::component
 {
@@ -179,6 +181,22 @@ namespace cycle_model::component
                 phy_map_table[new_phy_id] = 0;
                 set_valid(new_phy_id, false);
                 set_valid(old_phy_id, true);
+            }
+            
+            void producer_save_to_checkpoint(checkpoint_t &cp)
+            {
+                for(uint32_t i = 0;i < PHY_REG_NUM;i++)
+                {
+                    cp.phy_map_table_valid[i] = phy_map_table_valid[i].get_new();
+                }
+            }
+            
+            void restore_from_checkpoint(const checkpoint_t &cp)
+            {
+                for(uint32_t i = 0;i < PHY_REG_NUM;i++)
+                {
+                    phy_map_table_valid[i].set(cp.phy_map_table_valid[i]);
+                }
             }
             
             virtual void print(std::string indent)

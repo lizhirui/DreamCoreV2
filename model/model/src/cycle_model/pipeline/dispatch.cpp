@@ -38,10 +38,13 @@ namespace cycle_model::pipeline
         this->hold_lsu_issue_pack = dispatch_issue_pack_t();
         this->is_inst_waiting = false;
         this->inst_waiting_rob_id = 0;
+        this->inst_waiting_rob_id_stage = false;
         this->is_stbuf_empty_waiting = false;
+        this->stbuf_empty_waiting_rob_id = 0;
+        this->stbuf_empty_waiting_rob_id_stage = false;
     }
     
-    dispatch_feedback_pack_t dispatch::run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    dispatch_feedback_pack_t dispatch::run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         dispatch_issue_pack_t integer_issue_pack;
         dispatch_issue_pack_t lsu_issue_pack;
@@ -65,6 +68,53 @@ namespace cycle_model::pipeline
         
         if(!commit_feedback_pack.flush)
         {
+            if(bru_feedback_pack.flush)
+            {
+                this->hold_integer_issue_pack = {};
+        
+                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                {
+                    if(this->hold_lsu_issue_pack.op_info[i].enable && bru_feedback_pack.flush && (component::age_compare(this->hold_lsu_issue_pack.op_info[i].rob_id, this->hold_lsu_issue_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        this->hold_lsu_issue_pack.op_info[i].enable = false;
+                    }
+                }
+        
+                dispatch_integer_issue_port->set({});
+        
+                auto item = dispatch_lsu_issue_port->get();
+        
+                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                {
+                    if(item.op_info[i].enable && (component::age_compare(item.op_info[i].rob_id, item.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        item.op_info[i].enable = false;
+                    }
+                }
+        
+                dispatch_lsu_issue_port->set(item);
+        
+                this->integer_busy = false;
+        
+                if(this->lsu_busy)
+                {
+                    uint32_t valid_opcode_num = 0;
+            
+                    for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                    {
+                        if(this->hold_lsu_issue_pack.op_info[i].enable)
+                        {
+                            valid_opcode_num++;
+                        }
+                    }
+            
+                    if(valid_opcode_num == 0)
+                    {
+                        this->lsu_busy = false;
+                    }
+                }
+            }
+            
             if((!is_inst_waiting || inst_waiting_ok) && (!is_stbuf_empty_waiting || store_buffer->customer_is_empty()))
             {
                 //remove all waiting state
@@ -89,11 +139,17 @@ namespace cycle_model::pipeline
                     auto found_inst_waiting = false;
                     auto found_fence = false;
                     uint32_t found_rob_id = 0;
+                    bool found_rob_id_stage = false;
                     
                     for(uint32_t i = 0;i < RENAME_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable)
                         {
+                            if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                            {
+                                continue;//skip this instruction due to which is younger than the flush age
+                            }
+                            
                             if(rev_pack.op_info[i].op_unit != op_unit_t::lsu)
                             {
                                 integer_issue_pack.op_info[integer_issue_id].enable = rev_pack.op_info[i].enable;
@@ -174,6 +230,7 @@ namespace cycle_model::pipeline
                                 {
                                     found_inst_waiting = true;
                                     found_rob_id = this->rev_pack.op_info[i].rob_id;
+                                    found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
                                     verify_only(i == 0);
                                     break;
                                 }
@@ -181,6 +238,7 @@ namespace cycle_model::pipeline
                                 {
                                     found_fence = true;
                                     found_rob_id = this->rev_pack.op_info[i].rob_id;
+                                    found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
                                 }
                             }
                         }
@@ -216,6 +274,7 @@ namespace cycle_model::pipeline
                             
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = found_rob_id;
+                            this->inst_waiting_rob_id_stage = found_rob_id_stage;
                         }
                     }
                     else if(found_fence && (((integer_issue_id > 0) && integer_issue_feedback_pack.stall) || ((lsu_issue_id > 0) && lsu_issue_feedback_pack.stall)))
@@ -237,8 +296,11 @@ namespace cycle_model::pipeline
                         if(found_fence)
                         {
                             this->is_stbuf_empty_waiting = true;
+                            this->stbuf_empty_waiting_rob_id = found_rob_id;
+                            this->stbuf_empty_waiting_rob_id_stage = found_rob_id_stage;
                             this->is_inst_waiting = true;
                             this->inst_waiting_rob_id = found_rob_id;
+                            this->inst_waiting_rob_id_stage = found_rob_id_stage;
                         }
                         
                         if(integer_issue_id > 0)
@@ -323,18 +385,18 @@ namespace cycle_model::pipeline
                     dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                 }
                 
-                if(inst_waiting_ok)
+                if(inst_waiting_ok || (bru_feedback_pack.flush && (component::age_compare(inst_waiting_rob_id, inst_waiting_rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))))
                 {
                     this->is_inst_waiting = false;
                     this->inst_waiting_rob_id = 0;
                     
-                    if(is_stbuf_empty_waiting && store_buffer->customer_is_empty())
+                    if(is_stbuf_empty_waiting && (store_buffer->customer_is_empty() || (bru_feedback_pack.flush && (component::age_compare(stbuf_empty_waiting_rob_id, stbuf_empty_waiting_rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))))
                     {
                         this->is_stbuf_empty_waiting = false;
                     }
                 }
             }
-            else if(is_stbuf_empty_waiting && store_buffer->customer_is_empty())
+            else if(is_stbuf_empty_waiting)
             {
                 if(!integer_issue_feedback_pack.stall)
                 {
@@ -346,7 +408,10 @@ namespace cycle_model::pipeline
                     dispatch_lsu_issue_port->set(dispatch_issue_pack_t());
                 }
                 
-                this->is_stbuf_empty_waiting = false;
+                if(store_buffer->customer_is_empty() || (bru_feedback_pack.flush && (component::age_compare(stbuf_empty_waiting_rob_id, stbuf_empty_waiting_rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))))
+                {
+                    this->is_stbuf_empty_waiting = false;
+                }
             }
             else
             {
@@ -363,9 +428,11 @@ namespace cycle_model::pipeline
             this->hold_integer_issue_pack = dispatch_issue_pack_t();
             this->hold_lsu_issue_pack = dispatch_issue_pack_t();
             this->rev_pack = rename_dispatch_pack_t();
-            this->is_inst_waiting = false;
             this->inst_waiting_rob_id = 0;
+            this->inst_waiting_rob_id_stage = false;
             this->is_stbuf_empty_waiting = false;
+            this->stbuf_empty_waiting_rob_id = 0;
+            this->stbuf_empty_waiting_rob_id_stage = false;
         }
         
         return feedback_pack;

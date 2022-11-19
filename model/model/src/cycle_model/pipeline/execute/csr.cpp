@@ -33,7 +33,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    execute_feedback_channel_t csr::run(commit_feedback_pack_t commit_feedback_pack)
+    execute_feedback_channel_t csr::run(const commit_feedback_pack_t &commit_feedback_pack)
     {
         integer_readreg_execute_pack_t rev_pack;
         execute_wb_pack_t send_pack;
@@ -50,6 +50,7 @@ namespace cycle_model::pipeline::execute
                 send_pack.valid = rev_pack.valid;
                 send_pack.last_uop = rev_pack.last_uop;
                 send_pack.rob_id = rev_pack.rob_id;
+                send_pack.rob_id_stage = rev_pack.rob_id_stage;
                 send_pack.pc = rev_pack.pc;
                 send_pack.imm = rev_pack.imm;
                 send_pack.has_exception = rev_pack.has_exception;

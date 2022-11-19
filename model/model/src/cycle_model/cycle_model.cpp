@@ -115,10 +115,11 @@ namespace cycle_model
     rob(ROB_SIZE),
     store_buffer(STORE_BUFFER_SIZE, &bus),
     clint(&bus, &interrupt_interface),
+    checkpoint_buffer(CHECKPOINT_BUFFER_SIZE),
     fetch1_stage(&global, &bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
     fetch2_stage(&global, &fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
     decode_stage(&global, &fetch2_decode_fifo, &decode_rename_fifo),
-    rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list),
+    rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list, &checkpoint_buffer),
     dispatch_stage(&global, &rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
     integer_issue_stage(&global, &dispatch_integer_issue_port, &integer_issue_readreg_port, &phy_regfile),
     lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile),
@@ -131,7 +132,7 @@ namespace cycle_model
     execute_mul_stage{nullptr},
     execute_lsu_stage{nullptr},
     wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &wb_commit_port, &phy_regfile),
-    commit_stage(&global, &wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set)
+    commit_stage(&global, &wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer)
     {
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
@@ -147,7 +148,7 @@ namespace cycle_model
         {
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
-            execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file);
+            execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer, &branch_predictor_set);
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
@@ -296,7 +297,7 @@ namespace cycle_model
             verify(phy_id_free_list.pop(&phy_id));
             speculative_rat.set_map(i, phy_id);
             retire_rat.set_map(i, phy_id);
-            phy_regfile.write(phy_id, 0, true);
+            phy_regfile.write(phy_id, 0, true, 0, false, true);
             component::dff_base::sync_all();
         }
         
@@ -363,6 +364,7 @@ namespace cycle_model
         interrupt_interface.reset();
         ((component::slave::memory *)bus.get_slave_obj(0x80000000, false))->reset();
         clint.reset();
+        checkpoint_buffer.reset();
         
         fetch1_stage.reset();
         fetch2_stage.reset();
@@ -392,18 +394,19 @@ namespace cycle_model
         rob.set_committed(false);
         clint.run_pre();
         commit_feedback_pack = commit_stage.run();
-        wb_feedback_pack = wb_stage.run(commit_feedback_pack);
+        bru_feedback_pack = std::get<pipeline::execute::bru_feedback_pack_t>(execute_bru_stage[0]->run(commit_feedback_pack, true));
+        wb_feedback_pack = wb_stage.run(bru_feedback_pack, commit_feedback_pack);
         
         uint32_t execute_feedback_channel = 0;
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(bru_feedback_pack, commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_bru_stage[i]->run(commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = std::get<pipeline::execute_feedback_channel_t>(execute_bru_stage[i]->run(commit_feedback_pack, false));
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
@@ -413,35 +416,35 @@ namespace cycle_model
         
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(bru_feedback_pack, commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(bru_feedback_pack, commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_lsu_stage[i]->run(commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_lsu_stage[i]->run(bru_feedback_pack, commit_feedback_pack);
         }
         
-        integer_readreg_stage.run(execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        lsu_readreg_feedback_pack = lsu_readreg_stage.run(execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        integer_issue_output_feedback_pack = integer_issue_stage.run_output(commit_feedback_pack);
-        lsu_issue_output_feedback_pack = lsu_issue_stage.run_output(lsu_readreg_feedback_pack, commit_feedback_pack);
-        integer_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, execute_feedback_pack, commit_feedback_pack);
-        lsu_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, execute_feedback_pack, commit_feedback_pack);
-        integer_issue_feedback_pack = integer_issue_stage.run_input(execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        lsu_issue_feedback_pack = lsu_issue_stage.run_input(execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        dispatch_feedback_pack = dispatch_stage.run(integer_issue_feedback_pack, lsu_issue_feedback_pack, commit_feedback_pack);
-        rename_feedback_pack = rename_stage.run(dispatch_feedback_pack, commit_feedback_pack);
-        decode_feedback_pack = decode_stage.run(commit_feedback_pack);
-        fetch2_feedback_pack = fetch2_stage.run(commit_feedback_pack);
-        fetch1_stage.run(fetch2_feedback_pack, decode_feedback_pack, rename_feedback_pack, commit_feedback_pack);
+        integer_readreg_stage.run(bru_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        lsu_readreg_feedback_pack = lsu_readreg_stage.run(bru_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        integer_issue_output_feedback_pack = integer_issue_stage.run_output(bru_feedback_pack, commit_feedback_pack);
+        lsu_issue_output_feedback_pack = lsu_issue_stage.run_output(lsu_readreg_feedback_pack, bru_feedback_pack, commit_feedback_pack);
+        integer_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, execute_feedback_pack, commit_feedback_pack);
+        lsu_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, execute_feedback_pack, commit_feedback_pack);
+        integer_issue_feedback_pack = integer_issue_stage.run_input(bru_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        lsu_issue_feedback_pack = lsu_issue_stage.run_input(bru_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        dispatch_feedback_pack = dispatch_stage.run(integer_issue_feedback_pack, lsu_issue_feedback_pack, bru_feedback_pack, commit_feedback_pack);
+        rename_feedback_pack = rename_stage.run(dispatch_feedback_pack, bru_feedback_pack, commit_feedback_pack);
+        decode_feedback_pack = decode_stage.run(bru_feedback_pack, commit_feedback_pack);
+        fetch2_feedback_pack = fetch2_stage.run(bru_feedback_pack, commit_feedback_pack);
+        fetch1_stage.run(fetch2_feedback_pack, decode_feedback_pack, rename_feedback_pack, bru_feedback_pack, commit_feedback_pack);
         interrupt_interface.run();
         clint.run_post();
-        store_buffer.run(commit_feedback_pack);
+        store_buffer.run(bru_feedback_pack, commit_feedback_pack);
         bus.run();
         bus.sync();
         component::branch_predictor_base::batch_sync();

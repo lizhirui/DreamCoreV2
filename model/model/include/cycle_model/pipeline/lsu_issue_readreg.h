@@ -23,6 +23,7 @@ namespace cycle_model::pipeline
         bool last_uop = false;//this is the last uop of an ISA instruction
     
         uint32_t rob_id = 0;
+        bool rob_id_stage = false;
         uint32_t pc = 0;
         uint32_t imm = 0;
         bool has_exception = false;
