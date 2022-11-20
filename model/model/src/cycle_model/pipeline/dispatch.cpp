@@ -428,6 +428,7 @@ namespace cycle_model::pipeline
             this->hold_integer_issue_pack = dispatch_issue_pack_t();
             this->hold_lsu_issue_pack = dispatch_issue_pack_t();
             this->rev_pack = rename_dispatch_pack_t();
+            this->is_inst_waiting = false;
             this->inst_waiting_rob_id = 0;
             this->inst_waiting_rob_id_stage = false;
             this->is_stbuf_empty_waiting = false;

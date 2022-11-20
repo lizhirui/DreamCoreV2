@@ -321,15 +321,24 @@ namespace cycle_model::pipeline
                 rev_pack = dispatch_lsu_issue_port->get();
             }
             
+            if(bru_feedback_pack.flush)
+            {
+                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                {
+                    if(rev_pack.op_info[i].enable)
+                    {
+                        if((component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                        {
+                            rev_pack.op_info[i].enable = false;//skip this instruction due to which is younger than the flush age
+                        }
+                    }
+                }
+            }
+            
             for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
             {
                 if(rev_pack.op_info[i].enable)
                 {
-                    if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
-                    {
-                        continue;//skip this instruction due to which is younger than the flush age
-                    }
-                    
                     issue_queue_item_t item;
     
                     item.enable = rev_pack.op_info[i].enable;
