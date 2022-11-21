@@ -213,7 +213,7 @@ namespace cycle_model::pipeline::execute
                     {
                         l2_addr = 0;
                         l2_rev_pack = {};
-                        return {};
+                        goto exit;
                     }
                     
                     l2_addr = 0;
@@ -342,6 +342,7 @@ namespace cycle_model::pipeline::execute
             l2_rev_pack = lsu_readreg_execute_pack_t();
         }
 
+        exit:
         execute_feedback_channel_t feedback_pack;
         feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
         feedback_pack.phy_id = send_pack.rd_phy;

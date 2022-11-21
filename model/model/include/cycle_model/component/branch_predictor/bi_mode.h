@@ -26,7 +26,7 @@ namespace cycle_model::component::branch_predictor
             uint32_t pht_right[BI_MODE_PHT_SIZE];
             uint32_t pht_choice[BI_MODE_PHT_SIZE];
         
-            void _update(uint32_t &history, uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
+            void _update(uint32_t &history, uint32_t pc, bool jump, uint32_t next_pc, bool hit, bool fix_history, const branch_predictor_info_pack_t &bp_pack)
             {
                 if(bp_pack.condition_jump)
                 {
@@ -90,7 +90,7 @@ namespace cycle_model::component::branch_predictor
                 
                     history = ((history << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
                 
-                    if(!hit)
+                    if(!hit && fix_history)
                     {
                         global_history = history;
                     }
@@ -115,7 +115,20 @@ namespace cycle_model::component::branch_predictor
         
             virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
-                _update(global_history_retired, pc, jump, next_pc, hit, bp_pack);
+                if(bp_pack.checkpoint_id_valid)
+                {
+                    uint32_t history = bp_pack.bi_mode_global_history;
+                    _update(history, pc, jump, next_pc, hit, false, bp_pack);
+                    
+                    if(bp_pack.condition_jump)
+                    {
+                        global_history_retired = ((global_history_retired << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                    }
+                }
+                else
+                {
+                    _update(global_history_retired, pc, jump, next_pc, hit, true, bp_pack);
+                }
             }
         
             virtual void bru_speculative_update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
@@ -147,6 +160,19 @@ namespace cycle_model::component::branch_predictor
                 predict_next_pc[port].set(jump ? target : (pc + 4));
             }
             
+            uint32_t get_pht(uint32_t pc, uint32_t history)
+            {
+                uint32_t branch_pc = (pc >> 2) & BI_MODE_BRANCH_PC_MASK;
+                uint32_t pht_addr = history ^ branch_pc;
+                uint32_t pht_choice_addr = (pc >> 2) & BI_MODE_PHT_CHOICE_ADDR_MASK;
+                return (pht_choice[pht_choice_addr] <= 1) ? pht_left[pht_addr] : pht_right[pht_addr];
+            }
+            
+            uint32_t get_global_history_retired() const
+            {
+                return global_history_retired;
+            }
+            
             virtual uint32_t get_next_pc(uint32_t port)
             {
                 verify_only(port < FETCH_WIDTH);
@@ -163,6 +189,13 @@ namespace cycle_model::component::branch_predictor
             {
                 pack.condition_jump = true;
                 pack.bi_mode_global_history = global_history;
+            }
+        
+            void fill_info_pack_debug(uint32_t pc, branch_predictor_info_pack_t &pack)
+            {
+                pack.condition_jump = true;
+                pack.bi_mode_global_history = global_history;
+                pack.bi_mode_pht_value = get_pht(pc, global_history);
             }
             
             virtual void restore(const branch_predictor_info_pack_t &bp_pack)

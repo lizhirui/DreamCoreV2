@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from http.server import executable
 from tqdm import tqdm
 from static_always_jump import static_always_jump
 from static_always_not_jump import static_always_not_jump
@@ -23,11 +22,11 @@ branch_predictor_list = [bimode(16, 16, 10)]
 #branch_predictor_list = [bimodal(4)]
 
 branch_target_buffer_list = [direct_mapped_simple_btb(256)]
-branch_predictor_update_delay = 0
+branch_predictor_update_delay = 16
 
-dump_path = "../../branch_dump/coremark_10_7_2.txt"
+dump_path = "../../dump/branch_dump/coremark_10_7_2.txt"
 update_dump_compare = False
-branch_predictor_update_dump_path = "../../branch_predictor_update_dump/coremark_10_7_2.txt"
+branch_predictor_update_dump_path = "../../dump/branch_predictor_update_dump/coremark_10_7_2.txt"
 
 print("Reading dump file...")
 

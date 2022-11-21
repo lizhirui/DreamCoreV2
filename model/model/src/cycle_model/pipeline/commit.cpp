@@ -28,6 +28,9 @@ namespace cycle_model::pipeline
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
+#ifdef BRANCH_PREDICTOR_DUMP
+            branch_predictor_dump_stream(BRANCH_PREDICTOR_DUMP_FILE),
+#endif
     tdb(TRACE_COMMIT)
     {
         this->global = global;
@@ -183,10 +186,22 @@ namespace cycle_model::pipeline
                                                 branch_predictor_update_dump_stream << outhex(rob_item.pc) << "," << outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(true) << std::endl;
                                             }
 #endif
-                                            branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
-                                            //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
-                                            //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
-                                            branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+#ifdef BRANCH_PREDICTOR_DUMP
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                branch_predictor_dump_stream << outhex(rob_item.pc) << "," << outhex(rob_item.inst_value) << "," <<
+                                                outhex(branch_predictor_set->bi_mode.get_global_history_retired()) << "," <<
+                                                outhex(rob_item.branch_predictor_info_pack.bi_mode_global_history) << "," << rob_item.branch_predictor_info_pack.bi_mode_pht_value << "," <<
+                                                outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(true) << std::endl;
+                                            }
+#endif
+                                            //if(!rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                            {
+                                                branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                                //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                                //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                                branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, true, rob_item.branch_predictor_info_pack);
+                                            }
                                         }
                                         else if((rob_item.bru_jump == rob_item.branch_predictor_info_pack.jump) && (rob_item.bru_next_pc != rob_item.branch_predictor_info_pack.next_pc) && rob_item.branch_predictor_info_pack.condition_jump)
                                         {
@@ -205,10 +220,22 @@ namespace cycle_model::pipeline
                                                 branch_predictor_update_dump_stream << outhex(rob_item.pc) << "," << outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(false) << std::endl;
                                             }
 #endif
-                                            branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
-                                            //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
-                                            //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
-                                            branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+#ifdef BRANCH_PREDICTOR_DUMP
+                                            if(rob_item.branch_predictor_info_pack.condition_jump)
+                                            {
+                                                branch_predictor_dump_stream << outhex(rob_item.pc) << "," << outhex(rob_item.inst_value) << "," <<
+                                                                             outhex(branch_predictor_set->bi_mode.get_global_history_retired()) << "," <<
+                                                                             outhex(rob_item.branch_predictor_info_pack.bi_mode_global_history) << "," << rob_item.branch_predictor_info_pack.bi_mode_pht_value << "," <<
+                                                                             outbool(rob_item.bru_jump) << "," << outhex(rob_item.bru_next_pc) << "," << outbool(false) << std::endl;
+                                            }
+#endif
+                                            //if(!rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                            {
+                                                branch_predictor_set->bi_mode.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                                //branch_predictor_set->bi_modal.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                                //branch_predictor_set->l0_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                                branch_predictor_set->l1_btb.update_sync(rob_item.pc, rob_item.bru_jump, rob_item.bru_next_pc, false, rob_item.branch_predictor_info_pack);
+                                            }
                                             
                                             if(!rob_item.branch_predictor_info_pack.checkpoint_id_valid)
                                             {

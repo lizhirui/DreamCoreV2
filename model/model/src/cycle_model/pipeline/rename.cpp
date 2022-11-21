@@ -166,6 +166,7 @@ namespace cycle_model::pipeline
                                 //generate checkpoint items
                                 if(rev_pack.enable && rev_pack.valid && rev_pack.branch_predictor_info_pack.predicted)
                                 {
+#ifdef ENABLE_CHECKPOINT
                                     if(!checkpoint_buffer->producer_is_full())
                                     {
                                         component::checkpoint_t cp;
@@ -181,6 +182,7 @@ namespace cycle_model::pipeline
                                         send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id_valid = true;
                                         verify(checkpoint_buffer->producer_get_tail_id(&send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id));
                                     }
+#endif
                                 }
                             }
                             

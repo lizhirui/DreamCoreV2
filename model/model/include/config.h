@@ -20,6 +20,7 @@ const uint32_t LSU_ISSUE_QUEUE_SIZE = 16;
 const uint32_t ROB_SIZE = 64;
 const uint32_t STORE_BUFFER_SIZE = 16;
 const uint32_t CHECKPOINT_BUFFER_SIZE = 64;
+#define ENABLE_CHECKPOINT
 
 const uint32_t ALU_UNIT_NUM = 2;
 const uint32_t BRU_UNIT_NUM = 1;
@@ -60,8 +61,8 @@ const uint32_t BI_MODAL_ADDR_WIDTH = 4;
 const uint32_t BI_MODAL_SIZE = 1 << BI_MODAL_ADDR_WIDTH;
 const uint32_t BI_MODAL_ADDR_MASK = BI_MODAL_SIZE - 1;
 
-const uint32_t BI_MODE_GLOBAL_HISTORY_LENGTH = 12;
-const uint32_t BI_MODE_BRANCH_PC_LENGTH = 12;
+const uint32_t BI_MODE_GLOBAL_HISTORY_LENGTH = 16;
+const uint32_t BI_MODE_BRANCH_PC_LENGTH = 16;
 const uint32_t BI_MODE_PHT_CHOICE_LENGTH = 6;
 const uint32_t BI_MODE_PHT_ADDR_WIDTH = BI_MODE_BRANCH_PC_LENGTH;
 const uint32_t BI_MODE_PHT_SIZE = 1 << BI_MODE_PHT_ADDR_WIDTH;
@@ -102,10 +103,13 @@ typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV
 #endif
 
 //#define BRANCH_DUMP
-const std::string BRANCH_DUMP_FILE = "../../../branch_dump/coremark_10_7_2.txt";
+const std::string BRANCH_DUMP_FILE = "../../../dump/branch_dump/coremark_10_7_2.txt";
 
 //#define BRANCH_PREDICTOR_UPDATE_DUMP
-const std::string BRANCH_PREDICTOR_UPDATE_DUMP_FILE = "../../../branch_predictor_update_dump/coremark_10_7_2.txt";
+const std::string BRANCH_PREDICTOR_UPDATE_DUMP_FILE = "../../../dump/branch_predictor_update_dump/coremark_10_7_2.txt";
+
+//#define BRANCH_PREDICTOR_DUMP
+const std::string BRANCH_PREDICTOR_DUMP_FILE = "../../../dump/branch_predictor_dump/coremark_10_7_2_checkpoint.txt";
 
 const std::string TRACE_DIR = "../../../trace/coremark_10/";
 

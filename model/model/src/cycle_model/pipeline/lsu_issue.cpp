@@ -118,7 +118,7 @@ namespace cycle_model::pipeline
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                         lsu_issue_readreg_port->set(send_pack);
                         //build feedback_pack
-                        feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
+                        //feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
                         feedback_pack.wakeup_rd[0] = wakeup_rd[issue_id];
                         feedback_pack.wakeup_shift[0] = wakeup_shift[issue_id];
                     }

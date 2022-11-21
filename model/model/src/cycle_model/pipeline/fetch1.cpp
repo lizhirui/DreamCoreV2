@@ -166,7 +166,7 @@ namespace cycle_model::pipeline
                                 send_pack.op_info[i].branch_predictor_info_pack.jump = branch_predictor_set->bi_modal.is_jump(i);
                                 send_pack.op_info[i].branch_predictor_info_pack.next_pc = branch_predictor_set->bi_modal.get_next_pc(i);
                                 branch_predictor_set->bi_modal.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
-                                branch_predictor_set->bi_mode.fill_info_pack(send_pack.op_info[i].branch_predictor_info_pack);
+                                branch_predictor_set->bi_mode.fill_info_pack_debug(cur_pc, send_pack.op_info[i].branch_predictor_info_pack);
         
                                 switch(funct3)
                                 {

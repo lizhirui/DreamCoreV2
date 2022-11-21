@@ -90,6 +90,9 @@ namespace cycle_model::pipeline
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
             std::ofstream branch_predictor_update_dump_stream;
 #endif
+#ifdef BRANCH_PREDICTOR_DUMP
+            std::ofstream branch_predictor_dump_stream;
+#endif
             trace::trace_database tdb;
         
         public:

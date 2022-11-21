@@ -17,6 +17,7 @@ namespace cycle_model::component
     typedef struct branch_predictor_info_pack_t : if_print_t
     {
         uint32_t bi_mode_global_history = 0;
+        uint32_t bi_mode_pht_value = 0;//only for debug
         bool predicted = false;
         bool jump = false;
         uint32_t next_pc = 0;
