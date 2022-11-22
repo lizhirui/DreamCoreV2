@@ -46,8 +46,8 @@ namespace DreamCoreV2_model_controller.Model
         public execute? execute { get; set; }
         [JsonProperty("execute_wb")]
         public execute_wb_pack? execute_wb { get; set; }
-        [JsonProperty("wb_commit")]
-        public wb_commit_op_info[]? wb_commit { get; set; }
+        [JsonProperty("execute_commit")]
+        public execute_commit_pack? execute_commit { get; set; }
         [JsonProperty("fetch2_feedback_pack")]
         public fetch2_feedback_pack? fetch2_feedback_pack { get; set; }
         [JsonProperty("decode_feedback_pack")]

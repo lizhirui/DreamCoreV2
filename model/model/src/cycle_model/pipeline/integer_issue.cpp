@@ -838,7 +838,7 @@ namespace cycle_model::pipeline
     
     uint32_t integer_issue::latency_to_wakeup_shift(uint32_t latency)
     {
-        return (latency == 1) ? 0 : (1 << (latency - 1));
+        return (latency == 1) ? 0 : (1 << (latency - 2));
     }
     
     uint32_t integer_issue::latency_to_idle_shift(uint32_t latency)

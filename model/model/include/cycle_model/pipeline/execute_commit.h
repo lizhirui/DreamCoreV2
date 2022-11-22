@@ -16,7 +16,7 @@
 
 namespace cycle_model::pipeline
 {
-    typedef struct wb_commit_op_info_t
+    typedef struct execute_commit_pack_t : public if_print_t
     {
         bool enable = false;//this item has op
         uint32_t value = 0;
@@ -208,34 +208,5 @@ namespace cycle_model::pipeline
             
             return t;
         }
-    }wb_commit_op_info_t;
-    
-    typedef struct wb_commit_pack_t : if_print_t
-    {
-        wb_commit_op_info_t op_info[ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM];
-        
-        virtual void print(std::string indent)
-        {
-            std::string blank = "    ";
-            
-            for(uint32_t i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
-            {
-                std::cout << indent << "Item " << i << ":" << std::endl;
-                op_info[i].print(indent + "\t");
-                std::cout << std::endl;
-            }
-        }
-        
-        virtual json get_json()
-        {
-            json ret = json::array();
-            
-            for(uint32_t i = 0;i < (ALU_UNIT_NUM + BRU_UNIT_NUM + CSR_UNIT_NUM + DIV_UNIT_NUM + LSU_UNIT_NUM + MUL_UNIT_NUM);i++)
-            {
-                ret.push_back(op_info[i].get_json());
-            }
-            
-            return ret;
-        }
-    }wb_commit_pack_t;
+    }execute_commit_pack_t;
 }

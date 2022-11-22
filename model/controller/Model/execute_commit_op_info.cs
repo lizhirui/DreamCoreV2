@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 namespace DreamCoreV2_model_controller.Model
 {
     [Serializable]
-    public class wb_commit_op_info
+    public class execute_commit_op_info
     {
         [JsonProperty("enable")]
         public bool enable { get; set; }

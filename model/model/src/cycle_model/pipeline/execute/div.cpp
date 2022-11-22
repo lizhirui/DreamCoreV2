@@ -117,7 +117,7 @@ namespace cycle_model::pipeline::execute
                     }
                     
                     this->busy = true;
-                    this->progress = DIV_LATENCY;
+                    this->progress = DIV_LATENCY - 1;
                 }
 
                 div_wb_port->set(execute_wb_pack_t());

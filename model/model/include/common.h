@@ -46,7 +46,8 @@ using json = nlohmann::json;
         { \
             if(!(cond)) \
             { \
-                printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond);\
+                printf("In file %s, Line %d, %s\n", __FILE__, __LINE__, #cond); \
+                fflush(stdout); \
                 abort();\
             } \
         }while(0)

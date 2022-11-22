@@ -364,7 +364,52 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tew["mul"] = tew_mul;
     tew["lsu"] = tew_lsu;
     ret["execute_wb"] = tew;
-    ret["wb_commit"] = cycle_model_inst->wb_commit_port.get_json();
+    json tec;
+    json tec_alu, tec_bru, tec_csr, tec_div, tec_lsu, tec_mul;
+    tec_alu = json::array();
+    tec_bru = json::array();
+    tec_csr = json::array();
+    tec_div = json::array();
+    tec_lsu = json::array();
+    tec_mul = json::array();
+    
+    for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+    {
+        tec_alu.push_back(cycle_model_inst->alu_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+    {
+        tec_bru.push_back(cycle_model_inst->bru_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+    {
+        tec_csr.push_back(cycle_model_inst->csr_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+    {
+        tec_div.push_back(cycle_model_inst->div_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+    {
+        tec_mul.push_back(cycle_model_inst->mul_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+    {
+        tec_lsu.push_back(cycle_model_inst->lsu_commit_port[i]->get_json());
+    }
+    
+    tec["alu"] = tec_alu;
+    tec["bru"] = tec_bru;
+    tec["csr"] = tec_csr;
+    tec["div"] = tec_div;
+    tec["mul"] = tec_mul;
+    tec["lsu"] = tec_lsu;
+    ret["execute_commit"] = tec;
     ret["fetch2_feedback_pack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
     ret["decode_feedback_pack"] = cycle_model_inst->decode_feedback_pack.get_json();
     ret["rename_feedback_pack"] = cycle_model_inst->rename_feedback_pack.get_json();

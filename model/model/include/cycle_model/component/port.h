@@ -41,6 +41,11 @@ namespace cycle_model::component
             {
                 return this->value.get();
             }
+            
+            T get_new()
+            {
+                return this->value.get_new();
+            }
 
             virtual void print(std::string indent)
             {

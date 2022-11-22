@@ -57,7 +57,7 @@
 #include "cycle_model/pipeline/execute/lsu.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/wb.h"
-#include "cycle_model/pipeline/wb_commit.h"
+#include "cycle_model/pipeline/execute_commit.h"
 #include "cycle_model/pipeline/commit.h"
 
 namespace cycle_model
@@ -106,7 +106,6 @@ namespace cycle_model
     div_wb_port{nullptr},
     mul_wb_port{nullptr},
     lsu_wb_port{nullptr},
-    wb_commit_port(pipeline::wb_commit_pack_t()),
     phy_id_free_list(PHY_REG_NUM),
     interrupt_interface(&csr_file),
     speculative_rat(PHY_REG_NUM, ARCH_REG_NUM),
@@ -131,8 +130,8 @@ namespace cycle_model
     execute_div_stage{nullptr},
     execute_mul_stage{nullptr},
     execute_lsu_stage{nullptr},
-    wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &wb_commit_port, &phy_regfile),
-    commit_stage(&global, &wb_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer)
+    wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lsu_wb_port, &phy_regfile),
+    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lsu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer)
     {
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
@@ -141,6 +140,7 @@ namespace cycle_model
         {
             readreg_alu_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             alu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            alu_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_alu_stage[i] = new pipeline::execute::alu(&global, i, readreg_alu_hdff[i], alu_wb_port[i]);
         }
         
@@ -148,6 +148,7 @@ namespace cycle_model
         {
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            bru_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer, &branch_predictor_set);
         }
         
@@ -155,6 +156,7 @@ namespace cycle_model
         {
             readreg_csr_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             csr_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            csr_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_csr_stage[i] = new pipeline::execute::csr(&global, i, readreg_csr_hdff[i], csr_wb_port[i], &csr_file);
         }
         
@@ -162,6 +164,7 @@ namespace cycle_model
         {
             readreg_div_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             div_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            div_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_div_stage[i] = new pipeline::execute::div(&global, i, readreg_div_hdff[i], div_wb_port[i]);
         }
         
@@ -169,6 +172,7 @@ namespace cycle_model
         {
             readreg_mul_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             mul_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            mul_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_mul_stage[i] = new pipeline::execute::mul(&global, i, readreg_mul_hdff[i], mul_wb_port[i]);
         }
         
@@ -176,6 +180,7 @@ namespace cycle_model
         {
             readreg_lsu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             lsu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
+            lsu_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
             execute_lsu_stage[i] = new pipeline::execute::lsu(&global, i, readreg_lsu_hdff[i], lsu_wb_port[i], &bus, &store_buffer, &clint);
         }
     
@@ -221,6 +226,7 @@ namespace cycle_model
         }
     
         wb_stage.init();
+        commit_stage.init();
         this->reset();
     }
     
@@ -319,6 +325,7 @@ namespace cycle_model
             readreg_alu_hdff[i]->reset();
             execute_alu_stage[i]->reset();
             alu_wb_port[i]->reset();
+            alu_commit_port[i]->reset();
         }
     
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
@@ -326,6 +333,7 @@ namespace cycle_model
             readreg_bru_hdff[i]->reset();
             execute_bru_stage[i]->reset();
             bru_wb_port[i]->reset();
+            bru_commit_port[i]->reset();
         }
     
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
@@ -333,6 +341,7 @@ namespace cycle_model
             readreg_csr_hdff[i]->reset();
             execute_csr_stage[i]->reset();
             csr_wb_port[i]->reset();
+            csr_commit_port[i]->reset();
         }
     
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
@@ -340,6 +349,7 @@ namespace cycle_model
             readreg_div_hdff[i]->reset();
             execute_div_stage[i]->reset();
             div_wb_port[i]->reset();
+            div_commit_port[i]->reset();
         }
     
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
@@ -347,6 +357,7 @@ namespace cycle_model
             readreg_mul_hdff[i]->reset();
             execute_mul_stage[i]->reset();
             mul_wb_port[i]->reset();
+            mul_commit_port[i]->reset();
         }
         
         for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
@@ -354,9 +365,9 @@ namespace cycle_model
             readreg_lsu_hdff[i]->reset();
             execute_lsu_stage[i]->reset();
             lsu_wb_port[i]->reset();
+            lsu_commit_port[i]->reset();
         }
         
-        wb_commit_port.reset();
         bus.reset();
         rob.reset();
         csr_file.reset();
@@ -462,6 +473,84 @@ namespace cycle_model
         csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(global.branch_hit >> 32));
         csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(global.branch_miss & 0xffffffffu));
         csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(global.branch_miss >> 32));
+        
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            alu_commit_port[i]->set(execute_wb_to_commit_pack(alu_wb_port[i]->get_new()));
+        }
+    
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            bru_commit_port[i]->set(execute_wb_to_commit_pack(bru_wb_port[i]->get_new()));
+        }
+    
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            csr_commit_port[i]->set(execute_wb_to_commit_pack(csr_wb_port[i]->get_new()));
+        }
+        
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            div_commit_port[i]->set(execute_wb_to_commit_pack(div_wb_port[i]->get_new()));
+        }
+        
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            mul_commit_port[i]->set(execute_wb_to_commit_pack(mul_wb_port[i]->get_new()));
+        }
+    
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+        {
+            lsu_commit_port[i]->set(execute_wb_to_commit_pack(lsu_wb_port[i]->get_new()));
+        }
+    
         component::dff_base::sync_all();
+    }
+    
+    pipeline::execute_commit_pack_t cycle_model::execute_wb_to_commit_pack(const pipeline::execute_wb_pack_t &rev_pack)
+    {
+        pipeline::execute_commit_pack_t send_pack;
+    
+        send_pack.enable = rev_pack.enable;
+        send_pack.value = rev_pack.value;
+        send_pack.valid = rev_pack.valid;
+        send_pack.last_uop = rev_pack.last_uop;
+        send_pack.rob_id = rev_pack.rob_id;
+        send_pack.rob_id_stage = rev_pack.rob_id_stage;
+        send_pack.pc = rev_pack.pc;
+        send_pack.imm = rev_pack.imm;
+        send_pack.has_exception = rev_pack.has_exception;
+        send_pack.exception_id = rev_pack.exception_id;
+        send_pack.exception_value = rev_pack.exception_value;
+        send_pack.branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
+    
+        send_pack.bru_jump = rev_pack.bru_jump;
+        send_pack.bru_next_pc = rev_pack.bru_next_pc;
+    
+        send_pack.rs1 = rev_pack.rs1;
+        send_pack.arg1_src = rev_pack.arg1_src;
+        send_pack.rs1_need_map = rev_pack.rs1_need_map;
+        send_pack.rs1_phy = rev_pack.rs1_phy;
+        send_pack.src1_value = rev_pack.src1_value;
+    
+        send_pack.rs2 = rev_pack.rs2;
+        send_pack.arg2_src = rev_pack.arg2_src;
+        send_pack.rs2_need_map = rev_pack.rs2_need_map;
+        send_pack.rs2_phy = rev_pack.rs2_phy;
+        send_pack.src2_value = rev_pack.src2_value;
+    
+        send_pack.rd = rev_pack.rd;
+        send_pack.rd_enable = rev_pack.rd_enable;
+        send_pack.need_rename = rev_pack.need_rename;
+        send_pack.rd_phy = rev_pack.rd_phy;
+        send_pack.rd_value = rev_pack.rd_value;
+    
+        send_pack.csr = rev_pack.csr;
+        send_pack.csr_newvalue = rev_pack.csr_newvalue;
+        send_pack.csr_newvalue_valid = rev_pack.csr_newvalue_valid;
+        send_pack.op = rev_pack.op;
+        send_pack.op_unit = rev_pack.op_unit;
+        memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
+        return send_pack;
     }
 }

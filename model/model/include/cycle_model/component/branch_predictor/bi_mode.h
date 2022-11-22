@@ -26,7 +26,7 @@ namespace cycle_model::component::branch_predictor
             uint32_t pht_right[BI_MODE_PHT_SIZE];
             uint32_t pht_choice[BI_MODE_PHT_SIZE];
         
-            void _update(uint32_t &history, uint32_t pc, bool jump, uint32_t next_pc, bool hit, bool fix_history, const branch_predictor_info_pack_t &bp_pack)
+            void _update(uint32_t history, uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
                 if(bp_pack.condition_jump)
                 {
@@ -87,13 +87,6 @@ namespace cycle_model::component::branch_predictor
                             }
                         }
                     }
-                
-                    history = ((history << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
-                
-                    if(!hit && fix_history)
-                    {
-                        global_history = history;
-                    }
                 }
             }
             
@@ -115,19 +108,16 @@ namespace cycle_model::component::branch_predictor
         
             virtual void update(uint32_t pc, bool jump, uint32_t next_pc, bool hit, const branch_predictor_info_pack_t &bp_pack)
             {
-                if(bp_pack.checkpoint_id_valid)
+                _update(bp_pack.bi_mode_global_history, pc, jump, next_pc, hit, bp_pack);
+    
+                if(bp_pack.condition_jump)
                 {
-                    uint32_t history = bp_pack.bi_mode_global_history;
-                    _update(history, pc, jump, next_pc, hit, false, bp_pack);
-                    
-                    if(bp_pack.condition_jump)
+                    if(!hit && !bp_pack.checkpoint_id_valid)
                     {
-                        global_history_retired = ((global_history_retired << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
+                        global_history = global_history_retired;
                     }
-                }
-                else
-                {
-                    _update(global_history_retired, pc, jump, next_pc, hit, true, bp_pack);
+                    
+                    global_history_retired = ((global_history_retired << 1) & BI_MODE_GLOBAL_HISTORY_MASK) | (jump ? 1 : 0);
                 }
             }
         

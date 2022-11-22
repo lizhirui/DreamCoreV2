@@ -193,7 +193,7 @@ namespace cycle_model::pipeline
                             
                             if(from_prf)
                             {
-                                verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy));
+                                //verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy));
                             }
                         }
                         else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
@@ -225,7 +225,7 @@ namespace cycle_model::pipeline
     
                             if(from_prf)
                             {
-                                verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy));
+                                //verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy));
                             }
                         }
                         else if(rev_pack.op_info[i].arg2_src == arg_src_t::imm)

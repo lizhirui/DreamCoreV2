@@ -641,7 +641,7 @@ static void sub_main(const command_line_arg_t &arg)
     {
         //load_bin_file("../../../image/rtthread.bin");
         //load_bin_file("../../../image/coremark_10.bin");
-        load_bin_file("../../../testcase/benchmark/coremark_10_7_2.bin");
+        load_bin_file("../../../testcase/benchmark/coremark_10_12_2.bin");
         //load_bin_file("../../../testcase/benchmark/dhrystone_500_12_2.bin");
         //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
         //load_elf_file("../../../testcase/riscv-tests/rv32mi-p-sbreak");

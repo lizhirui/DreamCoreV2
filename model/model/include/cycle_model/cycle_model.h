@@ -57,7 +57,7 @@
 #include "cycle_model/pipeline/execute/lsu.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/wb.h"
-#include "cycle_model/pipeline/wb_commit.h"
+#include "cycle_model/pipeline/execute_commit.h"
 #include "cycle_model/pipeline/commit.h"
 
 namespace cycle_model
@@ -98,7 +98,12 @@ namespace cycle_model
             component::port<pipeline::execute_wb_pack_t> *div_wb_port[DIV_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *lsu_wb_port[LSU_UNIT_NUM];
-            component::port<pipeline::wb_commit_pack_t> wb_commit_port;
+            component::port<pipeline::execute_commit_pack_t> *alu_commit_port[ALU_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *bru_commit_port[BRU_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *csr_commit_port[CSR_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *div_commit_port[DIV_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *mul_commit_port[MUL_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *lsu_commit_port[LSU_UNIT_NUM];
             
             component::bus bus;
             component::csrfile csr_file;
@@ -151,5 +156,6 @@ namespace cycle_model
             void load(void *mem, size_t size);
             void reset();
             void run();
+            static pipeline::execute_commit_pack_t execute_wb_to_commit_pack(const pipeline::execute_wb_pack_t &rev_pack);
     };
 }

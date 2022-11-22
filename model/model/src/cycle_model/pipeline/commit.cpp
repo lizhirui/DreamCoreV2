@@ -17,14 +17,14 @@
 #include "cycle_model/component/csrfile.h"
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/interrupt_interface.h"
-#include "cycle_model/pipeline/wb_commit.h"
+#include "cycle_model/pipeline/execute_commit.h"
 #include "cycle_model/component/csr_all.h"
 #include "cycle_model/component/branch_predictor_base.h"
 #include "breakpoint.h"
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<wb_commit_pack_t> *wb_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
+    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lsu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
@@ -34,7 +34,12 @@ namespace cycle_model::pipeline
     tdb(TRACE_COMMIT)
     {
         this->global = global;
-        this->wb_commit_port = wb_commit_port;
+        this->alu_commit_port = alu_commit_port;
+        this->bru_commit_port = bru_commit_port;
+        this->csr_commit_port = csr_commit_port;
+        this->div_commit_port = div_commit_port;
+        this->mul_commit_port = mul_commit_port;
+        this->lsu_commit_port = lsu_commit_port;
         this->speculative_rat = speculative_rat;
         this->retire_rat = retire_rat;
         this->rob = rob;
@@ -50,6 +55,39 @@ namespace cycle_model::pipeline
     void commit::reset()
     {
     
+    }
+    
+    void commit::init()
+    {
+        for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(alu_commit_port[i]);
+        }
+        
+        for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(bru_commit_port[i]);
+        }
+        
+        for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(csr_commit_port[i]);
+        }
+        
+        for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(div_commit_port[i]);
+        }
+        
+        for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(mul_commit_port[i]);
+        }
+        
+        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(lsu_commit_port[i]);
+        }
     }
     
     commit_feedback_pack_t commit::run()
@@ -277,24 +315,24 @@ namespace cycle_model::pipeline
                 
                 if(!need_flush)
                 {
-                    auto rev_pack = wb_commit_port->get();
-                    
                     for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
                     {
-                        if(rev_pack.op_info[i].enable)
+                        auto rev_pack = execute_commit_port[i]->get();
+                        
+                        if(rev_pack.enable)
                         {
-                            auto rob_item = rob->get_item(rev_pack.op_info[i].rob_id);
+                            auto rob_item = rob->get_item(rev_pack.rob_id);
                             rob_item.finish = true;
-                            rob_item.has_exception = rev_pack.op_info[i].has_exception;
-                            rob_item.exception_id = rev_pack.op_info[i].exception_id;
-                            rob_item.exception_value = rev_pack.op_info[i].exception_value;
-                            rob_item.branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
-                            rob_item.bru_op = rev_pack.op_info[i].op_unit == op_unit_t::bru;
-                            rob_item.bru_jump = rev_pack.op_info[i].bru_jump;
-                            rob_item.bru_next_pc = rev_pack.op_info[i].bru_next_pc;
-                            rob_item.csr_newvalue = rev_pack.op_info[i].csr_newvalue;
-                            rob_item.csr_newvalue_valid = rev_pack.op_info[i].csr_newvalue_valid;
-                            rob->set_item(rev_pack.op_info[i].rob_id, rob_item);
+                            rob_item.has_exception = rev_pack.has_exception;
+                            rob_item.exception_id = rev_pack.exception_id;
+                            rob_item.exception_value = rev_pack.exception_value;
+                            rob_item.branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
+                            rob_item.bru_op = rev_pack.op_unit == op_unit_t::bru;
+                            rob_item.bru_jump = rev_pack.bru_jump;
+                            rob_item.bru_next_pc = rev_pack.bru_next_pc;
+                            rob_item.csr_newvalue = rev_pack.csr_newvalue;
+                            rob_item.csr_newvalue_valid = rev_pack.csr_newvalue_valid;
+                            rob->set_item(rev_pack.rob_id, rob_item);
                         }
                     }
                 }

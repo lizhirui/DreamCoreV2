@@ -342,8 +342,8 @@
                 </GridView>
             </ListView.View>
         </local:ArrowKeyBypassListView>
-        <Label Grid.Row="23" Grid.Column="3" VerticalAlignment="Center" Content="WB->Commit:" />
-        <local:ArrowKeyBypassListView Grid.Row="24" Grid.Column="3" Grid.RowSpan="6" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_WB_Commit" PreviewMouseLeftButtonUp="listView_WB_Commit_PreviewMouseLeftButtonUp">
+        <Label Grid.Row="23" Grid.Column="3" VerticalAlignment="Center" Content="Execute->Commit:" />
+        <local:ArrowKeyBypassListView Grid.Row="24" Grid.Column="3" Grid.RowSpan="6" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_Execute_Commit" PreviewMouseLeftButtonUp="listView_Execute_Commit_PreviewMouseLeftButtonUp">
             <ListView.View>
                 <GridView ColumnHeaderContainerStyle="{StaticResource ListViewHeaderHidden}">
                     <GridViewColumn Header="Value" Width="{Binding ElementName=GridCol0Width,Path=ActualWidth}"  DisplayMemberBinding="{Binding Path=Value}" />
