@@ -68,12 +68,6 @@ namespace cycle_model::component
                 return this->buffer[id].get();
             }
             
-            virtual void set_item(uint32_t id, store_buffer_item_t value)
-            {
-                verify(check_id_valid(id));
-                this->buffer[id].set(value);
-            }
-            
             bool get_front_id(uint32_t *front_id)
             {
                 return this->customer_get_front_id(front_id);
@@ -147,6 +141,12 @@ namespace cycle_model::component
                 wptr.set(pack.wptr);
                 wstage.set(pack.wstage);
             }
+        
+            virtual void set_item(uint32_t id, store_buffer_item_t value)
+            {
+                verify(check_id_valid(id));
+                this->buffer[id].set(value);
+            }
             
             std::pair<uint32_t, uint32_t> get_feedback_value(uint32_t addr, uint32_t size)
             {
@@ -204,7 +204,7 @@ namespace cycle_model::component
                         {
                             auto cur_item = get_item(cur_id);
                             
-                            if(!cur_item.committed)
+                            if(cur_item.enable && !cur_item.committed)
                             {
                                 bool ready_to_commit = false;
                                 
@@ -254,7 +254,7 @@ namespace cycle_model::component
                     
                     if(customer_get_front(&item))
                     {
-                        if(item.committed)
+                        if(item.enable && item.committed)
                         {
                             store_buffer_item_t t_item;
                             pop(&t_item);
@@ -289,15 +289,18 @@ namespace cycle_model::component
                     {
                         auto cur_item = get_item(cur_id);
                         
-                        for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
+                        if(cur_item.enable)
                         {
-                            if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
+                            for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
                             {
-                                cur_item.committed = true;
+                                if(commit_feedback_pack.committed_rob_id_valid[i] && (commit_feedback_pack.committed_rob_id[i] == cur_item.rob_id))
+                                {
+                                    cur_item.committed = true;
+                                }
                             }
+                            
+                            set_item(cur_id, cur_item);
                         }
-                        
-                        set_item(cur_id, cur_item);
                     }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
             }

@@ -122,7 +122,7 @@ namespace cycle_model
     rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list, &checkpoint_buffer),
     dispatch_stage(&global, &rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
     integer_issue_stage(&global, &dispatch_integer_issue_port, &integer_issue_readreg_port, &phy_regfile),
-    lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile),
+    lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile, &store_buffer),
     integer_readreg_stage(&global, &integer_issue_readreg_port, readreg_alu_hdff, readreg_bru_hdff, readreg_csr_hdff, readreg_div_hdff, readreg_mul_hdff, &phy_regfile),
     lsu_readreg_stage(&global, &lsu_issue_readreg_port, readreg_lsu_hdff, &phy_regfile),
     execute_alu_stage{nullptr},

@@ -25,12 +25,13 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
+    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::store_buffer *store_buffer) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
     {
         this->global = global;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
         this->phy_regfile = phy_regfile;
+        this->store_buffer = store_buffer;
         this->lsu_issue::reset();
     }
     
@@ -68,11 +69,19 @@ namespace cycle_model::pipeline
                     {
                         //build send_pack
                         issue_queue_item_t rev_pack;
+                        verify(issue_q.customer_get_front(&rev_pack));
+                        
+                        auto is_store = (rev_pack.sub_op.lsu_op == lsu_op_t::sb) || (rev_pack.sub_op.lsu_op == lsu_op_t::sh) || (rev_pack.sub_op.lsu_op == lsu_op_t::sw);
+                        
+                        if(is_store && store_buffer->producer_is_full())
+                        {
+                            //skip this instruction
+                            lsu_issue_readreg_port->set(send_pack);
+                            return feedback_pack;
+                        }
                         
                         if(bru_feedback_pack.flush)
                         {
-                            verify(issue_q.customer_get_front(&rev_pack));
-                            
                             if(component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
                             {
                                 //skip this instruction
@@ -113,12 +122,23 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].rd_phy = rev_pack.rd_phy;
     
                         send_pack.op_info[0].csr = rev_pack.csr;
+                        send_pack.op_info[0].store_buffer_id = 0;
                         send_pack.op_info[0].op = rev_pack.op;
                         send_pack.op_info[0].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
+                        
+                        if(is_store)
+                        {
+                            component::store_buffer_item_t store_buffer_item;
+                            store_buffer_item.rob_id = rev_pack.rob_id;
+                            store_buffer_item.rob_id_stage = rev_pack.rob_id_stage;
+                            verify(store_buffer->push(store_buffer_item));
+                            verify(store_buffer->producer_get_tail_id(&send_pack.op_info[0].store_buffer_id));
+                        }
+                        
                         lsu_issue_readreg_port->set(send_pack);
                         //build feedback_pack
-                        //feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
+                        feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
                         feedback_pack.wakeup_rd[0] = wakeup_rd[issue_id];
                         feedback_pack.wakeup_shift[0] = wakeup_shift[issue_id];
                     }

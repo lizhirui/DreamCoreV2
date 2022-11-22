@@ -91,7 +91,6 @@ namespace cycle_model::pipeline::execute
                 uint32_t bus_value = 0;
                 uint32_t feedback_value = 0;
                 bool load_stall = false;
-                bool store_stall = false;
                 
                 switch(l2_rev_pack.sub_op.lsu_op)
                 {
@@ -126,72 +125,48 @@ namespace cycle_model::pipeline::execute
                         break;
                     
                     case lsu_op_t::sb:
-                        if(store_buffer->producer_is_full())
-                        {
-                            store_stall = true;
-                        }
-                        else
-                        {
-                            item.enable = true;
-                            item.addr = l2_addr;
-                            item.size = 1;
-                            item.data = l2_rev_pack.src2_value & 0xff;
-                            item.committed = false;
-                            item.pc = l2_rev_pack.pc;
-                            item.rob_id = l2_rev_pack.rob_id;
-                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
-                            item.cycle = get_cpu_clock_cycle();//only for debug
-                            store_buffer->push(item);
-                        }
-                        
+                        item.enable = true;
+                        item.addr = l2_addr;
+                        item.size = 1;
+                        item.data = l2_rev_pack.src2_value & 0xff;
+                        item.committed = false;
+                        item.pc = l2_rev_pack.pc;
+                        item.rob_id = l2_rev_pack.rob_id;
+                        item.rob_id_stage = l2_rev_pack.rob_id_stage;
+                        item.cycle = get_cpu_clock_cycle();//only for debug
+                        store_buffer->set_item(l2_rev_pack.store_buffer_id, item);
                         break;
                     
                     case lsu_op_t::sh:
-                        if(store_buffer->producer_is_full())
-                        {
-                            store_stall = true;
-                        }
-                        else
-                        {
-                            item.enable = true;
-                            item.addr = l2_addr;
-                            item.size = 2;
-                            item.data = l2_rev_pack.src2_value & 0xffff;
-                            item.committed = false;
-                            item.pc = l2_rev_pack.pc;
-                            item.rob_id = l2_rev_pack.rob_id;
-                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
-                            item.cycle = get_cpu_clock_cycle();//only for debug
-                            store_buffer->push(item);
-                        }
-                        
+                        item.enable = true;
+                        item.addr = l2_addr;
+                        item.size = 2;
+                        item.data = l2_rev_pack.src2_value & 0xffff;
+                        item.committed = false;
+                        item.pc = l2_rev_pack.pc;
+                        item.rob_id = l2_rev_pack.rob_id;
+                        item.rob_id_stage = l2_rev_pack.rob_id_stage;
+                        item.cycle = get_cpu_clock_cycle();//only for debug
+                        store_buffer->set_item(l2_rev_pack.store_buffer_id, item);
                         break;
                     
                     case lsu_op_t::sw:
-                        if(store_buffer->producer_is_full())
-                        {
-                            store_stall = true;
-                        }
-                        else
-                        {
-                            item.enable = true;
-                            item.addr = l2_addr;
-                            item.size = 4;
-                            item.data = l2_rev_pack.src2_value;
-                            item.committed = false;
-                            item.pc = l2_rev_pack.pc;
-                            item.rob_id = l2_rev_pack.rob_id;
-                            item.rob_id_stage = l2_rev_pack.rob_id_stage;
-                            item.cycle = get_cpu_clock_cycle();//only for debug
-                            store_buffer->push(item);
-                        }
-                        
+                        item.enable = true;
+                        item.addr = l2_addr;
+                        item.size = 4;
+                        item.data = l2_rev_pack.src2_value;
+                        item.committed = false;
+                        item.pc = l2_rev_pack.pc;
+                        item.rob_id = l2_rev_pack.rob_id;
+                        item.rob_id_stage = l2_rev_pack.rob_id_stage;
+                        item.cycle = get_cpu_clock_cycle();//only for debug
+                        store_buffer->set_item(l2_rev_pack.store_buffer_id, item);
                         break;
                 }
                 
-                this->l2_stall = load_stall || store_stall;//generate l2_stall signal
+                this->l2_stall = load_stall;//generate l2_stall signal
                 
-                if(load_stall || store_stall)
+                if(load_stall)
                 {
                     send_pack = execute_wb_pack_t();
                 }
@@ -247,6 +222,7 @@ namespace cycle_model::pipeline::execute
                     l2_rev_pack.rd_phy = rev_pack.rd_phy;
     
                     l2_rev_pack.csr = rev_pack.csr;
+                    l2_rev_pack.store_buffer_id = rev_pack.store_buffer_id;
                     l2_rev_pack.op = rev_pack.op;
                     l2_rev_pack.op_unit = rev_pack.op_unit;
                     memcpy(&l2_rev_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));

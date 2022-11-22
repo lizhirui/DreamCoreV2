@@ -108,6 +108,7 @@ namespace cycle_model::pipeline
                 send_pack.rd_phy = rev_pack.op_info[i].rd_phy;
             
                 send_pack.csr = rev_pack.op_info[i].csr;
+                send_pack.store_buffer_id = rev_pack.op_info[i].store_buffer_id;
                 send_pack.op = rev_pack.op_info[i].op;
                 send_pack.op_unit = rev_pack.op_info[i].op_unit;
                 memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
