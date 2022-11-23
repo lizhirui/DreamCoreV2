@@ -110,10 +110,10 @@ namespace DreamCoreV2_model_controller
             }
         }
 
-        private string getInstructionText(uint Value, uint PC)
+        private string getInstructionText(uint Value, uint PC, bool last_uop, string uop_name)
         {
             var result = RISC_V_Disassembler.Disassemble(BitConverter.GetBytes(Value), PC);
-            return ((result != null) && (result.Length > 0)) ? (result[0].mnemonic + " " + result[0].op_str) : "<Invalid>";
+            return (!last_uop ? "<" + uop_name + ">" : "") + (((result != null) && (result.Length > 0)) ? (result[0].mnemonic + " " + result[0].op_str) : "<Invalid>");
         }
 
         #pragma warning disable CS8602
@@ -127,7 +127,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, true, "");
                     }
                     else
                     {
@@ -141,7 +141,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, true, "");
                     }
                     else
                     {
@@ -155,7 +155,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -169,7 +169,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -183,7 +183,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -197,7 +197,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -211,7 +211,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -225,7 +225,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -239,7 +239,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -253,7 +253,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -267,7 +267,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -281,7 +281,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -295,7 +295,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -309,7 +309,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -323,7 +323,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -337,7 +337,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -351,7 +351,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -365,7 +365,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -379,7 +379,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -393,7 +393,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -407,7 +407,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -421,7 +421,7 @@ namespace DreamCoreV2_model_controller
                     
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -435,7 +435,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -449,7 +449,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -463,7 +463,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -477,7 +477,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -491,7 +491,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -505,7 +505,7 @@ namespace DreamCoreV2_model_controller
                     
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {
@@ -516,7 +516,7 @@ namespace DreamCoreV2_model_controller
                 for(var i = 0;i < pipelineStatus.rob.Length;i++)
                 {
                     var item = pipelineStatus.rob[i];
-                    item.Instruction = getInstructionText(item.inst_value, item.pc);
+                    item.Instruction = getInstructionText(item.inst_value, item.pc, item.last_uop, item.sub_op);
                 }
 
                 for(var i = 0;i < pipelineStatus.integer_issue.issue_q.value.Length;i++)
@@ -527,7 +527,7 @@ namespace DreamCoreV2_model_controller
 
                         if(item.enable)
                         {
-                            item.Instruction = getInstructionText(item.value, item.pc);
+                            item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                         }
                         else
                     {
@@ -542,7 +542,7 @@ namespace DreamCoreV2_model_controller
 
                     if(item.enable)
                     {
-                        item.Instruction = getInstructionText(item.value, item.pc);
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
                     }
                     else
                     {

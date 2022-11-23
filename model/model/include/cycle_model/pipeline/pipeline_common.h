@@ -141,7 +141,10 @@ namespace cycle_model::pipeline
         lw,
         sb,
         sh,
-        sw
+        sw,
+        stab,
+        stah,
+        staw
     };
     
     enum class mul_op_t

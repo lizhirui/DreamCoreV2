@@ -110,7 +110,7 @@ namespace cycle_model::pipeline
             
             riscv_interrupt_t interrupt_id;
         
-            if(interrupt_interface->get_cause(&interrupt_id))
+            if((rob_item.last_uop || rob_item.has_exception) && interrupt_interface->get_cause(&interrupt_id))
             {
                 csr_file->write_sys(CSR_MEPC, rob_item.pc);
                 csr_file->write_sys(CSR_MTVAL, 0);
@@ -144,7 +144,10 @@ namespace cycle_model::pipeline
                         if(rob_item.finish)
                         {
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
-                            rob_retire_queue.push(std::pair(rob_item_id, rob_item));
+                            if(rob_item.last_uop || rob_item.has_exception)
+                            {
+                                rob_retire_queue.push(std::pair(rob_item_id, rob_item));
+                            }
 #endif
                             feedback_pack.next_handle_rob_id_valid = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
                             feedback_pack.committed_rob_id_valid[i] = true;
@@ -179,8 +182,11 @@ namespace cycle_model::pipeline
                                     phy_id_free_list->push(rob_item.old_phy_reg_id);
                                 }
             
-                                rob->set_committed(true);
-                                rob->add_commit_num(1);
+                                if(rob_item.last_uop)
+                                {
+                                    rob->set_committed(true);
+                                    rob->add_commit_num(1);
+                                }
             
                                 if(rob_item.csr_newvalue_valid)
                                 {

@@ -58,7 +58,6 @@ namespace cycle_model::pipeline
             std::cout << indent << "enable = " << outbool(enable);
             std::cout << blank << "value = 0x" << fillzero(8) << outhex(value);
             std::cout << blank << "valid = " << outbool(valid);
-            std::cout << blank << "last_uop = " << outbool(last_uop);
             std::cout << blank << "pc = 0x" << fillzero(8) << outhex(pc);
             std::cout << blank << "imm = 0x" << fillzero(8) << outhex(imm);
             std::cout << blank << "has_exception = " << outbool(has_exception);

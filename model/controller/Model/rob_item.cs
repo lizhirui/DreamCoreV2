@@ -22,6 +22,8 @@ namespace DreamCoreV2_model_controller.Model
         public uint pc { get; set; }
         [JsonProperty("inst_value")]
         public uint inst_value { get; set; }
+        [JsonProperty("last_uop")]
+        public bool last_uop { get; set; }
         [JsonProperty("rd")]
         public uint rd { get; set; }
         [JsonProperty("has_exception")]
@@ -52,6 +54,8 @@ namespace DreamCoreV2_model_controller.Model
         public uint new_phy_id_free_list_rptr { get; set; }
         [JsonProperty("new_phy_id_free_list_rstage")]
         public bool new_phy_id_free_list_rstage { get; set; }
+        [JsonProperty("sub_op")]
+        public string sub_op { get; set; }
         [JsonProperty("rob_id")]
         public uint rob_id { get; set; }
         public string Instruction = "";

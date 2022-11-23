@@ -40,6 +40,7 @@ namespace cycle_model::pipeline
         this->issue_q.reset();
         this->busy = false;
         this->hold_rev_pack = dispatch_issue_pack_t();
+        this->last_store_buffer_id = 0;
         
         for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
         {
@@ -72,8 +73,9 @@ namespace cycle_model::pipeline
                         verify(issue_q.customer_get_front(&rev_pack));
                         
                         auto is_store = (rev_pack.sub_op.lsu_op == lsu_op_t::sb) || (rev_pack.sub_op.lsu_op == lsu_op_t::sh) || (rev_pack.sub_op.lsu_op == lsu_op_t::sw);
+                        auto is_sta = (rev_pack.sub_op.lsu_op == lsu_op_t::stab) || (rev_pack.sub_op.lsu_op == lsu_op_t::stah) || (rev_pack.sub_op.lsu_op == lsu_op_t::staw);
                         
-                        if(is_store && store_buffer->producer_is_full())
+                        if(is_sta && store_buffer->producer_is_full())
                         {
                             //skip this instruction
                             lsu_issue_readreg_port->set(send_pack);
@@ -127,13 +129,19 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                         
-                        if(is_store)
+                        if(is_sta)
                         {
                             component::store_buffer_item_t store_buffer_item;
-                            store_buffer_item.rob_id = rev_pack.rob_id;
+                            store_buffer_item.rob_id = rev_pack.rob_id;//set the age of sta instruction temporarily
                             store_buffer_item.rob_id_stage = rev_pack.rob_id_stage;
                             verify(store_buffer->push(store_buffer_item));
                             verify(store_buffer->producer_get_tail_id(&send_pack.op_info[0].store_buffer_id));
+                            last_store_buffer_id = send_pack.op_info[0].store_buffer_id;
+                            store_buffer->write_addr(send_pack.op_info[0].store_buffer_id, 0, 0, false);
+                        }
+                        else if(is_store)
+                        {
+                            send_pack.op_info[0].store_buffer_id = last_store_buffer_id;
                         }
                         
                         lsu_issue_readreg_port->set(send_pack);

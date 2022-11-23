@@ -23,6 +23,7 @@ namespace cycle_model::component
         bool finish = false;
         uint32_t pc = 0;
         uint32_t inst_value = 0;
+        bool last_uop = false;
         uint32_t rd = 0;
         bool has_exception = false;
         riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
@@ -39,6 +40,9 @@ namespace cycle_model::component
         uint32_t new_phy_id_free_list_rptr = 0;
         bool new_phy_id_free_list_rstage = false;
         component::branch_predictor_info_pack_t branch_predictor_info_pack;
+        //-----only for debug-----
+        std::string sub_op;
+        //-----only for debug-----
         
         virtual void print(std::string indent)
         {
@@ -64,6 +68,7 @@ namespace cycle_model::component
             ret["finish"] = finish;
             ret["pc"] = pc;
             ret["inst_value"] = inst_value;
+            ret["last_uop"] = last_uop;
             ret["rd"] = rd;
             ret["has_exception"] = has_exception;
             ret["exception_id"] = outenum(exception_id);
@@ -79,6 +84,9 @@ namespace cycle_model::component
             ret["old_phy_id_free_list_rstage"] = old_phy_id_free_list_rstage;
             ret["new_phy_id_free_list_rptr"] = new_phy_id_free_list_rptr;
             ret["new_phy_id_free_list_rstage"] = new_phy_id_free_list_rstage;
+            //-----only for debug-----
+            ret["sub_op"] = sub_op;
+            //-----only for debug-----
             return ret;
         }
     }rob_item_t;

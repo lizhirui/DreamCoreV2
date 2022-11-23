@@ -147,6 +147,7 @@ namespace cycle_model::pipeline
                                 rob_item.new_phy_reg_id = send_pack.op_info[i].rd_phy;
                                 rob_item.pc = rev_pack.pc;
                                 rob_item.inst_value = rev_pack.value;
+                                rob_item.last_uop = rev_pack.last_uop;
                                 rob_item.rd = rev_pack.rd;
                                 rob_item.has_exception = rev_pack.has_exception;
                                 rob_item.exception_id = rev_pack.exception_id;
@@ -158,6 +159,39 @@ namespace cycle_model::pipeline
                                 rob_item.csr_addr = rev_pack.csr;
                                 rob_item.csr_newvalue = 0;
                                 rob_item.csr_newvalue_valid = false;
+                                
+                                //only for debug
+                                switch(rev_pack.op_unit)
+                                {
+                                    case op_unit_t::alu:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.alu_op);
+                                        break;
+        
+                                    case op_unit_t::bru:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.bru_op);
+                                        break;
+        
+                                    case op_unit_t::csr:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.csr_op);
+                                        break;
+        
+                                    case op_unit_t::div:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.div_op);
+                                        break;
+        
+                                    case op_unit_t::mul:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.mul_op);
+                                        break;
+        
+                                    case op_unit_t::lsu:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.lsu_op);
+                                        break;
+        
+                                    default:
+                                        rob_item.sub_op = "<Unsupported>";
+                                        break;
+                                }
+                                
                                 phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 //write to rob
                                 verify(rob->get_new_id(&send_pack.op_info[i].rob_id));

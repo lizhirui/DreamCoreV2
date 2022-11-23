@@ -262,6 +262,7 @@ namespace cycle_model::pipeline
             component::io_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
             dispatch_issue_pack_t hold_rev_pack;
+            uint32_t last_store_buffer_id = 0;
         
             uint32_t wakeup_shift_src1[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool src1_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
@@ -269,9 +270,9 @@ namespace cycle_model::pipeline
             uint32_t wakeup_shift_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool src2_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
         
-            uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
-            uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t wakeup_rd[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rd_valid[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_shift[LSU_ISSUE_QUEUE_SIZE] = {0};
             
             trace::trace_database tdb;
         

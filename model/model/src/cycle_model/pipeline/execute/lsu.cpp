@@ -125,9 +125,8 @@ namespace cycle_model::pipeline::execute
                         break;
                     
                     case lsu_op_t::sb:
-                        item.enable = true;
-                        item.addr = l2_addr;
-                        item.size = 1;
+                        item = store_buffer->get_item(l2_rev_pack.store_buffer_id);
+                        item.data_valid = true;
                         item.data = l2_rev_pack.src2_value & 0xff;
                         item.committed = false;
                         item.pc = l2_rev_pack.pc;
@@ -138,9 +137,7 @@ namespace cycle_model::pipeline::execute
                         break;
                     
                     case lsu_op_t::sh:
-                        item.enable = true;
-                        item.addr = l2_addr;
-                        item.size = 2;
+                        item.data_valid = true;
                         item.data = l2_rev_pack.src2_value & 0xffff;
                         item.committed = false;
                         item.pc = l2_rev_pack.pc;
@@ -151,9 +148,7 @@ namespace cycle_model::pipeline::execute
                         break;
                     
                     case lsu_op_t::sw:
-                        item.enable = true;
-                        item.addr = l2_addr;
-                        item.size = 4;
+                        item.data_valid = true;
                         item.data = l2_rev_pack.src2_value;
                         item.committed = false;
                         item.pc = l2_rev_pack.pc;
@@ -161,6 +156,18 @@ namespace cycle_model::pipeline::execute
                         item.rob_id_stage = l2_rev_pack.rob_id_stage;
                         item.cycle = get_cpu_clock_cycle();//only for debug
                         store_buffer->set_item(l2_rev_pack.store_buffer_id, item);
+                        break;
+                        
+                    case lsu_op_t::stab:
+                        store_buffer->write_addr(l2_rev_pack.store_buffer_id, l2_addr, 1, true);
+                        break;
+    
+                    case lsu_op_t::stah:
+                        store_buffer->write_addr(l2_rev_pack.store_buffer_id, l2_addr, 2, true);
+                        break;
+    
+                    case lsu_op_t::staw:
+                        store_buffer->write_addr(l2_rev_pack.store_buffer_id, l2_addr, 4, true);
                         break;
                 }
                 
@@ -284,16 +291,21 @@ namespace cycle_model::pipeline::execute
                                     break;
                                     
                                 case lsu_op_t::sb:
+                                case lsu_op_t::sh:
+                                case lsu_op_t::sw:
+                                    break;
+                                    
+                                case lsu_op_t::stab:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 1);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 1) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;
-                                    
-                                case lsu_op_t::sh:
+    
+                                case lsu_op_t::stah:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 2);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 2) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;
-                                    
-                                case lsu_op_t::sw:
+    
+                                case lsu_op_t::staw:
                                     l2_rev_pack.has_exception = !component::bus::check_align(l2_addr, 4);
                                     l2_rev_pack.exception_id = !component::bus::check_align(l2_addr, 4) ? riscv_exception_t::store_amo_address_misaligned : riscv_exception_t::store_amo_access_fault;
                                     break;

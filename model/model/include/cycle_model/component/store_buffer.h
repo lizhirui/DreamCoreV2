@@ -22,14 +22,12 @@ namespace cycle_model::component
 {
     typedef struct store_buffer_item_t : public if_print_t
     {
-        bool enable = false;
+        bool data_valid = false;
         bool committed = false;
         uint32_t rob_id = 0;
         bool rob_id_stage = false;
         uint32_t pc = 0;
-        uint32_t addr = 0;
         uint32_t data = 0;
-        uint32_t size = 0;
         uint64_t cycle = 0;//only for debug
     }store_buffer_item_t;
     
@@ -46,6 +44,10 @@ namespace cycle_model::component
             
             trace::trace_database tdb;
             
+            dff<bool> *item_addr_valid;
+            dff<uint32_t> *item_addr;
+            dff<uint32_t> *item_size;
+            
             bool check_id_valid(uint32_t id)
             {
                 if(this->customer_is_empty())
@@ -60,12 +62,6 @@ namespace cycle_model::component
                 {
                     return ((id >= this->rptr.get_new()) && (id < this->size)) || (id < this->wptr.get());
                 }
-            }
-            
-            store_buffer_item_t get_item(uint32_t id)
-            {
-                verify(check_id_valid(id));
-                return this->buffer[id].get();
             }
             
             bool get_front_id(uint32_t *front_id)
@@ -104,7 +100,17 @@ namespace cycle_model::component
             store_buffer(uint32_t size, bus *bus_if) : fifo<store_buffer_item_t>(size), tdb(TRACE_STORE_BUFFER)
             {
                 this->bus_if = bus_if;
+                this->item_addr = new dff<uint32_t>[size];
+                this->item_addr_valid = new dff<bool>[size];
+                this->item_size = new dff<uint32_t>[size];
                 this->store_buffer::reset();
+            }
+            
+            ~store_buffer()
+            {
+                delete[] this->item_addr;
+                delete[] this->item_addr_valid;
+                delete[] this->item_size;
             }
             
             virtual void reset()
@@ -148,6 +154,19 @@ namespace cycle_model::component
                 this->buffer[id].set(value);
             }
             
+            void write_addr(uint32_t id, uint32_t addr, uint32_t size, bool addr_valid)
+            {
+                this->item_addr[id].set(addr);
+                this->item_size[id].set(size);
+                this->item_addr_valid[id].set(addr_valid);
+            }
+        
+            store_buffer_item_t get_item(uint32_t id)
+            {
+                verify(check_id_valid(id));
+                return this->buffer[id].get();
+            }
+            
             std::pair<uint32_t, uint32_t> get_feedback_value(uint32_t addr, uint32_t size)
             {
                 uint32_t result = 0;
@@ -161,24 +180,30 @@ namespace cycle_model::component
                     do
                     {
                         auto cur_item = producer_get_item(cur_id);
+                        auto cur_item_addr = item_addr[cur_id].get_new();
+                        auto cur_item_size = item_size[cur_id].get_new();
+                        auto cur_item_addr_valid = item_addr_valid[cur_id].get_new();
                         
-                        if((cur_item.addr >= addr) && (cur_item.addr < (addr + size)))
+                        if(cur_item.data_valid && cur_item_addr_valid)
                         {
-                            uint32_t bit_offset = (cur_item.addr - addr) << 3;
-                            uint32_t bit_length = std::min(cur_item.size, addr + size - cur_item.addr) << 3;
-                            uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
-                            result &= ~(bit_mask << bit_offset);
-                            result |= (cur_item.data & bit_mask) << bit_offset;
-                            feedback_mask |= bit_mask << bit_offset;
-                        }
-                        else if((cur_item.addr < addr) && ((cur_item.addr + cur_item.size) > addr))
-                        {
-                            uint32_t bit_offset = (addr - cur_item.addr) << 3;
-                            uint32_t bit_length = std::min(size, cur_item.addr + cur_item.size - addr) << 3;
-                            uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
-                            result &= ~bit_mask;
-                            result |= (cur_item.data >> bit_offset) & bit_mask;
-                            feedback_mask |= bit_mask;
+                            if((cur_item_addr >= addr) && (cur_item_addr < (addr + size)))
+                            {
+                                uint32_t bit_offset = (cur_item_addr - addr) << 3;
+                                uint32_t bit_length = std::min(cur_item_size, addr + size - cur_item_addr) << 3;
+                                uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
+                                result &= ~(bit_mask << bit_offset);
+                                result |= (cur_item.data & bit_mask) << bit_offset;
+                                feedback_mask |= bit_mask << bit_offset;
+                            }
+                            else if((cur_item_addr < addr) && ((cur_item_addr + cur_item_size) > addr))
+                            {
+                                uint32_t bit_offset = (addr - cur_item_addr) << 3;
+                                uint32_t bit_length = std::min(size, cur_item_addr + cur_item_size - addr) << 3;
+                                uint32_t bit_mask = (bit_length == 32) ? 0xffffffffu : ((1 << bit_length) - 1);
+                                result &= ~bit_mask;
+                                result |= (cur_item.data >> bit_offset) & bit_mask;
+                                feedback_mask |= bit_mask;
+                            }
                         }
                     }while(producer_get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
@@ -203,8 +228,9 @@ namespace cycle_model::component
                         do
                         {
                             auto cur_item = get_item(cur_id);
+                            auto cur_item_addr_valid = item_addr_valid[cur_id].get();
                             
-                            if(cur_item.enable && !cur_item.committed)
+                            if(!cur_item.committed)
                             {
                                 bool ready_to_commit = false;
                                 
@@ -254,24 +280,30 @@ namespace cycle_model::component
                     
                     if(customer_get_front(&item))
                     {
-                        if(item.enable && item.committed)
+                        uint32_t front_id = 0;
+                        verify(customer_get_front_id(&front_id));
+                        auto cur_item_addr = item_addr[front_id].get();
+                        auto cur_item_size = item_size[front_id].get();
+                        auto cur_item_addr_valid = item_addr_valid[front_id].get();
+                        
+                        if(item_addr_valid && item.data_valid && item.committed)
                         {
                             store_buffer_item_t t_item;
                             pop(&t_item);
-                            verify_only((item.size == 1) || (item.size == 2) || (item.size == 4));
+                            verify_only((cur_item_size == 1) || (cur_item_size == 2) || (cur_item_size == 4));
                             
-                            switch(item.size)
+                            switch(cur_item_size)
                             {
                                 case 1:
-                                    bus_if->write8_sync(item.addr, (uint8_t)item.data);
+                                    bus_if->write8_sync(cur_item_addr, (uint8_t)item.data);
                                     break;
                                 
                                 case 2:
-                                    bus_if->write16_sync(item.addr, (uint16_t)item.data);
+                                    bus_if->write16_sync(cur_item_addr, (uint16_t)item.data);
                                     break;
                                 
                                 case 4:
-                                    bus_if->write32_sync(item.addr, item.data);
+                                    bus_if->write32_sync(cur_item_addr, item.data);
                                     break;
                             }
                         }
@@ -288,8 +320,9 @@ namespace cycle_model::component
                     do
                     {
                         auto cur_item = get_item(cur_id);
+                        auto cur_item_addr_valid = item_addr_valid[cur_id].get();
                         
-                        if(cur_item.enable)
+                        if(cur_item_addr_valid && cur_item.data_valid)
                         {
                             for(uint32_t i = 0;i < COMMIT_WIDTH;i++)
                             {
