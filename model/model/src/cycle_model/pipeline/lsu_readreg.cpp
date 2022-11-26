@@ -23,11 +23,13 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_readreg::lsu_readreg(global_inst *global, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lsu_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_LSU_READREG)
+    lsu_readreg::lsu_readreg(global_inst *global, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_lu_hdff, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_sau_hdff, component::handshake_dff<lsu_readreg_execute_pack_t> **readreg_sdu_hdff, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_LSU_READREG)
     {
         this->global = global;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
-        this->readreg_lsu_hdff = readreg_lsu_hdff;
+        this->readreg_lu_hdff = readreg_lu_hdff;
+        this->readreg_sau_hdff = readreg_sau_hdff;
+        this->readreg_sdu_hdff = readreg_sdu_hdff;
         this->phy_regfile = phy_regfile;
         this->lsu_readreg::reset();
     }
@@ -47,16 +49,44 @@ namespace cycle_model::pipeline
         {
             if(bru_feedback_pack.flush)
             {
-                for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+                for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
                 {
-                    if(!this->readreg_lsu_hdff[i]->is_empty())
+                    if(!this->readreg_lu_hdff[i]->is_empty())
                     {
                         lsu_readreg_execute_pack_t tmp_pack;
-                        verify(this->readreg_lsu_hdff[i]->get_data(&tmp_pack));
+                        verify(this->readreg_lu_hdff[i]->get_data(&tmp_pack));
                 
                         if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
                         {
-                            this->readreg_lsu_hdff[i]->flush();
+                            this->readreg_lu_hdff[i]->flush();
+                        }
+                    }
+                }
+    
+                for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
+                {
+                    if(!this->readreg_sau_hdff[i]->is_empty())
+                    {
+                        lsu_readreg_execute_pack_t tmp_pack;
+                        verify(this->readreg_sau_hdff[i]->get_data(&tmp_pack));
+            
+                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_sau_hdff[i]->flush();
+                        }
+                    }
+                }
+                
+                for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
+                {
+                    if(!this->readreg_sdu_hdff[i]->is_empty())
+                    {
+                        lsu_readreg_execute_pack_t tmp_pack;
+                        verify(this->readreg_sdu_hdff[i]->get_data(&tmp_pack));
+            
+                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_sdu_hdff[i]->flush();
                         }
                     }
                 }
@@ -128,7 +158,7 @@ namespace cycle_model::pipeline
                             bool from_prf = true;
                             send_pack.src1_value = this->phy_regfile->read(rev_pack.op_info[i].rs1_phy);
                             
-                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                             {
                                 if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                 {
@@ -160,7 +190,7 @@ namespace cycle_model::pipeline
                             bool from_prf = true;
                             send_pack.src2_value = this->phy_regfile->read(rev_pack.op_info[i].rs2_phy);
                             
-                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                             {
                                 if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                 {
@@ -189,21 +219,42 @@ namespace cycle_model::pipeline
                     }
                 
                     //send pack
-                    verify_only(rev_pack.op_info[i].op_unit == op_unit_t::lsu);
-                    
-                    if(!this->readreg_lsu_hdff[i]->push(send_pack))
+                    switch(rev_pack.op_info[i].op_unit)
                     {
-                        this->busy = true;
-                        this->hold_rev_pack = rev_pack;
+                        case op_unit_t::lu:
+                            verify(this->readreg_lu_hdff[i]->push(send_pack));
+                            break;
+                        
+                        case op_unit_t::sau:
+                            verify(this->readreg_sau_hdff[i]->push(send_pack));
+                            break;
+                        
+                        case op_unit_t::sdu:
+                            verify(this->readreg_sdu_hdff[i]->push(send_pack));
+                            break;
+                        
+                        default:
+                            verify_only(0);
+                            break;
                     }
                 }
             }
         }
         else
         {
-            for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
             {
-                this->readreg_lsu_hdff[i]->flush();
+                this->readreg_lu_hdff[i]->flush();
+            }
+    
+            for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
+            {
+                this->readreg_sau_hdff[i]->flush();
+            }
+    
+            for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
+            {
+                this->readreg_sdu_hdff[i]->flush();
             }
             
             this->busy = false;

@@ -72,8 +72,8 @@ namespace cycle_model::pipeline
                         issue_queue_item_t rev_pack;
                         verify(issue_q.customer_get_front(&rev_pack));
                         
-                        auto is_store = (rev_pack.sub_op.lsu_op == lsu_op_t::sb) || (rev_pack.sub_op.lsu_op == lsu_op_t::sh) || (rev_pack.sub_op.lsu_op == lsu_op_t::sw);
-                        auto is_sta = (rev_pack.sub_op.lsu_op == lsu_op_t::stab) || (rev_pack.sub_op.lsu_op == lsu_op_t::stah) || (rev_pack.sub_op.lsu_op == lsu_op_t::staw);
+                        auto is_store = rev_pack.op_unit == op_unit_t::sdu;
+                        auto is_sta = rev_pack.op_unit == op_unit_t::sau;
                         
                         if(is_sta && store_buffer->producer_is_full())
                         {
@@ -93,7 +93,7 @@ namespace cycle_model::pipeline
                         }
                         
                         verify(issue_q.pop(&rev_pack));
-                        verify_only(rev_pack.op_unit == op_unit_t::lsu);
+                        verify_only((rev_pack.op_unit == op_unit_t::lu) || (rev_pack.op_unit == op_unit_t::sau) || (rev_pack.op_unit == op_unit_t::sdu));
                         
                         send_pack.op_info[0].enable = rev_pack.enable;
                         send_pack.op_info[0].value = rev_pack.value;
@@ -417,7 +417,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs1_need_map)
                             {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
@@ -428,7 +428,7 @@ namespace cycle_model::pipeline
         
                                 if(!src1_ready[issue_id])
                                 {
-                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
@@ -457,7 +457,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs2_need_map)
                             {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -468,7 +468,7 @@ namespace cycle_model::pipeline
                 
                                 if(!src2_ready[issue_id])
                                 {
-                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {

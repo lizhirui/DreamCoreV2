@@ -150,7 +150,7 @@ namespace cycle_model::pipeline
                                 continue;//skip this instruction due to which is younger than the flush age
                             }
                             
-                            if(rev_pack.op_info[i].op_unit != op_unit_t::lsu)
+                            if((rev_pack.op_info[i].op_unit != op_unit_t::lu) && (rev_pack.op_info[i].op_unit != op_unit_t::sau) && (rev_pack.op_info[i].op_unit != op_unit_t::sdu))
                             {
                                 integer_issue_pack.op_info[integer_issue_id].enable = rev_pack.op_info[i].enable;
                                 integer_issue_pack.op_info[integer_issue_id].value = rev_pack.op_info[i].value;

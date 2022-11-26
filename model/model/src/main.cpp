@@ -373,7 +373,7 @@ static void run(const command_line_arg_t &arg)
                 }
                 
                 //clint sync only for the instruction
-                auto item = cycle_model_inst->execute_lsu_stage[0]->clint_sync_list[rob_item.first];
+                auto item = cycle_model_inst->execute_lu_stage[0]->clint_sync_list[rob_item.first];
                 isa_model_inst->clint.set_mtime(item.mtime);
                 isa_model_inst->clint.set_mtimecmp(item.mtimecmp);
                 isa_model_inst->clint.set_msip(item.msip);

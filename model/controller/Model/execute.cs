@@ -12,7 +12,7 @@ namespace DreamCoreV2_model_controller.Model
     {
         [JsonProperty("div")]
         public div[]? div { get; set; }
-        [JsonProperty("lsu")]
-        public lsu[]? lsu { get; set; }
+        [JsonProperty("lu")]
+        public lu[]? lu { get; set; }
     }
 }

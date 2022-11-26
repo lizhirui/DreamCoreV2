@@ -192,7 +192,7 @@ namespace cycle_model::pipeline
                                 break;
                             
                             case 0x03://lb lh lw lbu lhu
-                                op_info[0].op_unit = op_unit_t::lsu;
+                                op_info[0].op_unit = op_unit_t::lu;
                                 op_info[0].arg1_src = arg_src_t::reg;
                                 op_info[0].rs1 = rs1;
                                 op_info[0].arg2_src = arg_src_t::disable;
@@ -204,27 +204,27 @@ namespace cycle_model::pipeline
                                 {
                                     case 0x0://lb
                                         op_info[0].op = op_t::lb;
-                                        op_info[0].sub_op.lsu_op = lsu_op_t::lb;
+                                        op_info[0].sub_op.lu_op = lu_op_t::lb;
                                         break;
                                     
                                     case 0x1://lh
                                         op_info[0].op = op_t::lh;
-                                        op_info[0].sub_op.lsu_op = lsu_op_t::lh;
+                                        op_info[0].sub_op.lu_op = lu_op_t::lh;
                                         break;
                                     
                                     case 0x2://lw
                                         op_info[0].op = op_t::lw;
-                                        op_info[0].sub_op.lsu_op = lsu_op_t::lw;
+                                        op_info[0].sub_op.lu_op = lu_op_t::lw;
                                         break;
                                     
                                     case 0x4://lbu
                                         op_info[0].op = op_t::lbu;
-                                        op_info[0].sub_op.lsu_op = lsu_op_t::lbu;
+                                        op_info[0].sub_op.lu_op = lu_op_t::lbu;
                                         break;
                                     
                                     case 0x5://lhu
                                         op_info[0].op = op_t::lhu;
-                                        op_info[0].sub_op.lsu_op = lsu_op_t::lhu;
+                                        op_info[0].sub_op.lu_op = lu_op_t::lhu;
                                         break;
                                     
                                     default://invalid
@@ -237,32 +237,32 @@ namespace cycle_model::pipeline
                             case 0x23://sb sh sw
                             {
                                 auto t_op_info = op_info[0];
-                                t_op_info.op_unit = op_unit_t::lsu;
+                                t_op_info.op_unit = op_unit_t::sdu;
                                 t_op_info.arg1_src = arg_src_t::reg;
                                 t_op_info.rs1 = rs1;
                                 t_op_info.arg2_src = arg_src_t::reg;
                                 t_op_info.rs2 = rs2;
                                 t_op_info.imm = sign_extend(imm_s, 12);
-                                lsu_op_t sta_lsu_op;
+                                sau_op_t sau_op;
                                 
                                 switch(funct3)
                                 {
                                     case 0x0://sb
                                         t_op_info.op = op_t::sb;
-                                        t_op_info.sub_op.lsu_op = lsu_op_t::sb;
-                                        sta_lsu_op = lsu_op_t::stab;
+                                        t_op_info.sub_op.sdu_op = sdu_op_t::sb;
+                                        sau_op = sau_op_t::stab;
                                         break;
                                     
                                     case 0x1://sh
                                         t_op_info.op = op_t::sh;
-                                        t_op_info.sub_op.lsu_op = lsu_op_t::sh;
-                                        sta_lsu_op = lsu_op_t::stah;
+                                        t_op_info.sub_op.sdu_op = sdu_op_t::sh;
+                                        sau_op = sau_op_t::stah;
                                         break;
                                     
                                     case 0x2://sw
                                         t_op_info.op = op_t::sw;
-                                        t_op_info.sub_op.lsu_op = lsu_op_t::sw;
-                                        sta_lsu_op = lsu_op_t::staw;
+                                        t_op_info.sub_op.sdu_op = sdu_op_t::sw;
+                                        sau_op = sau_op_t::staw;
                                         break;
                                     
                                     default://invalid
@@ -272,15 +272,15 @@ namespace cycle_model::pipeline
                                 
                                 if(t_op_info.valid)
                                 {
-                                    op_info[0].op_unit = op_unit_t::lsu;
-                                    op_info[0].sub_op.lsu_op = sta_lsu_op;
+                                    op_info[0].op_unit = op_unit_t::sau;
+                                    op_info[0].sub_op.sau_op = sau_op;
                                     op_info[0].arg1_src = arg_src_t::reg;
                                     op_info[0].rs1 = t_op_info.rs1;
                                     op_info[0].arg2_src = arg_src_t::imm;
                                     op_info[0].imm = t_op_info.imm;
                                     op_info[1].enable = true;
                                     op_info[1].op_unit = t_op_info.op_unit;
-                                    op_info[1].sub_op.lsu_op = t_op_info.sub_op.lsu_op;
+                                    op_info[1].sub_op.sdu_op = t_op_info.sub_op.sdu_op;
                                     op_info[1].arg1_src = arg_src_t::disable;
                                     op_info[1].arg2_src = arg_src_t::reg;
                                     op_info[1].rs2 = t_op_info.rs2;

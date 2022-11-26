@@ -21,7 +21,9 @@ namespace cycle_model::pipeline
         csr,
         div,
         mul,
-        lsu
+        lu,
+        sau,
+        sdu
     };
     
     enum class arg_src_t
@@ -132,19 +134,27 @@ namespace cycle_model::pipeline
         remu
     };
     
-    enum class lsu_op_t
+    enum class lu_op_t
     {
         lb,
         lbu,
         lh,
         lhu,
-        lw,
-        sb,
-        sh,
-        sw,
+        lw
+    };
+    
+    enum class sau_op_t
+    {
         stab,
         stah,
         staw
+    };
+    
+    enum class sdu_op_t
+    {
+        sb,
+        sh,
+        sw
     };
     
     enum class mul_op_t

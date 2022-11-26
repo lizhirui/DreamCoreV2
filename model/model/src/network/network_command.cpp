@@ -254,13 +254,18 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     ret["lsu_readreg"] = cycle_model_inst->lsu_readreg_stage.get_json();
 
     json ire;
-    json ire_alu, ire_bru, ire_csr, ire_div, ire_mul, ire_lsu;
+    json ire_alu, ire_bru, ire_csr, ire_div, ire_mul;
+    json lre;
+    json lre_lu, lre_sau, lre_sdu;
+    
     ire_alu = json::array();
     ire_bru = json::array();
     ire_csr = json::array();
     ire_div = json::array();
     ire_mul = json::array();
-    ire_lsu = json::array();
+    lre_lu = json::array();
+    lre_sau = json::array();
+    lre_sdu = json::array();
 
     for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -287,9 +292,19 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
         ire_mul.push_back(cycle_model_inst->readreg_mul_hdff[i]->get_json());
     }
     
-    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
     {
-        ire_lsu.push_back(cycle_model_inst->readreg_lsu_hdff[i]->get_json());
+        lre_lu.push_back(cycle_model_inst->readreg_lu_hdff[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
+    {
+        lre_sau.push_back(cycle_model_inst->readreg_sau_hdff[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
+    {
+        lre_sdu.push_back(cycle_model_inst->readreg_sdu_hdff[i]->get_json());
     }
 
     ire["alu"] = ire_alu;
@@ -298,34 +313,37 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     ire["div"] = ire_div;
     ire["mul"] = ire_mul;
     ret["integer_readreg_execute"] = ire;
-    ret["lsu_readreg_execute"] = ire_lsu;
+    lre["lu"] = lre_lu;
+    lre["sau"] = lre_sau;
+    lre["sdu"] = lre_sdu;
+    ret["lsu_readreg_execute"] = lre;
     
     json te;
     auto te_div = json::array();
-    auto te_lsu = json::array();
+    auto te_lu = json::array();
     
     for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
     {
         te_div.push_back(cycle_model_inst->execute_div_stage[i]->get_json());
     }
     
-    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
     {
-        te_lsu.push_back(cycle_model_inst->execute_lsu_stage[i]->get_json());
+        te_lu.push_back(cycle_model_inst->execute_lu_stage[i]->get_json());
     }
     
     te["div"] = te_div;
-    te["lsu"] = te_lsu;
+    te["lu"] = te_lu;
     ret["execute"] = te;
 
     json tew;
-    json tew_alu, tew_bru, tew_csr, tew_div, tew_lsu, tew_mul;
+    json tew_alu, tew_bru, tew_csr, tew_div, tew_mul, tew_lu;
     tew_alu = json::array();
     tew_bru = json::array();
     tew_csr = json::array();
     tew_div = json::array();
-    tew_lsu = json::array();
     tew_mul = json::array();
+    tew_lu = json::array();
 
     for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -352,9 +370,9 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
         tew_mul.push_back(cycle_model_inst->mul_wb_port[i]->get_json());
     }
     
-    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
     {
-        tew_lsu.push_back(cycle_model_inst->lsu_wb_port[i]->get_json());
+        tew_lu.push_back(cycle_model_inst->lu_wb_port[i]->get_json());
     }
 
     tew["alu"] = tew_alu;
@@ -362,16 +380,18 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tew["csr"] = tew_csr;
     tew["div"] = tew_div;
     tew["mul"] = tew_mul;
-    tew["lsu"] = tew_lsu;
+    tew["lu"] = tew_lu;
     ret["execute_wb"] = tew;
     json tec;
-    json tec_alu, tec_bru, tec_csr, tec_div, tec_lsu, tec_mul;
+    json tec_alu, tec_bru, tec_csr, tec_div, tec_mul, tec_lu, tec_sau, tec_sdu;
     tec_alu = json::array();
     tec_bru = json::array();
     tec_csr = json::array();
     tec_div = json::array();
-    tec_lsu = json::array();
     tec_mul = json::array();
+    tec_lu = json::array();
+    tec_sau = json::array();
+    tec_sdu = json::array();
     
     for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
     {
@@ -398,9 +418,19 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
         tec_mul.push_back(cycle_model_inst->mul_commit_port[i]->get_json());
     }
     
-    for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+    for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
     {
-        tec_lsu.push_back(cycle_model_inst->lsu_commit_port[i]->get_json());
+        tec_lu.push_back(cycle_model_inst->lu_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
+    {
+        tec_sau.push_back(cycle_model_inst->sau_commit_port[i]->get_json());
+    }
+    
+    for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
+    {
+        tec_sdu.push_back(cycle_model_inst->sdu_commit_port[i]->get_json());
     }
     
     tec["alu"] = tec_alu;
@@ -408,7 +438,9 @@ static std::string socket_cmd_get_pipeline_status(std::vector<std::string> args)
     tec["csr"] = tec_csr;
     tec["div"] = tec_div;
     tec["mul"] = tec_mul;
-    tec["lsu"] = tec_lsu;
+    tec["lu"] = tec_lu;
+    tec["sau"] = tec_sau;
+    tec["sdu"] = tec_sdu;
     ret["execute_commit"] = tec;
     ret["fetch2_feedback_pack"] = cycle_model_inst->fetch2_feedback_pack.get_json();
     ret["decode_feedback_pack"] = cycle_model_inst->decode_feedback_pack.get_json();

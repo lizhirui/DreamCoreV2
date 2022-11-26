@@ -54,7 +54,9 @@
 #include "cycle_model/pipeline/execute/csr.h"
 #include "cycle_model/pipeline/execute/div.h"
 #include "cycle_model/pipeline/execute/mul.h"
-#include "cycle_model/pipeline/execute/lsu.h"
+#include "cycle_model/pipeline/execute/lu.h"
+#include "cycle_model/pipeline/execute/sau.h"
+#include "cycle_model/pipeline/execute/sdu.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/pipeline/execute_commit.h"
@@ -91,19 +93,25 @@ namespace cycle_model
             component::handshake_dff<pipeline::integer_readreg_execute_pack_t> *readreg_csr_hdff[CSR_UNIT_NUM];
             component::handshake_dff<pipeline::integer_readreg_execute_pack_t> *readreg_div_hdff[DIV_UNIT_NUM];
             component::handshake_dff<pipeline::integer_readreg_execute_pack_t> *readreg_mul_hdff[MUL_UNIT_NUM];
-            component::handshake_dff<pipeline::lsu_readreg_execute_pack_t> *readreg_lsu_hdff[LSU_UNIT_NUM];
+            component::handshake_dff<pipeline::lsu_readreg_execute_pack_t> *readreg_lu_hdff[LU_UNIT_NUM];
+            component::handshake_dff<pipeline::lsu_readreg_execute_pack_t> *readreg_sau_hdff[SAU_UNIT_NUM];
+            component::handshake_dff<pipeline::lsu_readreg_execute_pack_t> *readreg_sdu_hdff[SDU_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *alu_wb_port[ALU_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *bru_wb_port[BRU_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *csr_wb_port[CSR_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *div_wb_port[DIV_UNIT_NUM];
             component::port<pipeline::execute_wb_pack_t> *mul_wb_port[MUL_UNIT_NUM];
-            component::port<pipeline::execute_wb_pack_t> *lsu_wb_port[LSU_UNIT_NUM];
+            component::port<pipeline::execute_wb_pack_t> *lu_wb_port[LU_UNIT_NUM];
+            component::port<pipeline::execute_wb_pack_t> *sau_wb_port[SAU_UNIT_NUM];
+            component::port<pipeline::execute_wb_pack_t> *sdu_wb_port[SDU_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *alu_commit_port[ALU_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *bru_commit_port[BRU_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *csr_commit_port[CSR_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *div_commit_port[DIV_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *mul_commit_port[MUL_UNIT_NUM];
-            component::port<pipeline::execute_commit_pack_t> *lsu_commit_port[LSU_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *lu_commit_port[LU_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *sau_commit_port[SAU_UNIT_NUM];
+            component::port<pipeline::execute_commit_pack_t> *sdu_commit_port[SDU_UNIT_NUM];
             
             component::bus bus;
             component::csrfile csr_file;
@@ -132,7 +140,9 @@ namespace cycle_model
             pipeline::execute::csr *execute_csr_stage[CSR_UNIT_NUM];
             pipeline::execute::div *execute_div_stage[DIV_UNIT_NUM];
             pipeline::execute::mul *execute_mul_stage[MUL_UNIT_NUM];
-            pipeline::execute::lsu *execute_lsu_stage[LSU_UNIT_NUM];
+            pipeline::execute::lu *execute_lu_stage[LU_UNIT_NUM];
+            pipeline::execute::sau *execute_sau_stage[SAU_UNIT_NUM];
+            pipeline::execute::sdu *execute_sdu_stage[SDU_UNIT_NUM];
             pipeline::wb wb_stage;
             pipeline::commit commit_stage;
             

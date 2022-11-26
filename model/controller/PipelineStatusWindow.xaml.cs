@@ -110,10 +110,10 @@ namespace DreamCoreV2_model_controller
             }
         }
 
-        private string getInstructionText(uint Value, uint PC, bool last_uop, string uop_name)
+        private string getInstructionText(uint Value, uint PC, bool last_uop, string? uop_name)
         {
             var result = RISC_V_Disassembler.Disassemble(BitConverter.GetBytes(Value), PC);
-            return (!last_uop ? "<" + uop_name + ">" : "") + (((result != null) && (result.Length > 0)) ? (result[0].mnemonic + " " + result[0].op_str) : "<Invalid>");
+            return (!last_uop ? "<" + (uop_name == null ? "null" : uop_name) + ">" : "") + (((result != null) && (result.Length > 0)) ? (result[0].mnemonic + " " + result[0].op_str) : "<Invalid>");
         }
 
         #pragma warning disable CS8602
@@ -331,9 +331,37 @@ namespace DreamCoreV2_model_controller
                     }
                 }
 
-                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.Length;i++)
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.lu.Length;i++)
                 {
-                    var item = pipelineStatus.lsu_readreg_execute[i];
+                    var item = pipelineStatus.lsu_readreg_execute.lu[i];
+
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.sau.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_readreg_execute.sau[i];
+
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.sdu.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_readreg_execute.sdu[i];
 
                     if(item.enable)
                     {
@@ -414,10 +442,10 @@ namespace DreamCoreV2_model_controller
                         item.Instruction = "<Empty>";
                     }
                 }
-
-                for(var i = 0;i < pipelineStatus.execute_wb.lsu.Length;i++)
+                
+                for(var i = 0;i < pipelineStatus.execute_wb.lu.Length;i++)
                 {
-                    var item = pipelineStatus.execute_wb.lsu[i];
+                    var item = pipelineStatus.execute_wb.lu[i];
                     
                     if(item.enable)
                     {
@@ -499,9 +527,37 @@ namespace DreamCoreV2_model_controller
                     }
                 }
 
-                for(var i = 0;i < pipelineStatus.execute_commit.lsu.Length;i++)
+                for(var i = 0;i < pipelineStatus.execute_commit.lu.Length;i++)
                 {
-                    var item = pipelineStatus.execute_commit.lsu[i];
+                    var item = pipelineStatus.execute_commit.lu[i];
+                    
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.execute_commit.sau.Length;i++)
+                {
+                    var item = pipelineStatus.execute_commit.sau[i];
+                    
+                    if(item.enable)
+                    {
+                        item.Instruction = getInstructionText(item.value, item.pc, item.last_uop, item.sub_op);
+                    }
+                    else
+                    {
+                        item.Instruction = "<Empty>";
+                    }
+                }
+
+                for(var i = 0;i < pipelineStatus.execute_commit.sdu.Length;i++)
+                {
+                    var item = pipelineStatus.execute_commit.sdu[i];
                     
                     if(item.enable)
                     {
@@ -631,9 +687,9 @@ namespace DreamCoreV2_model_controller
                 label_Commit_Feedback_I3.Background = pipelineStatus.commit_feedback_pack.committed_rob_id_valid[3] ? Brushes.Green : Brushes.Red;
                 label_Commit_Feedback_I3.Content = "I3: " + pipelineStatus.commit_feedback_pack.committed_rob_id[3];
                 label_DIV_Busy.Background = pipelineStatus.execute.div[0].busy ? Brushes.Green : Brushes.Red;
-                label_LSU_L2_Stall.Background = pipelineStatus.execute.lsu[0].l2_stall ? Brushes.Green : Brushes.Red;
-                label_LSU_L2_Addr.Content = "Addr: 0x" + string.Format("{0:X8}", pipelineStatus.execute.lsu[0].l2_addr);
-
+                label_LU_L2_Stall.Background = pipelineStatus.execute.lu[0].l2_stall ? Brushes.Green : Brushes.Red;
+                label_LU_L2_Addr.Content = "Addr: 0x" + string.Format("{0:X8}", pipelineStatus.execute.lu[0].l2_addr);
+                
                 listView_Fetch1_Fetch2.Items.Clear();
 
                 for(var i = 0;i < pipelineStatus.fetch1_fetch2.Length;i++)
@@ -748,10 +804,22 @@ namespace DreamCoreV2_model_controller
 
                 listView_LSU_Readreg_Execute.Items.Clear();
 
-                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.Length;i++)
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.lu.Length;i++)
                 {
-                    var item = pipelineStatus.lsu_readreg_execute[i];
-                    listView_LSU_Readreg_Execute.Items.Add(new { Highlight = false, Value = getDisplayText(item.Instruction, item.pc) });
+                    var item = pipelineStatus.lsu_readreg_execute.lu[i];
+                    listView_LSU_Readreg_Execute.Items.Add(new{Highlight = false, List = pipelineStatus.lsu_readreg_execute.lu, Value = "LU" + i + ": " + getDisplayText(item.Instruction, item.pc)});
+                }
+                
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.sau.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_readreg_execute.lu[i];
+                    listView_LSU_Readreg_Execute.Items.Add(new{Highlight = false, List = pipelineStatus.lsu_readreg_execute.sau, Value = "SAU" + i + ": " + getDisplayText(item.Instruction, item.pc)});
+                }
+
+                for(var i = 0;i < pipelineStatus.lsu_readreg_execute.sdu.Length;i++)
+                {
+                    var item = pipelineStatus.lsu_readreg_execute.lu[i];
+                    listView_LSU_Readreg_Execute.Items.Add(new{Highlight = false, List = pipelineStatus.lsu_readreg_execute.sdu, Value = "SDU" + i + ": " + getDisplayText(item.Instruction, item.pc)});
                 }
 
                 listView_Execute_WB.Items.Clear();
@@ -786,10 +854,10 @@ namespace DreamCoreV2_model_controller
                     listView_Execute_WB.Items.Add(new{Highlight = false, List = pipelineStatus.execute_wb.mul, ID = i, Value = "MUL" + i + ": " + getDisplayText(item.Instruction, item.pc)});
                 }
 
-                for(var i = 0;i < pipelineStatus.execute_wb.lsu.Length;i++)
+                for(var i = 0;i < pipelineStatus.execute_wb.lu.Length;i++)
                 {
-                    var item = pipelineStatus.execute_wb.lsu[i];
-                    listView_Execute_WB.Items.Add(new{Highlight = false, List = pipelineStatus.execute_wb.lsu, ID = i, Value = "LSU" + ": " + getDisplayText(item.Instruction, item.pc)});
+                    var item = pipelineStatus.execute_wb.lu[i];
+                    listView_Execute_WB.Items.Add(new{Highlight = false, List = pipelineStatus.execute_wb.lu, ID = i, Value = "LU" + ": " + getDisplayText(item.Instruction, item.pc)});
                 }
                 
                 listView_Execute_Commit.Items.Clear();
@@ -824,10 +892,22 @@ namespace DreamCoreV2_model_controller
                     listView_Execute_Commit.Items.Add(new{Highlight = false, List = pipelineStatus.execute_commit.mul, ID = i, Value = "MUL" + i + ": " + getDisplayText(item.Instruction, item.pc)});
                 }
 
-                for(var i = 0;i < pipelineStatus.execute_commit.lsu.Length;i++)
+                for(var i = 0;i < pipelineStatus.execute_commit.lu.Length;i++)
                 {
-                    var item = pipelineStatus.execute_commit.lsu[i];
-                    listView_Execute_Commit.Items.Add(new{Highlight = false, List = pipelineStatus.execute_commit.lsu, ID = i, Value = "LSU" + ": " + getDisplayText(item.Instruction, item.pc)});
+                    var item = pipelineStatus.execute_commit.lu[i];
+                    listView_Execute_Commit.Items.Add(new{Highlight = false, List = pipelineStatus.execute_commit.lu, ID = i, Value = "LU" + ": " + getDisplayText(item.Instruction, item.pc)});
+                }
+
+                for(var i = 0;i < pipelineStatus.execute_commit.sau.Length;i++)
+                {
+                    var item = pipelineStatus.execute_commit.sau[i];
+                    listView_Execute_Commit.Items.Add(new{Highlight = false, List = pipelineStatus.execute_commit.sau, ID = i, Value = "SAU" + ": " + getDisplayText(item.Instruction, item.pc)});
+                }
+
+                for(var i = 0;i < pipelineStatus.execute_commit.sdu.Length;i++)
+                {
+                    var item = pipelineStatus.execute_commit.sdu[i];
+                    listView_Execute_Commit.Items.Add(new{Highlight = false, List = pipelineStatus.execute_commit.sdu, ID = i, Value = "SDU" + ": " + getDisplayText(item.Instruction, item.pc)});
                 }
 
                 listView_ROB.Items.Clear();
@@ -1248,8 +1328,9 @@ namespace DreamCoreV2_model_controller
             {
                 if(id >= 0)
                 {
-                    HighlightROBItem(pipelineStatus.lsu_readreg_execute[id].rob_id, true);
-                    DisplayDetail(pipelineStatus.lsu_readreg_execute[id]);
+                    var item = ((dynamic)list.Items[id]).List[((dynamic)list.Items[id]).ID] as lsu_readreg_execute_op_info;
+                    HighlightROBItem(item.rob_id, true);
+                    DisplayDetail(item);
                 }
                 else
                 {

@@ -20,7 +20,7 @@ namespace DreamCoreV2_model_controller.Model
         public execute_wb_op_info[]? div;
         [JsonProperty("mul")]
         public execute_wb_op_info[]? mul;
-        [JsonProperty("lsu")]
-        public execute_wb_op_info[]? lsu;
+        [JsonProperty("lu")]
+        public execute_wb_op_info[]? lu;
     }
 }

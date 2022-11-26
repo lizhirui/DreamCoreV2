@@ -55,7 +55,7 @@ namespace DreamCoreV2_model_controller.Model
         [JsonProperty("new_phy_id_free_list_rstage")]
         public bool new_phy_id_free_list_rstage { get; set; }
         [JsonProperty("sub_op")]
-        public string sub_op { get; set; }
+        public string? sub_op { get; set; }
         [JsonProperty("rob_id")]
         public uint rob_id { get; set; }
         public string Instruction = "";

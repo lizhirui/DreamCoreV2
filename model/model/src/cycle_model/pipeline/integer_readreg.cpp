@@ -174,7 +174,7 @@ namespace cycle_model::pipeline
                             bool from_prf = true;
                             send_pack.src1_value = this->phy_regfile->read(rev_pack.op_info[i].rs1_phy);
                             
-                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                             {
                                 if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                 {
@@ -206,7 +206,7 @@ namespace cycle_model::pipeline
                             bool from_prf = true;
                             send_pack.src2_value = this->phy_regfile->read(rev_pack.op_info[i].rs2_phy);
                             
-                            for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                            for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                             {
                                 if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                 {

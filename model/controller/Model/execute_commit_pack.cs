@@ -20,7 +20,11 @@ namespace DreamCoreV2_model_controller.Model
         public execute_commit_op_info[]? div;
         [JsonProperty("mul")]
         public execute_commit_op_info[]? mul;
-        [JsonProperty("lsu")]
-        public execute_commit_op_info[]? lsu;
+        [JsonProperty("lu")]
+        public execute_commit_op_info[]? lu;
+        [JsonProperty("sau")]
+        public execute_commit_op_info[]? sau;
+        [JsonProperty("sdu")]
+        public execute_commit_op_info[]? sdu;
     }
 }

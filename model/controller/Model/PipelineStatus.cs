@@ -41,7 +41,7 @@ namespace DreamCoreV2_model_controller.Model
         [JsonProperty("integer_readreg_execute")]
         public integer_readreg_execute_pack? integer_readreg_execute { get; set; }
         [JsonProperty("lsu_readreg_execute")]
-        public lsu_readreg_execute_op_info[]? lsu_readreg_execute { get; set; }
+        public lsu_readreg_execute_pack? lsu_readreg_execute { get; set; }
         [JsonProperty("execute")]
         public execute? execute { get; set; }
         [JsonProperty("execute_wb")]

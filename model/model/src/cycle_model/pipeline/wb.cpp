@@ -19,7 +19,7 @@
 
 namespace cycle_model::pipeline
 {
-    wb::wb(global_inst *global, component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lsu_wb_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
+    wb::wb(global_inst *global, component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lu_wb_port, component::regfile<uint32_t> *phy_regfile) : tdb(TRACE_WB)
     {
         this->global = global;
         this->alu_wb_port = alu_wb_port;
@@ -27,7 +27,7 @@ namespace cycle_model::pipeline
         this->csr_wb_port = csr_wb_port;
         this->div_wb_port = div_wb_port;
         this->mul_wb_port = mul_wb_port;
-        this->lsu_wb_port = lsu_wb_port;
+        this->lu_wb_port = lu_wb_port;
         this->phy_regfile = phy_regfile;
         this->wb::reset();
     }
@@ -64,9 +64,9 @@ namespace cycle_model::pipeline
             this->execute_wb_port.push_back(mul_wb_port[i]);
         }
     
-        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
         {
-            this->execute_wb_port.push_back(lsu_wb_port[i]);
+            this->execute_wb_port.push_back(lu_wb_port[i]);
         }
     }
     

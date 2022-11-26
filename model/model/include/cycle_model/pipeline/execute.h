@@ -32,13 +32,13 @@ namespace cycle_model::pipeline
     
     typedef struct execute_feedback_pack_t : if_print_t
     {
-        execute_feedback_channel_t channel[EXECUTE_UNIT_NUM];
+        execute_feedback_channel_t channel[FEEDBACK_EXECUTE_UNIT_NUM];
         
         virtual json get_json()
         {
             json t = json::array();
             
-            for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
+            for(uint32_t i = 0;i < FEEDBACK_EXECUTE_UNIT_NUM;i++)
             {
                 t.push_back(channel[i].get_json());
             }

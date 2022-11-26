@@ -117,7 +117,9 @@ namespace cycle_model::pipeline
                     csr_op_t csr_op;
                     div_op_t div_op;
                     mul_op_t mul_op;
-                    lsu_op_t lsu_op;
+                    lu_op_t lu_op;
+                    sau_op_t sau_op;
+                    sdu_op_t sdu_op;
                 }sub_op;
                 
                 virtual void print(std::string indent)
@@ -177,8 +179,16 @@ namespace cycle_model::pipeline
                             std::cout << outenum(sub_op.mul_op);
                             break;
     
-                        case op_unit_t::lsu:
-                            std::cout << outenum(sub_op.lsu_op);
+                        case op_unit_t::lu:
+                            std::cout << outenum(sub_op.lu_op);
+                            break;
+    
+                        case op_unit_t::sau:
+                            std::cout << outenum(sub_op.sau_op);
+                            break;
+    
+                        case op_unit_t::sdu:
+                            std::cout << outenum(sub_op.sdu_op);
                             break;
                         
                         default:
@@ -241,8 +251,16 @@ namespace cycle_model::pipeline
                             t["sub_op"] = outenum(sub_op.mul_op);
                             break;
     
-                        case op_unit_t::lsu:
-                            t["sub_op"] = outenum(sub_op.lsu_op);
+                        case op_unit_t::lu:
+                            t["sub_op"] = outenum(sub_op.lu_op);
+                            break;
+    
+                        case op_unit_t::sau:
+                            t["sub_op"] = outenum(sub_op.sau_op);
+                            break;
+    
+                        case op_unit_t::sdu:
+                            t["sub_op"] = outenum(sub_op.sdu_op);
                             break;
                         
                         default:

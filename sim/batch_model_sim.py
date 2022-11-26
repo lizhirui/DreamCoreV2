@@ -130,7 +130,7 @@ parallel_count = 1
 rawdump = False
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-g", "--group", help="test group", choices=["riscv-tests", "benchmark", "all"], required=True)
+parser.add_argument("-g", "--group", help="test group", choices=["base-tests", "riscv-tests", "benchmark", "os", "all"], required=True)
 parser.add_argument("-j", help="parallel count limit, default is 1", nargs="?", type=int, const=0, choices=range(0, cpu_count() + 1), dest="parallel_count")
 parser.add_argument("-t", help="testcase name, default is all testcases", type=str, dest="testcase_name")
 parser.add_argument("--rawdump", help="dump all outputs", action="store_true", dest="rawdump")
@@ -150,6 +150,7 @@ if args.group == "all":
     tb_groups.append("base-tests")
     tb_groups.append("riscv-tests")
     tb_groups.append("benchmark")
+    tb_groups.append("os")
 else:
     tb_groups.append(args.group)
 

@@ -24,7 +24,7 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lsu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
+    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
@@ -39,7 +39,9 @@ namespace cycle_model::pipeline
         this->csr_commit_port = csr_commit_port;
         this->div_commit_port = div_commit_port;
         this->mul_commit_port = mul_commit_port;
-        this->lsu_commit_port = lsu_commit_port;
+        this->lu_commit_port = lu_commit_port;
+        this->sau_commit_port = sau_commit_port;
+        this->sdu_commit_port = sdu_commit_port;
         this->speculative_rat = speculative_rat;
         this->retire_rat = retire_rat;
         this->rob = rob;
@@ -84,9 +86,19 @@ namespace cycle_model::pipeline
             this->execute_commit_port.push_back(mul_commit_port[i]);
         }
         
-        for(uint32_t i = 0;i < LSU_UNIT_NUM;i++)
+        for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
         {
-            this->execute_commit_port.push_back(lsu_commit_port[i]);
+            this->execute_commit_port.push_back(lu_commit_port[i]);
+        }
+    
+        for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(sau_commit_port[i]);
+        }
+    
+        for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
+        {
+            this->execute_commit_port.push_back(sdu_commit_port[i]);
         }
     }
     

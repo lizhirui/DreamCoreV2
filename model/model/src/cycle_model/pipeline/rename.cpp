@@ -78,7 +78,7 @@ namespace cycle_model::pipeline
                                 {
                                     found_fence = true;
                                 }
-                                else if(found_fence && (rev_pack.op_unit == op_unit_t::lsu))
+                                else if(found_fence && ((rev_pack.op_unit == op_unit_t::lu) || (rev_pack.op_unit == op_unit_t::sau) || (rev_pack.op_unit == op_unit_t::sdu)))
                                 {
                                     break;//stop rename immediately
                                 }
@@ -183,8 +183,16 @@ namespace cycle_model::pipeline
                                         rob_item.sub_op = outenum(rev_pack.sub_op.mul_op);
                                         break;
         
-                                    case op_unit_t::lsu:
-                                        rob_item.sub_op = outenum(rev_pack.sub_op.lsu_op);
+                                    case op_unit_t::lu:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.lu_op);
+                                        break;
+    
+                                    case op_unit_t::sau:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.sau_op);
+                                        break;
+    
+                                    case op_unit_t::sdu:
+                                        rob_item.sub_op = outenum(rev_pack.sub_op.sdu_op);
                                         break;
         
                                     default:
@@ -273,7 +281,7 @@ namespace cycle_model::pipeline
             if(send_pack.op_info[i].enable && send_pack.op_info[i].valid && !send_pack.op_info[i].has_exception)
             {
                 verify_only((i == 0) || (send_pack.op_info[i].op_unit != op_unit_t::csr));
-                verify_only(!assertion_found_fence || (send_pack.op_info[i].op_unit != op_unit_t::lsu));
+                verify_only(!assertion_found_fence || ((send_pack.op_info[i].op_unit != op_unit_t::lu) && (send_pack.op_info[i].op_unit != op_unit_t::sau) && (send_pack.op_info[i].op_unit != op_unit_t::sdu)));
                 
                 if(send_pack.op_info[i].op == op_t::fence)
                 {

@@ -196,9 +196,9 @@
                     <RotateTransform Angle="90" />
                 </Separator.LayoutTransform>
             </Separator>
-            <Label VerticalAlignment="Center" Content="LSU__L2: " />
-            <Label VerticalAlignment="Center" Content="Stall" Background="Green" Foreground="White" Margin="5,2,5,2" x:Name="label_LSU_L2_Stall" />
-            <Label VerticalAlignment="Center" Content="Addr: 0x80000000" x:Name="label_LSU_L2_Addr" />
+            <Label VerticalAlignment="Center" Content="LU__L2: " />
+            <Label VerticalAlignment="Center" Content="Stall" Background="Green" Foreground="White" Margin="5,2,5,2" x:Name="label_LU_L2_Stall" />
+            <Label VerticalAlignment="Center" Content="Addr: 0x80000000" x:Name="label_LU_L2_Addr" />
         </StackPanel>
         <Grid Grid.Column="0" x:Name="GridCol0Width" />
         <Grid Grid.Column="1" x:Name="GridCol1Width" />
@@ -343,7 +343,7 @@
             </ListView.View>
         </local:ArrowKeyBypassListView>
         <Label Grid.Row="23" Grid.Column="3" VerticalAlignment="Center" Content="Execute->Commit:" />
-        <local:ArrowKeyBypassListView Grid.Row="24" Grid.Column="3" Grid.RowSpan="6" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_Execute_Commit" PreviewMouseLeftButtonUp="listView_Execute_Commit_PreviewMouseLeftButtonUp">
+        <local:ArrowKeyBypassListView Grid.Row="24" Grid.Column="3" Grid.RowSpan="7" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_Execute_Commit" PreviewMouseLeftButtonUp="listView_Execute_Commit_PreviewMouseLeftButtonUp">
             <ListView.View>
                 <GridView ColumnHeaderContainerStyle="{StaticResource ListViewHeaderHidden}">
                     <GridViewColumn Header="Value" Width="{Binding ElementName=GridCol0Width,Path=ActualWidth}"  DisplayMemberBinding="{Binding Path=Value}" />

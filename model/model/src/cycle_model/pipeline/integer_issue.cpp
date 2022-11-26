@@ -579,7 +579,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs1_need_map)
                             {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
@@ -590,7 +590,7 @@ namespace cycle_model::pipeline
                                 
                                 if(!src1_ready[issue_id])
                                 {
-                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
@@ -619,7 +619,7 @@ namespace cycle_model::pipeline
                         {
                             if(rev_pack.op_info[i].rs2_need_map)
                             {
-                                for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                 {
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
@@ -630,7 +630,7 @@ namespace cycle_model::pipeline
                                 
                                 if(!src2_ready[issue_id])
                                 {
-                                    for(uint32_t j = 0;j < EXECUTE_UNIT_NUM;j++)
+                                    for(uint32_t j = 0;j < FEEDBACK_EXECUTE_UNIT_NUM;j++)
                                     {
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {
