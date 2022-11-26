@@ -24,7 +24,7 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer) :
+    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue) :
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
@@ -51,6 +51,7 @@ namespace cycle_model::pipeline
         this->interrupt_interface = interrupt_interface;
         this->branch_predictor_set = branch_predictor_set;
         this->checkpoint_buffer = checkpoint_buffer;
+        this->load_queue = load_queue;
         this->commit::reset();
     }
     
@@ -142,6 +143,7 @@ namespace cycle_model::pipeline
                 rob->flush();
                 phy_regfile->restore(retire_rat);
                 phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
+                load_queue->flush();
                 rob->set_committed(true);
                 need_flush = true;
             }
@@ -177,6 +179,7 @@ namespace cycle_model::pipeline
                                 rob->flush();
                                 phy_regfile->restore(retire_rat);
                                 phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
+                                load_queue->flush();
                                 rob->set_committed(true);
                                 rob->add_commit_num(1);
                                 need_flush = true;
@@ -204,6 +207,30 @@ namespace cycle_model::pipeline
                                 {
                                     csr_file->write(rob_item.csr_addr, rob_item.csr_newvalue);
                                     breakpoint_csr_trigger(rob_item.csr_addr, rob_item.csr_newvalue, true);
+                                }
+                                
+                                //load handle
+                                if(rob_item.load_queue_id_valid)
+                                {
+                                    if(load_queue->get_conflict(rob_item.load_queue_id) && !rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                    {
+                                        feedback_pack.jump_enable = true;
+                                        feedback_pack.jump = true;
+                                        feedback_pack.jump_next_pc = rob_item.pc;
+                                        feedback_pack.flush = true;
+                                        speculative_rat->load(retire_rat);
+                                        rob->flush();
+                                        phy_regfile->restore(retire_rat);
+                                        phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
+                                        load_queue->flush();
+                                        rob->set_committed(true);
+                                        rob->add_commit_num(1);
+                                        need_flush = true;
+                                        break;
+                                    }
+                                    
+                                    component::load_queue_item_t t_item;
+                                    load_queue->pop(&t_item);
                                 }
             
                                 //branch handle
@@ -303,6 +330,7 @@ namespace cycle_model::pipeline
                                                 rob->flush();
                                                 phy_regfile->restore(retire_rat);
                                                 phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
+                                                load_queue->flush();
                                                 need_flush = true;
                                             }
                                         }

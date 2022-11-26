@@ -40,6 +40,8 @@ namespace cycle_model::component
         uint32_t new_phy_id_free_list_rptr = 0;
         bool new_phy_id_free_list_rstage = false;
         component::branch_predictor_info_pack_t branch_predictor_info_pack;
+        bool load_queue_id_valid = false;
+        uint32_t load_queue_id = 0;
         //-----only for debug-----
         std::string sub_op;
         //-----only for debug-----

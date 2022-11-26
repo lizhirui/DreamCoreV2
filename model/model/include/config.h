@@ -20,6 +20,7 @@ const uint32_t LSU_ISSUE_QUEUE_SIZE = 16;
 const uint32_t ROB_SIZE = 64;
 const uint32_t STORE_BUFFER_SIZE = 16;
 const uint32_t CHECKPOINT_BUFFER_SIZE = 64;
+const uint32_t LOAD_QUEUE_SIZE = 32;
 #define ENABLE_CHECKPOINT
 
 const uint32_t ALU_UNIT_NUM = 2;

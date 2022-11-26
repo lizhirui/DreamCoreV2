@@ -34,11 +34,11 @@ namespace cycle_model::pipeline
         this->jump_wait = false;
     }
     
-    void fetch1::run(const fetch2_feedback_pack_t &fetch2_feedback_pack, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void fetch1::run(const fetch2_feedback_pack_t &fetch2_feedback_pack, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         fetch1_fetch2_pack_t send_pack;
         
-        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !fetch2_feedback_pack.pc_redirect)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !sau_feedback_pack.flush && !fetch2_feedback_pack.pc_redirect)
         {
             if(jump_wait)
             {
@@ -252,6 +252,12 @@ namespace cycle_model::pipeline
         {
             this->jump_wait = false;
             this->pc = bru_feedback_pack.next_pc;
+            this->fetch1_fetch2_port->set(send_pack);
+        }
+        else if(sau_feedback_pack.flush)
+        {
+            this->jump_wait = false;
+            this->pc = sau_feedback_pack.next_pc;
             this->fetch1_fetch2_port->set(send_pack);
         }
         else if(fetch2_feedback_pack.pc_redirect)

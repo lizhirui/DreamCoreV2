@@ -20,5 +20,5 @@ endif()
 include_directories(./include ./tools ./include_third_party)
 file(GLOB_RECURSE src_files CONFIGURE_DEPENDS "./src/*.cpp" "./include/*.h" "./include/*.hpp" "./tools/*.h" "./tools/*.cpp")
 
-add_executable(sim ${src_files} include/cycle_model/pipeline/execute/sau.h include/cycle_model/pipeline/execute/sdu.h src/cycle_model/pipeline/execute/sau.cpp src/cycle_model/pipeline/execute/sdu.cpp)
+add_executable(sim ${src_files} include/cycle_model/pipeline/execute/sau.h include/cycle_model/pipeline/execute/sdu.h src/cycle_model/pipeline/execute/sau.cpp src/cycle_model/pipeline/execute/sdu.cpp include/cycle_model/component/load_queue.h include/cycle_model/pipeline/execute/bru_define.h include/cycle_model/pipeline/execute/sau_define.h)
 target_link_libraries(sim pthread)

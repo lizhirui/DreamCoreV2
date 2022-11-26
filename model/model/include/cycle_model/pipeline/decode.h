@@ -13,8 +13,9 @@
 #include "../component/fifo.h"
 #include "fetch2_decode.h"
 #include "decode_rename.h"
-#include "execute/bru.h"
 #include "commit.h"
+#include "cycle_model/pipeline/execute/bru_define.h"
+#include "cycle_model/pipeline/execute/sau_define.h"
 
 namespace cycle_model::pipeline
 {
@@ -41,6 +42,6 @@ namespace cycle_model::pipeline
         public:
             decode(global_inst *global, component::fifo<fetch2_decode_pack_t> *fetch2_decode_fifo, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
             virtual void reset();
-            decode_feedback_pack_t run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            decode_feedback_pack_t run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

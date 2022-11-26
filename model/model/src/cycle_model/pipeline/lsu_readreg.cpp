@@ -40,14 +40,14 @@ namespace cycle_model::pipeline
         this->hold_rev_pack = lsu_issue_readreg_pack_t();
     }
     
-    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_readreg_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;
     
         if(!commit_feedback_pack.flush)
         {
-            if(bru_feedback_pack.flush)
+            if(bru_feedback_pack.flush || sau_feedback_pack.flush)
             {
                 for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
                 {
@@ -56,7 +56,12 @@ namespace cycle_model::pipeline
                         lsu_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_lu_hdff[i]->get_data(&tmp_pack));
                 
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_lu_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_lu_hdff[i]->flush();
                         }
@@ -69,8 +74,13 @@ namespace cycle_model::pipeline
                     {
                         lsu_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_sau_hdff[i]->get_data(&tmp_pack));
-            
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_sau_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_sau_hdff[i]->flush();
                         }
@@ -83,8 +93,13 @@ namespace cycle_model::pipeline
                     {
                         lsu_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_sdu_hdff[i]->get_data(&tmp_pack));
-            
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_sdu_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_sdu_hdff[i]->flush();
                         }
@@ -119,6 +134,7 @@ namespace cycle_model::pipeline
                 send_pack.has_exception = rev_pack.op_info[i].has_exception;
                 send_pack.exception_id = rev_pack.op_info[i].exception_id;
                 send_pack.exception_value = rev_pack.op_info[i].exception_value;
+                send_pack.branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
             
                 send_pack.rs1 = rev_pack.op_info[i].rs1;
                 send_pack.arg1_src = rev_pack.op_info[i].arg1_src;
@@ -139,6 +155,7 @@ namespace cycle_model::pipeline
             
                 send_pack.csr = rev_pack.op_info[i].csr;
                 send_pack.store_buffer_id = rev_pack.op_info[i].store_buffer_id;
+                send_pack.load_queue_id = rev_pack.op_info[i].load_queue_id;
                 send_pack.op = rev_pack.op_info[i].op;
                 send_pack.op_unit = rev_pack.op_info[i].op_unit;
                 memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
@@ -146,6 +163,11 @@ namespace cycle_model::pipeline
                 if(rev_pack.op_info[i].enable)
                 {
                     if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        continue;//skip this instruction due to which is younger than the flush age
+                    }
+                    
+                    if(sau_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                     {
                         continue;//skip this instruction due to which is younger than the flush age
                     }

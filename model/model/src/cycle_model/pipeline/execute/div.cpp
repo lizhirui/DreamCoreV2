@@ -33,7 +33,7 @@ namespace cycle_model::pipeline::execute
         this->progress = 0;
     }
     
-    execute_feedback_channel_t div::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    execute_feedback_channel_t div::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         execute_feedback_channel_t feedback_pack;
         feedback_pack.enable = false;
@@ -50,6 +50,12 @@ namespace cycle_model::pipeline::execute
                     verify(readreg_div_hdff->pop(&rev_pack));
     
                     if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        div_wb_port->set(execute_wb_pack_t());
+                        return feedback_pack;
+                    }
+    
+                    if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                     {
                         div_wb_port->set(execute_wb_pack_t());
                         return feedback_pack;
@@ -126,6 +132,12 @@ namespace cycle_model::pipeline::execute
             if(this->busy)
             {
                 if(bru_feedback_pack.flush && (component::age_compare(send_pack.rob_id, send_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                {
+                    this->busy = false;
+                    this->progress = 0;
+                    div_wb_port->set(execute_wb_pack_t());
+                }
+                else if(sau_feedback_pack.flush && (component::age_compare(send_pack.rob_id, send_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                 {
                     this->busy = false;
                     this->progress = 0;

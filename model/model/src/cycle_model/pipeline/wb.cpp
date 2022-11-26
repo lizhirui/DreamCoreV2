@@ -70,7 +70,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    wb_feedback_pack_t wb::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    wb_feedback_pack_t wb::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         wb_feedback_pack_t feedback_pack;
         
@@ -89,6 +89,11 @@ namespace cycle_model::pipeline
                 rev_pack = this->execute_wb_port[i]->get();
     
                 if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                {
+                    continue;//skip this instruction due to which is younger than the flush age
+                }
+    
+                if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                 {
                     continue;//skip this instruction due to which is younger than the flush age
                 }

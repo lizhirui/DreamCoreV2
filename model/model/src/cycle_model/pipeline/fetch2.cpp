@@ -32,7 +32,7 @@ namespace cycle_model::pipeline
         this->rev_pack = fetch1_fetch2_pack_t();
     }
     
-    fetch2_feedback_pack_t fetch2::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    fetch2_feedback_pack_t fetch2::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         fetch2_decode_pack_t send_pack;
         fetch2_feedback_pack_t feedback_pack;
@@ -42,7 +42,7 @@ namespace cycle_model::pipeline
         feedback_pack.pc_redirect = false;
         feedback_pack.new_pc = 0;
         
-        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !sau_feedback_pack.flush)
         {
             //if no hold rev_pack exists, get a new instruction pack
             if(!this->busy)

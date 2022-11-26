@@ -20,7 +20,7 @@
 
 namespace cycle_model::pipeline::execute
 {
-    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint) : tdb(TRACE_EXECUTE_LSU)
+    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue) : tdb(TRACE_EXECUTE_LSU)
     {
         this->global = global;
         this->id = id;
@@ -29,6 +29,7 @@ namespace cycle_model::pipeline::execute
         this->bus = bus;
         this->store_buffer = store_buffer;
         this->clint = clint;
+        this->load_queue = load_queue;
         this->lu::reset();
     }
     
@@ -39,7 +40,7 @@ namespace cycle_model::pipeline::execute
         this->l2_addr = 0;
     }
     
-    execute_feedback_channel_t lu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    execute_feedback_channel_t lu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         //level 2 pipeline: get memory data
         execute_wb_pack_t send_pack;
@@ -47,7 +48,8 @@ namespace cycle_model::pipeline::execute
         this->l2_stall = false;//cancel l2_stall signal temporarily
         
         if(l2_rev_pack.enable && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||
-          (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))))
+          (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+          && (!sau_feedback_pack.flush || (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
         {
             verify_only(l2_rev_pack.valid);
             send_pack.enable = l2_rev_pack.enable;
@@ -61,7 +63,7 @@ namespace cycle_model::pipeline::execute
             send_pack.has_exception = l2_rev_pack.has_exception;
             send_pack.exception_id = l2_rev_pack.exception_id;
             send_pack.exception_value = l2_rev_pack.exception_value;
-            send_pack.branch_predictor_info_pack.predicted = false;
+            send_pack.branch_predictor_info_pack = l2_rev_pack.branch_predictor_info_pack;
             
             send_pack.rs1 = l2_rev_pack.rs1;
             send_pack.arg1_src = l2_rev_pack.arg1_src;
@@ -81,6 +83,7 @@ namespace cycle_model::pipeline::execute
             send_pack.rd_phy = l2_rev_pack.rd_phy;
             
             send_pack.csr = l2_rev_pack.csr;
+            send_pack.load_queue_id = l2_rev_pack.load_queue_id;
             send_pack.op = l2_rev_pack.op;
             send_pack.op_unit = l2_rev_pack.op_unit;
             memcpy((void *)&send_pack.sub_op, (void *)&l2_rev_pack.sub_op, sizeof(l2_rev_pack.sub_op));
@@ -151,6 +154,13 @@ namespace cycle_model::pipeline::execute
                         l2_rev_pack = {};
                         goto exit;
                     }
+    
+                    if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
+                    {
+                        l2_addr = 0;
+                        l2_rev_pack = {};
+                        goto exit;
+                    }
                     
                     l2_addr = 0;
                     l2_rev_pack.enable = rev_pack.enable;
@@ -164,6 +174,7 @@ namespace cycle_model::pipeline::execute
                     l2_rev_pack.has_exception = rev_pack.has_exception;
                     l2_rev_pack.exception_id = rev_pack.exception_id;
                     l2_rev_pack.exception_value = rev_pack.exception_value;
+                    l2_rev_pack.branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
     
                     l2_rev_pack.rs1 = rev_pack.rs1;
                     l2_rev_pack.arg1_src = rev_pack.arg1_src;
@@ -184,6 +195,7 @@ namespace cycle_model::pipeline::execute
     
                     l2_rev_pack.csr = rev_pack.csr;
                     l2_rev_pack.store_buffer_id = rev_pack.store_buffer_id;
+                    l2_rev_pack.load_queue_id = rev_pack.load_queue_id;
                     l2_rev_pack.op = rev_pack.op;
                     l2_rev_pack.op_unit = rev_pack.op_unit;
                     memcpy(&l2_rev_pack.sub_op, &rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -248,6 +260,19 @@ namespace cycle_model::pipeline::execute
                                     verify_only(0);
                                     break;
                             }
+                            
+                            component::load_queue_item_t load_queue_item;
+                            load_queue_item.addr_valid = true;
+                            load_queue_item.pc = rev_pack.pc;
+                            load_queue_item.rob_id = rev_pack.rob_id;
+                            load_queue_item.rob_id_stage = rev_pack.rob_id_stage;
+                            load_queue_item.addr = l2_addr;
+                            load_queue_item.size = (rev_pack.sub_op.lu_op == lu_op_t::lb || rev_pack.sub_op.lu_op == lu_op_t::lbu) ? 1 :
+                                                   (rev_pack.sub_op.lu_op == lu_op_t::lh || rev_pack.sub_op.lu_op == lu_op_t::lhu) ? 2 : 4;
+                            load_queue_item.checkpoint_id_valid = rev_pack.branch_predictor_info_pack.checkpoint_id_valid;
+                            load_queue_item.checkpoint_id = rev_pack.branch_predictor_info_pack.checkpoint_id;
+                            load_queue->set_item(rev_pack.load_queue_id, load_queue_item);
+                            load_queue->write_conflict(rev_pack.load_queue_id, false);
                         }
                     }
                 }

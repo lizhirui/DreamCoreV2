@@ -35,7 +35,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    void sdu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void sdu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         execute_wb_pack_t send_pack;
         lsu_readreg_execute_pack_t rev_pack;
@@ -46,6 +46,11 @@ namespace cycle_model::pipeline::execute
             if(readreg_sdu_hdff->pop(&rev_pack))
             {
                 if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                {
+                    goto exit;
+                }
+    
+                if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                 {
                     goto exit;
                 }

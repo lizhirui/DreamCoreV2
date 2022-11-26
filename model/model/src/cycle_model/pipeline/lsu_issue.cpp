@@ -51,7 +51,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_issue_output_feedback_pack_t feedback_pack;
         lsu_issue_readreg_pack_t send_pack;
@@ -81,15 +81,19 @@ namespace cycle_model::pipeline
                             lsu_issue_readreg_port->set(send_pack);
                             return feedback_pack;
                         }
-                        
-                        if(bru_feedback_pack.flush)
+    
+                        if(bru_feedback_pack.flush && component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
                         {
-                            if(component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
-                            {
-                                //skip this instruction
-                                lsu_issue_readreg_port->set(send_pack);
-                                return feedback_pack;
-                            }
+                            //skip this instruction
+                            lsu_issue_readreg_port->set(send_pack);
+                            return feedback_pack;
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
+                        {
+                            //skip this instruction
+                            lsu_issue_readreg_port->set(send_pack);
+                            return feedback_pack;
                         }
                         
                         verify(issue_q.pop(&rev_pack));
@@ -107,6 +111,7 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].has_exception = rev_pack.has_exception;
                         send_pack.op_info[0].exception_id = rev_pack.exception_id;
                         send_pack.op_info[0].exception_value = rev_pack.exception_value;
+                        send_pack.op_info[0].branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
     
                         send_pack.op_info[0].rs1 = rev_pack.rs1;
                         send_pack.op_info[0].arg1_src = rev_pack.arg1_src;
@@ -125,6 +130,7 @@ namespace cycle_model::pipeline
     
                         send_pack.op_info[0].csr = rev_pack.csr;
                         send_pack.op_info[0].store_buffer_id = 0;
+                        send_pack.op_info[0].load_queue_id = rev_pack.load_queue_id;
                         send_pack.op_info[0].op = rev_pack.op;
                         send_pack.op_info[0].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -169,15 +175,21 @@ namespace cycle_model::pipeline
         return feedback_pack;
     }
     
-    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
-            if(bru_feedback_pack.flush)
+            if(bru_feedback_pack.flush || sau_feedback_pack.flush)
             {
                 issue_q.customer_foreach([=](uint32_t id, bool stage, const issue_queue_item_t &item)->bool
                 {
-                    if(component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                    if(bru_feedback_pack.flush && component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                    {
+                        issue_q.update_wptr(id, stage);
+                        return false;
+                    }
+    
+                    if(sau_feedback_pack.flush && component::age_compare(item.rob_id, item.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                     {
                         issue_q.update_wptr(id, stage);
                         return false;
@@ -329,7 +341,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         lsu_issue_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;//generate stall signal to prevent dispatch from dispatching new instructions
@@ -362,6 +374,20 @@ namespace cycle_model::pipeline
                     }
                 }
             }
+    
+            if(sau_feedback_pack.flush)
+            {
+                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                {
+                    if(rev_pack.op_info[i].enable)
+                    {
+                        if((component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
+                        {
+                            rev_pack.op_info[i].enable = false;//skip this instruction due to which is younger than the flush age
+                        }
+                    }
+                }
+            }
             
             for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
             {
@@ -381,6 +407,7 @@ namespace cycle_model::pipeline
                     item.has_exception = rev_pack.op_info[i].has_exception;
                     item.exception_id = rev_pack.op_info[i].exception_id;
                     item.exception_value = rev_pack.op_info[i].exception_value;
+                    item.branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
     
                     item.rs1 = rev_pack.op_info[i].rs1;
                     item.arg1_src = rev_pack.op_info[i].arg1_src;
@@ -398,6 +425,7 @@ namespace cycle_model::pipeline
                     item.rd_phy = rev_pack.op_info[i].rd_phy;
     
                     item.csr = rev_pack.op_info[i].csr;
+                    item.load_queue_id = rev_pack.op_info[i].load_queue_id;
                     item.op = rev_pack.op_info[i].op;
                     item.op_unit = rev_pack.op_info[i].op_unit;
                     memcpy((void *)&item.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));

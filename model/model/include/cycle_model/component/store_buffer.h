@@ -12,7 +12,8 @@
 #include "common.h"
 #include "fifo.h"
 #include "bus.h"
-#include "../pipeline/execute/bru.h"
+#include "../pipeline/execute/bru_define.h"
+#include "../pipeline/execute/sau_define.h"
 #include "../pipeline/commit.h"
 #include "slave/memory.h"
 #include "slave/clint.h"
@@ -30,12 +31,6 @@ namespace cycle_model::component
         uint32_t data = 0;
         uint64_t cycle = 0;//only for debug
     }store_buffer_item_t;
-    
-    typedef struct store_buffer_state_pack_t
-    {
-        uint32_t wptr;
-        bool wstage;
-    }store_buffer_state_pack_t;
     
     class store_buffer : public fifo<store_buffer_item_t>
     {
@@ -132,21 +127,6 @@ namespace cycle_model::component
             {
                 return &tdb;
             }
-            
-            store_buffer_state_pack_t save()
-            {
-                store_buffer_state_pack_t pack;
-                
-                pack.wptr = wptr.get();
-                pack.wstage = wstage.get();
-                return pack;
-            }
-            
-            void restore(store_buffer_state_pack_t pack)
-            {
-                wptr.set(pack.wptr);
-                wstage.set(pack.wstage);
-            }
         
             virtual void set_item(uint32_t id, store_buffer_item_t value)
             {
@@ -211,7 +191,7 @@ namespace cycle_model::component
                 return {result, feedback_mask};
             }
             
-            void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)
+            void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::execute::sau_feedback_pack_t &sau_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)
             {
                 if(commit_feedback_pack.flush)
                 {
@@ -265,6 +245,19 @@ namespace cycle_model::component
                     customer_foreach([=](uint32_t id, bool stage, const store_buffer_item_t &item)->bool
                     {
                         if(component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            update_wptr(id, stage);
+                            return false;
+                        }
+                        
+                        return true;
+                    });
+                }
+                else if(sau_feedback_pack.flush)
+                {
+                    customer_foreach([=](uint32_t id, bool stage, const store_buffer_item_t &item)->bool
+                    {
+                        if(component::age_compare(item.rob_id, item.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             update_wptr(id, stage);
                             return false;

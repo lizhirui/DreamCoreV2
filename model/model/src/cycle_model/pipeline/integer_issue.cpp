@@ -89,7 +89,7 @@ namespace cycle_model::pipeline
         this->next_port_index = 0;
     }
     
-    integer_issue_output_feedback_pack_t integer_issue::run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    integer_issue_output_feedback_pack_t integer_issue::run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         integer_issue_output_feedback_pack_t feedback_pack;
         integer_issue_readreg_pack_t send_pack;
@@ -111,7 +111,8 @@ namespace cycle_model::pipeline
                 {
                     if(issue_q.is_valid(j) && (op_unit_seq[j] & op_unit_seq_mask[i]) && port_index[j] == i && src1_ready[j] && src2_ready[j] && (!selected_valid[i] ||
                        (component::age_compare(rob_id[j], rob_id_stage[j]) > component::age_compare(selected_rob_id[i], selected_rob_id_stage[i]))) &&
-                       (!bru_feedback_pack.flush || (component::age_compare(rob_id[j], rob_id_stage[j]) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))))
+                       (!bru_feedback_pack.flush || (component::age_compare(rob_id[j], rob_id_stage[j]) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))) &&
+                       (!sau_feedback_pack.flush || (component::age_compare(rob_id[j], rob_id_stage[j]) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
                     {
                         selected_issue_id[i] = j;
                         selected_rob_id[i] = rob_id[j];
@@ -354,7 +355,7 @@ namespace cycle_model::pipeline
         return feedback_pack;
     }
     
-    void integer_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void integer_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
@@ -365,6 +366,12 @@ namespace cycle_model::pipeline
                     auto item = issue_q.customer_get_item(i);
                     
                     if(bru_feedback_pack.flush && (component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        issue_q.set_valid(i, false);
+                        continue;
+                    }
+    
+                    if(sau_feedback_pack.flush && (component::age_compare(item.rob_id, item.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                     {
                         issue_q.set_valid(i, false);
                         continue;
@@ -506,12 +513,12 @@ namespace cycle_model::pipeline
         }
     }
     
-    integer_issue_feedback_pack_t integer_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    integer_issue_feedback_pack_t integer_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         integer_issue_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;//generate stall signal to prevent dispatch from dispatching new instructions
         
-        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !sau_feedback_pack.flush)
         {
             dispatch_issue_pack_t rev_pack;
             
@@ -827,7 +834,7 @@ namespace cycle_model::pipeline
             
             next_port_index = 0;
         }
-        else if(bru_feedback_pack.flush)
+        else if(bru_feedback_pack.flush || sau_feedback_pack.flush)
         {
             busy = false;
             hold_rev_pack = dispatch_issue_pack_t();

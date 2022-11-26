@@ -182,6 +182,30 @@ namespace cycle_model::component
                 *front_id = rptr.get_new();
                 return true;
             }
+        
+            bool producer_get_front_id_stage(uint32_t *front_id, bool *front_stage)
+            {
+                if(producer_is_empty())
+                {
+                    return false;
+                }
+            
+                *front_id = rptr.get();
+                *front_stage = rstage.get();
+                return true;
+            }
+        
+            bool customer_get_front_id_stage(uint32_t *front_id, bool *front_stage)
+            {
+                if(customer_is_empty())
+                {
+                    return false;
+                }
+            
+                *front_id = rptr.get_new();
+                *front_stage = rstage.get_new();
+                return true;
+            }
 
             bool producer_get_tail_id(uint32_t *tail_id)
             {
@@ -202,6 +226,30 @@ namespace cycle_model::component
                 }
 
                 *tail_id = (wptr.get() + this->size - 1) % this->size;
+                return true;
+            }
+        
+            bool producer_get_tail_id_stage(uint32_t *tail_id, bool *tail_id_stage)
+            {
+                if(producer_is_empty())
+                {
+                    return false;
+                }
+            
+                *tail_id = (wptr.get_new() + this->size - 1) % this->size;
+                *tail_id_stage = (wptr.get_new() == 0) ? !wstage.get_new() : wstage.get_new();
+                return true;
+            }
+        
+            bool customer_get_tail_id_stage(uint32_t *tail_id, bool *tail_id_stage)
+            {
+                if(customer_is_empty())
+                {
+                    return false;
+                }
+            
+                *tail_id = (wptr.get() + this->size - 1) % this->size;
+                *tail_id_stage = (wptr.get() == 0) ? !wstage.get() : wstage.get();
                 return true;
             }
 

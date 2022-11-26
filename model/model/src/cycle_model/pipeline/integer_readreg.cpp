@@ -41,11 +41,11 @@ namespace cycle_model::pipeline
     
     }
     
-    void integer_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void integer_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
-            if(bru_feedback_pack.flush)
+            if(bru_feedback_pack.flush || sau_feedback_pack.flush)
             {
                 for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
                 {
@@ -54,7 +54,12 @@ namespace cycle_model::pipeline
                         integer_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_alu_hdff[i]->get_data(&tmp_pack));
                 
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_alu_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_alu_hdff[i]->flush();
                         }
@@ -67,8 +72,13 @@ namespace cycle_model::pipeline
                     {
                         integer_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_bru_hdff[i]->get_data(&tmp_pack));
-                
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_bru_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_bru_hdff[i]->flush();
                         }
@@ -81,8 +91,13 @@ namespace cycle_model::pipeline
                     {
                         integer_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_csr_hdff[i]->get_data(&tmp_pack));
-                
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_csr_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_csr_hdff[i]->flush();
                         }
@@ -95,8 +110,13 @@ namespace cycle_model::pipeline
                     {
                         integer_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_div_hdff[i]->get_data(&tmp_pack));
-                
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_div_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_div_hdff[i]->flush();
                         }
@@ -109,8 +129,13 @@ namespace cycle_model::pipeline
                     {
                         integer_readreg_execute_pack_t tmp_pack;
                         verify(this->readreg_mul_hdff[i]->get_data(&tmp_pack));
-                
-                        if(component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+    
+                        if(bru_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+                        {
+                            this->readreg_mul_hdff[i]->flush();
+                        }
+    
+                        if(sau_feedback_pack.flush && component::age_compare(tmp_pack.rob_id, tmp_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
                         {
                             this->readreg_mul_hdff[i]->flush();
                         }
@@ -162,6 +187,11 @@ namespace cycle_model::pipeline
                 if(rev_pack.op_info[i].enable)
                 {
                     if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        continue;//skip this instruction due to which is younger than the flush age
+                    }
+    
+                    if(sau_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                     {
                         continue;//skip this instruction due to which is younger than the flush age
                     }

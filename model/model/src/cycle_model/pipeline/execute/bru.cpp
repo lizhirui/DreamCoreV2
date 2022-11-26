@@ -17,7 +17,7 @@
 
 namespace cycle_model::pipeline::execute
 {
-    bru::bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::branch_predictor_set *branch_predictor_set) : tdb(TRACE_EXECUTE_BRU)
+    bru::bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::branch_predictor_set *branch_predictor_set, component::load_queue *load_queue) : tdb(TRACE_EXECUTE_BRU)
     {
         this->global = global;
         this->id = id;
@@ -30,6 +30,7 @@ namespace cycle_model::pipeline::execute
         this->phy_id_free_list = phy_id_free_list;
         this->checkpoint_buffer = checkpoint_buffer;
         this->branch_predictor_set = branch_predictor_set;
+        this->load_queue = load_queue;
         this->bru::reset();
     }
     
@@ -38,7 +39,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    std::variant<execute_feedback_channel_t, bru_feedback_pack_t> bru::run(const commit_feedback_pack_t &commit_feedback_pack, bool need_bru_feedback_only)
+    std::variant<execute_feedback_channel_t, bru_feedback_pack_t> bru::run(const sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_bru_feedback_only)
     {
         execute_wb_pack_t send_pack;
         
@@ -53,6 +54,11 @@ namespace cycle_model::pipeline::execute
             else
             {
                 verify(readreg_bru_hdff->pop(&rev_pack));
+            }
+    
+            if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
+            {
+                goto exit;
             }
             
             send_pack.enable = rev_pack.enable;
@@ -146,6 +152,8 @@ namespace cycle_model::pipeline::execute
             }
         }
         
+        exit:
+        
         if(!need_bru_feedback_only)
         {
             bru_wb_port->set(send_pack);
@@ -180,6 +188,7 @@ namespace cycle_model::pipeline::execute
                 phy_regfile->restore(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage);
                 checkpoint_buffer->update_wptr(cp.new_checkpoint_buffer_wptr, cp.new_checkpoint_buffer_wstage);
                 phy_id_free_list->restore(cp.new_phy_id_free_list_rptr, cp.new_phy_id_free_list_rstage);
+                load_queue->update_wptr(cp.old_load_queue_wptr, cp.old_load_queue_wstage);
                 branch_predictor_set->bi_mode.bru_speculative_update_sync(send_pack.pc, send_pack.bru_jump, send_pack.bru_next_pc, false, send_pack.branch_predictor_info_pack);
                 branch_predictor_set->l1_btb.bru_speculative_update_sync(send_pack.pc, send_pack.bru_jump, send_pack.bru_next_pc, false, send_pack.branch_predictor_info_pack);
             }

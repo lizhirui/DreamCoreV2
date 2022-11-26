@@ -18,8 +18,9 @@
 #include "fetch2.h"
 #include "decode.h"
 #include "rename.h"
-#include "execute/bru.h"
 #include "commit.h"
+#include "cycle_model/pipeline/execute/bru_define.h"
+#include "cycle_model/pipeline/execute/sau_define.h"
 
 namespace cycle_model::pipeline
 {
@@ -39,7 +40,7 @@ namespace cycle_model::pipeline
         public:
             fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc);
             virtual void reset();
-            void run(const fetch2_feedback_pack_t &fetch2_feedback_pack_t, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run(const fetch2_feedback_pack_t &fetch2_feedback_pack_t, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             uint32_t get_pc() const;
             virtual void print(std::string indent);
             virtual json get_json();

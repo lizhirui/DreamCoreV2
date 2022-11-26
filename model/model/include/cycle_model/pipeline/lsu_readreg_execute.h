@@ -29,6 +29,7 @@ namespace cycle_model::pipeline
         bool has_exception = false;
         riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
         uint32_t exception_value = 0;
+        component::branch_predictor_info_pack_t branch_predictor_info_pack;
     
         uint32_t rs1 = 0;
         arg_src_t arg1_src = arg_src_t::reg;
@@ -49,6 +50,7 @@ namespace cycle_model::pipeline
     
         uint32_t csr = 0;
         uint32_t store_buffer_id = 0;
+        uint32_t load_queue_id = 0;
         op_t op = op_t::add;
         op_unit_t op_unit = op_unit_t::alu;
     

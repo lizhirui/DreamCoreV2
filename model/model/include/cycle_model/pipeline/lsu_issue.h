@@ -27,9 +27,10 @@ namespace cycle_model::pipeline
 #include "lsu_issue_readreg.h"
 #include "integer_issue.h"
 #include "lsu_readreg.h"
-#include "execute/bru.h"
 #include "wb.h"
 #include "commit.h"
+#include "execute/bru_define.h"
+#include "execute/sau_define.h"
 
 namespace cycle_model::pipeline
 {
@@ -89,6 +90,7 @@ namespace cycle_model::pipeline
                 bool has_exception = false;
                 riscv_exception_t exception_id = riscv_exception_t::instruction_address_misaligned;
                 uint32_t exception_value = 0;
+                component::branch_predictor_info_pack_t branch_predictor_info_pack;
                 
                 uint32_t rs1 = 0;
                 arg_src_t arg1_src = arg_src_t::reg;
@@ -106,6 +108,8 @@ namespace cycle_model::pipeline
                 uint32_t rd_phy = 0;
                 
                 uint32_t csr = 0;
+                uint32_t store_buffer_id = 0;
+                uint32_t load_queue_id = 0;
                 op_t op = op_t::add;
                 op_unit_t op_unit = op_unit_t::alu;
                 
@@ -297,9 +301,9 @@ namespace cycle_model::pipeline
         public:
             lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::store_buffer *store_buffer);
             virtual void reset();
-            lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            lsu_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            lsu_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t latency_to_wakeup_shift(uint32_t latency);
             virtual void print(std::string indent);
             virtual json get_json();

@@ -137,6 +137,21 @@ namespace cycle_model::component
                     }
                 }
             }
+        
+            void restore_equal(uint32_t rob_id, bool rob_id_stage)
+            {
+                for(uint32_t i = 0;i < size;i++)
+                {
+                    if(reg_data_valid[i].get() && !reg_oldest[i].get())
+                    {
+                        if(age_compare(reg_rob_id[i].get(), reg_rob_id_stage[i].get()) <= age_compare(rob_id, rob_id_stage))
+                        {
+                            reg_data_valid[i].set(false);
+                            reg_oldest[i].set(true);
+                        }
+                    }
+                }
+            }
             
             virtual json get_json()
             {

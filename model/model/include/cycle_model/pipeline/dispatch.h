@@ -16,8 +16,9 @@
 #include "dispatch_issue.h"
 #include "integer_issue.h"
 #include "lsu_issue.h"
-#include "execute/bru.h"
 #include "commit.h"
+#include "cycle_model/pipeline/execute/bru_define.h"
+#include "cycle_model/pipeline/execute/sau_define.h"
 
 namespace cycle_model::pipeline
 {
@@ -62,7 +63,7 @@ namespace cycle_model::pipeline
         public:
             dispatch(global_inst *global, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::store_buffer *store_buffer);
             virtual void reset();
-            dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            dispatch_feedback_pack_t run(const integer_issue_feedback_pack_t &integer_issue_feedback_pack, const lsu_issue_feedback_pack_t &lsu_issue_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();
     };
 }
