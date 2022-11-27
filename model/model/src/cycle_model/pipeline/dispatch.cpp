@@ -227,6 +227,7 @@ namespace cycle_model::pipeline
                                 lsu_issue_pack.op_info[lsu_issue_id].rd_phy = rev_pack.op_info[i].rd_phy;
         
                                 lsu_issue_pack.op_info[lsu_issue_id].csr = rev_pack.op_info[i].csr;
+                                lsu_issue_pack.op_info[lsu_issue_id].store_buffer_id = rev_pack.op_info[i].store_buffer_id;
                                 lsu_issue_pack.op_info[lsu_issue_id].load_queue_id = rev_pack.op_info[i].load_queue_id;
                                 lsu_issue_pack.op_info[lsu_issue_id].op = rev_pack.op_info[i].op;
                                 lsu_issue_pack.op_info[lsu_issue_id].op_unit = rev_pack.op_info[i].op_unit;

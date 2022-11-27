@@ -305,8 +305,8 @@ namespace cycle_model::pipeline
             uint32_t op_unit_seq[INTEGER_ISSUE_QUEUE_SIZE] = {0};//one-hot
             uint32_t rob_id[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t rob_id_stage[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             bool wakeup_rd_valid[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             

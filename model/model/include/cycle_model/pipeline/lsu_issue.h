@@ -20,9 +20,8 @@ namespace cycle_model::pipeline
 #include "common.h"
 #include "config.h"
 #include "../component/port.h"
-#include "../component/io_issue_queue.h"
+#include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
-#include "../component/store_buffer.h"
 #include "dispatch_issue.h"
 #include "lsu_issue_readreg.h"
 #include "integer_issue.h"
@@ -37,6 +36,7 @@ namespace cycle_model::pipeline
     typedef struct lsu_issue_output_feedback_pack_t : if_print_t
     {
         bool wakeup_valid[LSU_ISSUE_WIDTH] = {false};
+        uint32_t wakeup_issue_id[LSU_ISSUE_WIDTH] = {0};
         uint32_t wakeup_rd[LSU_ISSUE_WIDTH] = {0};
         uint32_t wakeup_shift[LSU_ISSUE_WIDTH] = {0};
         
@@ -279,12 +279,10 @@ namespace cycle_model::pipeline
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
             
             component::regfile<uint32_t> *phy_regfile;
-            component::store_buffer *store_buffer;
             
-            component::io_issue_queue<issue_queue_item_t> issue_q;
+            component::ooo_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
             dispatch_issue_pack_t hold_rev_pack;
-            uint32_t last_store_buffer_id = 0;
         
             uint32_t wakeup_shift_src1[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool src1_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
@@ -292,18 +290,22 @@ namespace cycle_model::pipeline
             uint32_t wakeup_shift_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool src2_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
         
-            uint32_t wakeup_rd[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool wakeup_rd_valid[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rd[LSU_ISSUE_QUEUE_SIZE] = {0};
             uint32_t wakeup_shift[LSU_ISSUE_QUEUE_SIZE] = {0};
             
             bool sau_part_issued[LSU_ISSUE_QUEUE_SIZE] = {false};
             bool sdu_part_issued[LSU_ISSUE_QUEUE_SIZE] = {false};
             bool is_store[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t rob_id[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool rob_id_stage[LSU_ISSUE_QUEUE_SIZE] = {false};
+            bool waiting_issue_id_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t waiting_issue_id[LSU_ISSUE_QUEUE_SIZE] = {0};
             
             trace::trace_database tdb;
         
         public:
-            lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::store_buffer *store_buffer);
+            lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
             lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);

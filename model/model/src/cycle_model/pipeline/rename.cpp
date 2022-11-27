@@ -19,7 +19,7 @@
 
 namespace cycle_model::pipeline
 {
-    rename::rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue) : tdb(TRACE_RENAME)
+    rename::rename(global_inst *global, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::port<rename_dispatch_pack_t> *rename_dispatch_port, component::rat *speculative_rat, component::rob *rob, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue, component::store_buffer *store_buffer) : tdb(TRACE_RENAME)
     {
         this->global = global;
         this->decode_rename_fifo = decode_rename_fifo;
@@ -29,6 +29,7 @@ namespace cycle_model::pipeline
         this->phy_id_free_list = phy_id_free_list;
         this->checkpoint_buffer = checkpoint_buffer;
         this->load_queue = load_queue;
+        this->store_buffer = store_buffer;
         this->rename::reset();
     }
     
@@ -86,6 +87,13 @@ namespace cycle_model::pipeline
                                 else if(rev_pack.op_unit == op_unit_t::lu)
                                 {
                                     if(load_queue->producer_is_full())
+                                    {
+                                        break;//stop rename immediately
+                                    }
+                                }
+                                else if(rev_pack.op_unit == op_unit_t::sdu)
+                                {
+                                    if(store_buffer->producer_is_full())
                                     {
                                         break;//stop rename immediately
                                     }
@@ -208,22 +216,37 @@ namespace cycle_model::pipeline
                                         break;
                                 }
                                 
+                                //get rob id
+                                verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
+                                verify(rob->get_new_id_stage(&send_pack.op_info[i].rob_id_stage));
+                                
                                 phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 auto old_load_queue_wptr = load_queue->producer_get_wptr();
                                 auto old_load_queue_wstage = load_queue->producer_get_wstage();
                                 
-                                if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && (rev_pack.op_unit == op_unit_t::lu))
+                                if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception)
                                 {
-                                    component::load_queue_item_t load_queue_item;
-                                    rob_item.load_queue_id_valid = true;
-                                    rob_item.load_queue_id = old_load_queue_wptr;
-                                    verify(load_queue->push(load_queue_item));
+                                    if(rev_pack.op_unit == op_unit_t::lu)
+                                    {
+                                        component::load_queue_item_t load_queue_item;
+                                        rob_item.load_queue_id_valid = true;
+                                        rob_item.load_queue_id = old_load_queue_wptr;
+                                        verify(load_queue->push(load_queue_item));
+                                    }
+                                    else if(rev_pack.op_unit == op_unit_t::sdu)
+                                    {
+                                        component::store_buffer_item_t store_buffer_item;
+                                        store_buffer_item.rob_id = send_pack.op_info[i].rob_id;//set the age of sta instruction temporarily
+                                        store_buffer_item.rob_id_stage = send_pack.op_info[i].rob_id_stage;
+                                        verify(store_buffer->push(store_buffer_item));
+                                        verify(store_buffer->producer_get_tail_id(&send_pack.op_info[i].store_buffer_id));
+                                        store_buffer->write_addr(send_pack.op_info[i].store_buffer_id, 0, 0, false);
+                                    }
                                 }
                                 
                                 //write to rob
-                                verify(rob->get_new_id(&send_pack.op_info[i].rob_id));
-                                verify(rob->get_new_id_stage(&send_pack.op_info[i].rob_id_stage));
                                 verify(rob->push(rob_item));
+                                
                                 //generate checkpoint items
                                 if(rev_pack.enable && rev_pack.valid && rev_pack.branch_predictor_info_pack.predicted)
                                 {

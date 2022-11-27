@@ -12,7 +12,7 @@
 #include "config.h"
 #include "cycle_model/pipeline/lsu_issue.h"
 #include "cycle_model/component/port.h"
-#include "cycle_model/component/io_issue_queue.h"
+#include "cycle_model/component/ooo_issue_queue.h"
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/age_compare.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
@@ -25,13 +25,12 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::store_buffer *store_buffer) : issue_q(component::io_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
+    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
     {
         this->global = global;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
         this->phy_regfile = phy_regfile;
-        this->store_buffer = store_buffer;
         this->lsu_issue::reset();
     }
     
@@ -40,7 +39,6 @@ namespace cycle_model::pipeline
         this->issue_q.reset();
         this->busy = false;
         this->hold_rev_pack = dispatch_issue_pack_t();
-        this->last_store_buffer_id = 0;
         
         for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
         {
@@ -51,6 +49,8 @@ namespace cycle_model::pipeline
             this->sau_part_issued[i] = false;
             this->sdu_part_issued[i] = false;
             this->is_store[i] = false;
+            this->waiting_issue_id_ready[i] = false;
+            this->waiting_issue_id[i] = 0;
         }
     }
     
@@ -63,147 +63,166 @@ namespace cycle_model::pipeline
         {
             if(!lsu_readreg_feedback_pack.stall)
             {
-                if(!issue_q.customer_is_empty())
+                uint32_t selected_issue_id[LSU_ISSUE_WIDTH] = {0};
+                uint32_t selected_rob_id[LSU_ISSUE_WIDTH] = {0};
+                bool selected_rob_id_stage[LSU_ISSUE_WIDTH] = {false};
+                bool selected_valid[LSU_ISSUE_WIDTH] = {false};
+                
+                //select instructions
+                for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
                 {
-                    uint32_t issue_id = 0;
-                    
-                    verify(issue_q.customer_get_front_id(&issue_id));
-                    
-                    if((src1_ready[issue_id] && src2_ready[issue_id]) || (is_store[issue_id] && ((src1_ready[issue_id] && !sau_part_issued[issue_id]) || (src2_ready[issue_id] && !sdu_part_issued[issue_id]))))
+                    if(issue_q.is_valid(i) && waiting_issue_id_ready[i])
                     {
-                        //build send_pack
-                        issue_queue_item_t rev_pack;
-                        verify(issue_q.customer_get_front(&rev_pack));
-                        
-                        if(is_store[issue_id] && !sau_part_issued[issue_id] && !sdu_part_issued[issue_id] && store_buffer->producer_is_full())
+                        if(bru_feedback_pack.flush && (component::age_compare(rob_id[i], rob_id_stage[i]) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
                         {
-                            //skip this instruction
-                            lsu_issue_readreg_port->set(send_pack);
-                            return feedback_pack;
+                            continue;
                         }
-    
-                        if(bru_feedback_pack.flush && component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
+
+                        if(sau_feedback_pack.flush && (component::age_compare(rob_id[i], rob_id_stage[i]) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                         {
-                            //skip this instruction
-                            lsu_issue_readreg_port->set(send_pack);
-                            return feedback_pack;
-                        }
-    
-                        if(sau_feedback_pack.flush && component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
-                        {
-                            //skip this instruction
-                            lsu_issue_readreg_port->set(send_pack);
-                            return feedback_pack;
+                            continue;
                         }
                         
-                        if(!is_store[issue_id] || sau_part_issued[issue_id] || sdu_part_issued[issue_id])
+                        if(!is_store[i])
                         {
-                            verify(issue_q.pop(&rev_pack));
+                            if(src1_ready[i] && src2_ready[i])
+                            {
+                                if(!selected_valid[0] || (component::age_compare(rob_id[i], rob_id_stage[i]) > component::age_compare(selected_rob_id[0], selected_rob_id_stage[0])))
+                                {
+                                    selected_issue_id[0] = i;
+                                    selected_rob_id[0] = rob_id[i];
+                                    selected_rob_id_stage[0] = rob_id_stage[i];
+                                    selected_valid[0] = true;
+                                }
+                            }
                         }
                         else
                         {
-                            verify(issue_q.customer_get_front(&rev_pack));
-                        }
-                        
-                        verify_only((rev_pack.op_unit == op_unit_t::lu) || (rev_pack.op_unit == op_unit_t::sdu));
-                        
-                        send_pack.op_info[0].enable = rev_pack.enable;
-                        send_pack.op_info[0].value = rev_pack.value;
-                        send_pack.op_info[0].valid = rev_pack.valid;
-                        send_pack.op_info[0].last_uop = rev_pack.last_uop;
-    
-                        send_pack.op_info[0].rob_id = rev_pack.rob_id;
-                        send_pack.op_info[0].rob_id_stage = rev_pack.rob_id_stage;
-                        send_pack.op_info[0].pc = rev_pack.pc;
-                        send_pack.op_info[0].imm = rev_pack.imm;
-                        send_pack.op_info[0].has_exception = rev_pack.has_exception;
-                        send_pack.op_info[0].exception_id = rev_pack.exception_id;
-                        send_pack.op_info[0].exception_value = rev_pack.exception_value;
-                        send_pack.op_info[0].branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
-    
-                        send_pack.op_info[0].rs1 = rev_pack.rs1;
-                        send_pack.op_info[0].arg1_src = rev_pack.arg1_src;
-                        send_pack.op_info[0].rs1_need_map = rev_pack.rs1_need_map;
-                        send_pack.op_info[0].rs1_phy = rev_pack.rs1_phy;
-    
-                        send_pack.op_info[0].rs2 = rev_pack.rs2;
-                        send_pack.op_info[0].arg2_src = rev_pack.arg2_src;
-                        send_pack.op_info[0].rs2_need_map = rev_pack.rs2_need_map;
-                        send_pack.op_info[0].rs2_phy = rev_pack.rs2_phy;
-    
-                        send_pack.op_info[0].rd = rev_pack.rd;
-                        send_pack.op_info[0].rd_enable = rev_pack.rd_enable;
-                        send_pack.op_info[0].need_rename = rev_pack.need_rename;
-                        send_pack.op_info[0].rd_phy = rev_pack.rd_phy;
-    
-                        send_pack.op_info[0].csr = rev_pack.csr;
-                        send_pack.op_info[0].store_buffer_id = 0;
-                        send_pack.op_info[0].load_queue_id = rev_pack.load_queue_id;
-                        send_pack.op_info[0].op = rev_pack.op;
-                        send_pack.op_info[0].op_unit = rev_pack.op_unit;
-                        memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
-                        
-                        if(is_store[issue_id] && !sau_part_issued[issue_id] && !sdu_part_issued[issue_id])
-                        {
-                            component::store_buffer_item_t store_buffer_item;
-                            store_buffer_item.rob_id = rev_pack.rob_id;//set the age of sta instruction temporarily
-                            store_buffer_item.rob_id_stage = rev_pack.rob_id_stage;
-                            verify(store_buffer->push(store_buffer_item));
-                            verify(store_buffer->producer_get_tail_id(&send_pack.op_info[0].store_buffer_id));
-                            last_store_buffer_id = send_pack.op_info[0].store_buffer_id;
-                            store_buffer->write_addr(send_pack.op_info[0].store_buffer_id, 0, 0, false);
-                        }
-                        else if(is_store[issue_id])
-                        {
-                            send_pack.op_info[0].store_buffer_id = last_store_buffer_id;
-                        }
-                        
-                        if(is_store[issue_id])
-                        {
-                            if(src1_ready[issue_id] && !sau_part_issued[issue_id])
+                            if(src1_ready[i] && !sau_part_issued[i])
                             {
-                                send_pack.op_info[0].op_unit = op_unit_t::sau;
-                                
-                                switch(rev_pack.sub_op.sdu_op)
+                                if(!selected_valid[1] || (component::age_compare(rob_id[i], rob_id_stage[i]) > component::age_compare(selected_rob_id[1], selected_rob_id_stage[1])))
                                 {
-                                    case sdu_op_t::sb:
-                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::stab;
-                                        break;
-                                        
-                                    case sdu_op_t::sh:
-                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::stah;
-                                        break;
-                                        
-                                    case sdu_op_t::sw:
-                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::staw;
-                                        break;
+                                    selected_issue_id[1] = i;
+                                    selected_rob_id[1] = rob_id[i];
+                                    selected_rob_id_stage[1] = rob_id_stage[i];
+                                    selected_valid[1] = true;
                                 }
-                                
-                                sau_part_issued[issue_id] = true;
-                                send_pack.op_info[0].last_uop = sdu_part_issued[issue_id];
                             }
-                            else if(src2_ready[issue_id] && !sdu_part_issued[issue_id])
+
+                            if(src2_ready[i] && !sdu_part_issued[i])
                             {
-                                sdu_part_issued[issue_id] = true;
-                                send_pack.op_info[0].last_uop = sau_part_issued[issue_id];
+                                if(!selected_valid[2] || (component::age_compare(rob_id[i], rob_id_stage[i]) > component::age_compare(selected_rob_id[2], selected_rob_id_stage[2])))
+                                {
+                                    selected_issue_id[2] = i;
+                                    selected_rob_id[2] = rob_id[i];
+                                    selected_rob_id_stage[2] = rob_id_stage[i];
+                                    selected_valid[2] = true;
+                                }
                             }
                         }
+                    }
+                }
+                
+                //build send_pack
+                for(uint32_t i = 0;i < LSU_ISSUE_WIDTH;i++)
+                {
+                    if(selected_valid[i])
+                    {
+                        auto rev_pack = issue_q.customer_get_item(selected_issue_id[i]);
+
+                        send_pack.op_info[i].enable = rev_pack.enable;
+                        send_pack.op_info[i].value = rev_pack.value;
+                        send_pack.op_info[i].valid = rev_pack.valid;
+                        send_pack.op_info[i].last_uop = rev_pack.last_uop;
+
+                        send_pack.op_info[i].rob_id = rev_pack.rob_id;
+                        send_pack.op_info[i].rob_id_stage = rev_pack.rob_id_stage;
+                        send_pack.op_info[i].pc = rev_pack.pc;
+                        send_pack.op_info[i].imm = rev_pack.imm;
+                        send_pack.op_info[i].has_exception = rev_pack.has_exception;
+                        send_pack.op_info[i].exception_id = rev_pack.exception_id;
+                        send_pack.op_info[i].exception_value = rev_pack.exception_value;
+                        send_pack.op_info[i].branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
+
+                        send_pack.op_info[i].rs1 = rev_pack.rs1;
+                        send_pack.op_info[i].arg1_src = rev_pack.arg1_src;
+                        send_pack.op_info[i].rs1_need_map = rev_pack.rs1_need_map;
+                        send_pack.op_info[i].rs1_phy = rev_pack.rs1_phy;
+
+                        send_pack.op_info[i].rs2 = rev_pack.rs2;
+                        send_pack.op_info[i].arg2_src = rev_pack.arg2_src;
+                        send_pack.op_info[i].rs2_need_map = rev_pack.rs2_need_map;
+                        send_pack.op_info[i].rs2_phy = rev_pack.rs2_phy;
+
+                        send_pack.op_info[i].rd = rev_pack.rd;
+                        send_pack.op_info[i].rd_enable = rev_pack.rd_enable;
+                        send_pack.op_info[i].need_rename = rev_pack.need_rename;
+                        send_pack.op_info[i].rd_phy = rev_pack.rd_phy;
+
+                        send_pack.op_info[i].csr = rev_pack.csr;
+                        send_pack.op_info[i].store_buffer_id = rev_pack.store_buffer_id;
+                        send_pack.op_info[i].op = rev_pack.op;
+                        send_pack.op_info[i].op_unit = rev_pack.op_unit;
+                        memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                         
-                        lsu_issue_readreg_port->set(send_pack);
-                        //build feedback_pack
-                        feedback_pack.wakeup_valid[0] = wakeup_rd_valid[issue_id];
-                        feedback_pack.wakeup_rd[0] = wakeup_rd[issue_id];
-                        feedback_pack.wakeup_shift[0] = wakeup_shift[issue_id];
+                        if(i == 1)
+                        {
+                            send_pack.op_info[i].op_unit = op_unit_t::sau;
+                            
+                            switch(rev_pack.sub_op.sdu_op)
+                            {
+                                case sdu_op_t::sb:
+                                    send_pack.op_info[i].sub_op.sau_op = sau_op_t::stab;
+                                    break;
+                                    
+                                case sdu_op_t::sh:
+                                    send_pack.op_info[i].sub_op.sau_op = sau_op_t::stah;
+                                    break;
+                                    
+                                case sdu_op_t::sw:
+                                    send_pack.op_info[i].sub_op.sau_op = sau_op_t::staw;
+                                    break;
+                            }
+                            
+                            send_pack.op_info[i].last_uop = sdu_part_issued[selected_issue_id[i]];
+                        }
+                        else if(i == 2)
+                        {
+                            send_pack.op_info[i].last_uop = sau_part_issued[selected_issue_id[i]] || (selected_valid[1] && (selected_issue_id[1] == selected_issue_id[2]));
+                        }
+                        
+                        if(send_pack.op_info[i].last_uop)
+                        {
+                            issue_q.pop(selected_issue_id[i]);
+                        }
                     }
                     else
                     {
-                        lsu_issue_readreg_port->set(lsu_issue_readreg_pack_t());
+                        send_pack.op_info[i] = lsu_issue_readreg_op_info_t();
                     }
                 }
-                else
+                
+                //set sau_part_issued and sdu_part_issued
+                if(selected_valid[1])
                 {
-                    lsu_issue_readreg_port->set(lsu_issue_readreg_pack_t());
+                    sau_part_issued[selected_issue_id[1]] = true;
                 }
+    
+                if(selected_valid[2])
+                {
+                    sdu_part_issued[selected_issue_id[2]] = true;
+                }
+                
+                //build feedback_pack
+                for(uint32_t i = 0;i < LSU_ISSUE_WIDTH;i++)
+                {
+                    feedback_pack.wakeup_valid[i] = selected_valid[i] && wakeup_rd_valid[selected_issue_id[i]] && send_pack.op_info[i].last_uop;
+                    feedback_pack.wakeup_issue_id[i] = selected_issue_id[i];
+                    feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
+                    feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
+                }
+                
+                lsu_issue_readreg_port->set(send_pack);
             }
         }
         else
@@ -238,11 +257,23 @@ namespace cycle_model::pipeline
                 });
             }
             
-            for(uint32_t i = 0;i < INTEGER_ISSUE_QUEUE_SIZE;i++)
+            for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
             {
-                if(issue_q.customer_check_id_valid(i))
+                if(issue_q.is_valid(i))
                 {
                     auto item = issue_q.customer_get_item(i);
+    
+                    if(bru_feedback_pack.flush && (component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                    {
+                        issue_q.set_valid(i, false);
+                        continue;
+                    }
+    
+                    if(sau_feedback_pack.flush && (component::age_compare(item.rob_id, item.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
+                    {
+                        issue_q.set_valid(i, false);
+                        continue;
+                    }
     
                     //delay wakeup
                     if(!this->src1_ready[i] && this->wakeup_shift_src1[i] > 0)
@@ -343,6 +374,12 @@ namespace cycle_model::pipeline
                                         this->wakeup_shift_src2[i] = lsu_issue_output_feedback_pack.wakeup_shift[j];
                                     }
                                 }
+                            }
+    
+                            //store wakeup
+                            if(!this->waiting_issue_id_ready[i] && this->waiting_issue_id[i] == lsu_issue_output_feedback_pack.wakeup_issue_id[j])
+                            {
+                                this->waiting_issue_id_ready[i] = true;
                             }
                         }
                     }
@@ -464,16 +501,15 @@ namespace cycle_model::pipeline
                     item.rd_phy = rev_pack.op_info[i].rd_phy;
     
                     item.csr = rev_pack.op_info[i].csr;
+                    item.store_buffer_id = rev_pack.op_info[i].store_buffer_id;
                     item.load_queue_id = rev_pack.op_info[i].load_queue_id;
                     item.op = rev_pack.op_info[i].op;
                     item.op_unit = rev_pack.op_info[i].op_unit;
                     memcpy((void *)&item.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
                     uint32_t issue_id = 0;
                     
-                    if(issue_q.push(item))
+                    if(issue_q.push(item, &issue_id))
                     {
-                        verify(issue_q.producer_get_tail_id(&issue_id));
-                        
                         wakeup_shift_src1[issue_id] = 0;
                         src1_ready[issue_id] = false;
                         wakeup_shift_src2[issue_id] = 0;
@@ -560,13 +596,19 @@ namespace cycle_model::pipeline
                             src2_ready[i] = true;
                         }
                         
+                        //set age information
+                        rob_id[issue_id] = rev_pack.op_info[i].rob_id;
+                        rob_id_stage[issue_id] = rev_pack.op_info[i].rob_id_stage;
+                        
                         //set wakeup information
-                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
                         wakeup_rd_valid[issue_id] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
+                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
                         wakeup_shift[issue_id] = lsu_issue::latency_to_wakeup_shift(LSU_LATENCY);
                         is_store[issue_id] = rev_pack.op_info[i].op_unit == op_unit_t::sdu;
                         sau_part_issued[issue_id] = false;
                         sdu_part_issued[issue_id] = false;
+                        waiting_issue_id_ready[issue_id] = true;
+                        waiting_issue_id[issue_id] = 0;
                     }
                     else
                     {
@@ -623,15 +665,14 @@ namespace cycle_model::pipeline
         auto src1_ready = json::array();
         auto wakeup_shift_src2 = json::array();
         auto src2_ready = json::array();
-    
-        issue_q.customer_foreach([&](uint32_t id, bool stage, const issue_queue_item_t &item) -> bool
+        
+        for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
         {
-            wakeup_shift_src1.push_back(this->wakeup_shift_src1[id]);
-            src1_ready.push_back(this->src1_ready[id]);
-            wakeup_shift_src2.push_back(this->wakeup_shift_src2[id]);
-            src2_ready.push_back(this->src2_ready[id]);
-            return true;
-        });
+            wakeup_shift_src1.push_back(this->wakeup_shift_src1[i]);
+            src1_ready.push_back(this->src1_ready[i]);
+            wakeup_shift_src2.push_back(this->wakeup_shift_src2[i]);
+            src2_ready.push_back(this->src2_ready[i]);
+        }
         
         t["wakeup_shift_src1"] = wakeup_shift_src1;
         t["src1_ready"] = src1_ready;

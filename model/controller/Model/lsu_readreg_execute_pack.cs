@@ -11,10 +11,10 @@ namespace DreamCoreV2_model_controller.Model
     public class lsu_readreg_execute_pack
     {
         [JsonProperty("lu")]
-        public integer_readreg_execute_op_info[]? lu { get; set; }
+        public lsu_readreg_execute_op_info[]? lu { get; set; }
         [JsonProperty("sau")]
-        public integer_readreg_execute_op_info[]? sau { get; set; }
+        public lsu_readreg_execute_op_info[]? sau { get; set; }
         [JsonProperty("sdu")]
-        public integer_readreg_execute_op_info[]? sdu { get; set; }
+        public lsu_readreg_execute_op_info[]? sdu { get; set; }
     }
 }

@@ -7,7 +7,7 @@
         xmlns:converter="clr-namespace:DreamCoreV2_model_controller.Converter"
         mc:Ignorable="d"
         FontFamily="Consolas"
-        Title="DreamCoreV2 Model Controller LiZhirui" Height="900" Width="1440" Loaded="Window_Loaded" LocationChanged="Window_LocationChanged">
+        Title="DreamCoreV2 Model Controller LiZhirui" Height="900" Width="1440" Loaded="Window_Loaded" LocationChanged="Window_LocationChanged" Closed="Window_Closed">
 
     <Window.Resources>
         <converter:ConnectionStatusValueConverter x:Key="ConnectionStatusValueConverter" />

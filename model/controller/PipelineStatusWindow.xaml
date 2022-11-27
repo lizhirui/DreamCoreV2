@@ -319,15 +319,15 @@
             </ListView.View>
         </local:ArrowKeyBypassListView>
         <Label Grid.Row="12" Grid.Column="3" VerticalAlignment="Center" Content="LSU Issue->LSU Readreg:" />
-        <local:ArrowKeyBypassListView Grid.Row="13" Grid.Column="3" Grid.RowSpan="1" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_LSU_Issue_Readreg" PreviewMouseLeftButtonUp="listView_LSU_Issue_Readreg_PreviewMouseLeftButtonUp">
+        <local:ArrowKeyBypassListView Grid.Row="13" Grid.Column="3" Grid.RowSpan="2" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="listView_LSU_Issue_Readreg" PreviewMouseLeftButtonUp="listView_LSU_Issue_Readreg_PreviewMouseLeftButtonUp">
             <ListView.View>
                 <GridView ColumnHeaderContainerStyle="{StaticResource ListViewHeaderHidden}">
                     <GridViewColumn Header="Value" Width="{Binding ElementName=GridCol0Width,Path=ActualWidth}"  DisplayMemberBinding="{Binding Path=Value}" />
                 </GridView>
             </ListView.View>
         </local:ArrowKeyBypassListView>
-        <Label Grid.Row="14" Grid.Column="3" VerticalAlignment="Center" Content="LSU Readreg->Execute:" />
-        <local:ArrowKeyBypassListView Grid.Row="15" Grid.Column="3" Grid.RowSpan="3" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" x:Name="listView_LSU_Readreg_Execute" PreviewMouseLeftButtonUp="listView_LSU_Readreg_Execute_PreviewMouseLeftButtonUp">
+        <Label Grid.Row="15" Grid.Column="3" VerticalAlignment="Center" Content="LSU Readreg->Execute:" />
+        <local:ArrowKeyBypassListView Grid.Row="16" Grid.Column="3" Grid.RowSpan="2" ItemContainerStyle="{StaticResource ListViewItemHighlight}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" x:Name="listView_LSU_Readreg_Execute" PreviewMouseLeftButtonUp="listView_LSU_Readreg_Execute_PreviewMouseLeftButtonUp">
             <ListView.View>
                 <GridView ColumnHeaderContainerStyle="{StaticResource ListViewHeaderHidden}">
                     <GridViewColumn Header="Value" Width="{Binding ElementName=GridCol0Width,Path=ActualWidth}"  DisplayMemberBinding="{Binding Path=Value}" />

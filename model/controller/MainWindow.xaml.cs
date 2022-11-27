@@ -518,5 +518,10 @@ namespace DreamCoreV2_model_controller
         {
             PipelineStatusWindow.CreateInstance(this);
         }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
+        }
     }
 }

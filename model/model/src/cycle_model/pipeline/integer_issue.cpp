@@ -715,9 +715,9 @@ namespace cycle_model::pipeline
                         rob_id_stage[issue_id] = rev_pack.op_info[i].rob_id_stage;
                         
                         //set wakeup information
-                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
                         wakeup_rd_valid[issue_id] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
-    
+                        wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
+                        
                         switch(rev_pack.op_info[i].op_unit)
                         {
                             case op_unit_t::alu:

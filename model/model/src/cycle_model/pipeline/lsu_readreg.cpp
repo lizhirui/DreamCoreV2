@@ -244,15 +244,15 @@ namespace cycle_model::pipeline
                     switch(rev_pack.op_info[i].op_unit)
                     {
                         case op_unit_t::lu:
-                            verify(this->readreg_lu_hdff[i]->push(send_pack));
+                            verify(this->readreg_lu_hdff[0]->push(send_pack));
                             break;
                         
                         case op_unit_t::sau:
-                            verify(this->readreg_sau_hdff[i]->push(send_pack));
+                            verify(this->readreg_sau_hdff[0]->push(send_pack));
                             break;
                         
                         case op_unit_t::sdu:
-                            verify(this->readreg_sdu_hdff[i]->push(send_pack));
+                            verify(this->readreg_sdu_hdff[0]->push(send_pack));
                             break;
                         
                         default:

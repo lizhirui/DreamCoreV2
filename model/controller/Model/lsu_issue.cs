@@ -15,7 +15,7 @@ namespace DreamCoreV2_model_controller.Model
         [JsonProperty("hold_rev_pack")]
         public dispatch_issue_op_info[]? hold_rev_pack { get; set; }
         [JsonProperty("issue_q")]
-        public lsu_issue_queue_item[]? issue_q { get; set; }
+        public ooo_issue_queue<lsu_issue_queue_item>? issue_q { get; set; }
         [JsonProperty("wakeup_shift_src1")]
         public uint[]? wakeup_shift_src1 { get; set; }
         [JsonProperty("src1_ready")]
