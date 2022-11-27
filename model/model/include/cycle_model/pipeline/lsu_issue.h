@@ -296,6 +296,10 @@ namespace cycle_model::pipeline
             bool wakeup_rd_valid[LSU_ISSUE_QUEUE_SIZE] = {false};
             uint32_t wakeup_shift[LSU_ISSUE_QUEUE_SIZE] = {0};
             
+            bool sau_part_issued[LSU_ISSUE_QUEUE_SIZE] = {false};
+            bool sdu_part_issued[LSU_ISSUE_QUEUE_SIZE] = {false};
+            bool is_store[LSU_ISSUE_QUEUE_SIZE] = {false};
+            
             trace::trace_database tdb;
         
         public:

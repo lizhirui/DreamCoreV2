@@ -368,10 +368,19 @@ namespace cycle_model::pipeline
                         if(rev_pack.enable)
                         {
                             auto rob_item = rob->get_item(rev_pack.rob_id);
-                            rob_item.finish = true;
-                            rob_item.has_exception = rev_pack.has_exception;
-                            rob_item.exception_id = rev_pack.exception_id;
-                            rob_item.exception_value = rev_pack.exception_value;
+                            
+                            if(rev_pack.last_uop)
+                            {
+                                rob_item.finish = true;
+                            }
+                            
+                            if(!rob_item.has_exception)
+                            {
+                                rob_item.has_exception = rev_pack.has_exception;
+                                rob_item.exception_id = rev_pack.exception_id;
+                                rob_item.exception_value = rev_pack.exception_value;
+                            }
+                            
                             rob_item.branch_predictor_info_pack = rev_pack.branch_predictor_info_pack;
                             rob_item.bru_op = rev_pack.op_unit == op_unit_t::bru;
                             rob_item.bru_jump = rev_pack.bru_jump;

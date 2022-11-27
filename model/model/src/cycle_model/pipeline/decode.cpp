@@ -236,58 +236,33 @@ namespace cycle_model::pipeline
                             
                             case 0x23://sb sh sw
                             {
-                                auto t_op_info = op_info[0];
-                                t_op_info.op_unit = op_unit_t::sdu;
-                                t_op_info.arg1_src = arg_src_t::reg;
-                                t_op_info.rs1 = rs1;
-                                t_op_info.arg2_src = arg_src_t::reg;
-                                t_op_info.rs2 = rs2;
-                                t_op_info.imm = sign_extend(imm_s, 12);
-                                sau_op_t sau_op;
-                                
+                                op_info[0].op_unit = op_unit_t::sdu;
+                                op_info[0].arg1_src = arg_src_t::reg;
+                                op_info[0].rs1 = rs1;
+                                op_info[0].arg2_src = arg_src_t::reg;
+                                op_info[0].rs2 = rs2;
+                                op_info[0].imm = sign_extend(imm_s, 12);
+    
                                 switch(funct3)
                                 {
                                     case 0x0://sb
-                                        t_op_info.op = op_t::sb;
-                                        t_op_info.sub_op.sdu_op = sdu_op_t::sb;
-                                        sau_op = sau_op_t::stab;
+                                        op_info[0].op = op_t::sb;
+                                        op_info[0].sub_op.sdu_op = sdu_op_t::sb;
                                         break;
-                                    
+        
                                     case 0x1://sh
-                                        t_op_info.op = op_t::sh;
-                                        t_op_info.sub_op.sdu_op = sdu_op_t::sh;
-                                        sau_op = sau_op_t::stah;
+                                        op_info[0].op = op_t::sh;
+                                        op_info[0].sub_op.sdu_op = sdu_op_t::sh;
                                         break;
-                                    
+        
                                     case 0x2://sw
-                                        t_op_info.op = op_t::sw;
-                                        t_op_info.sub_op.sdu_op = sdu_op_t::sw;
-                                        sau_op = sau_op_t::staw;
+                                        op_info[0].op = op_t::sw;
+                                        op_info[0].sub_op.sdu_op = sdu_op_t::sw;
                                         break;
-                                    
+        
                                     default://invalid
-                                        t_op_info.valid = false;
+                                        op_info[0].valid = false;
                                         break;
-                                }
-                                
-                                if(t_op_info.valid)
-                                {
-                                    op_info[0].op_unit = op_unit_t::sau;
-                                    op_info[0].sub_op.sau_op = sau_op;
-                                    op_info[0].arg1_src = arg_src_t::reg;
-                                    op_info[0].rs1 = t_op_info.rs1;
-                                    op_info[0].arg2_src = arg_src_t::imm;
-                                    op_info[0].imm = t_op_info.imm;
-                                    op_info[1].enable = true;
-                                    op_info[1].op_unit = t_op_info.op_unit;
-                                    op_info[1].sub_op.sdu_op = t_op_info.sub_op.sdu_op;
-                                    op_info[1].arg1_src = arg_src_t::disable;
-                                    op_info[1].arg2_src = arg_src_t::reg;
-                                    op_info[1].rs2 = t_op_info.rs2;
-                                }
-                                else
-                                {
-                                    op_info[0] = t_op_info;
                                 }
                                 
                                 break;

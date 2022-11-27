@@ -48,6 +48,9 @@ namespace cycle_model::pipeline
             this->src1_ready[i] = false;
             this->wakeup_shift_src2[i] = 0;
             this->src2_ready[i] = false;
+            this->sau_part_issued[i] = false;
+            this->sdu_part_issued[i] = false;
+            this->is_store[i] = false;
         }
     }
     
@@ -66,16 +69,13 @@ namespace cycle_model::pipeline
                     
                     verify(issue_q.customer_get_front_id(&issue_id));
                     
-                    if(src1_ready[issue_id] && src2_ready[issue_id])
+                    if((src1_ready[issue_id] && src2_ready[issue_id]) || (is_store[issue_id] && ((src1_ready[issue_id] && !sau_part_issued[issue_id]) || (src2_ready[issue_id] && !sdu_part_issued[issue_id]))))
                     {
                         //build send_pack
                         issue_queue_item_t rev_pack;
                         verify(issue_q.customer_get_front(&rev_pack));
                         
-                        auto is_store = rev_pack.op_unit == op_unit_t::sdu;
-                        auto is_sta = rev_pack.op_unit == op_unit_t::sau;
-                        
-                        if(is_sta && store_buffer->producer_is_full())
+                        if(is_store[issue_id] && !sau_part_issued[issue_id] && !sdu_part_issued[issue_id] && store_buffer->producer_is_full())
                         {
                             //skip this instruction
                             lsu_issue_readreg_port->set(send_pack);
@@ -96,8 +96,16 @@ namespace cycle_model::pipeline
                             return feedback_pack;
                         }
                         
-                        verify(issue_q.pop(&rev_pack));
-                        verify_only((rev_pack.op_unit == op_unit_t::lu) || (rev_pack.op_unit == op_unit_t::sau) || (rev_pack.op_unit == op_unit_t::sdu));
+                        if(!is_store[issue_id] || sau_part_issued[issue_id] || sdu_part_issued[issue_id])
+                        {
+                            verify(issue_q.pop(&rev_pack));
+                        }
+                        else
+                        {
+                            verify(issue_q.customer_get_front(&rev_pack));
+                        }
+                        
+                        verify_only((rev_pack.op_unit == op_unit_t::lu) || (rev_pack.op_unit == op_unit_t::sdu));
                         
                         send_pack.op_info[0].enable = rev_pack.enable;
                         send_pack.op_info[0].value = rev_pack.value;
@@ -135,7 +143,7 @@ namespace cycle_model::pipeline
                         send_pack.op_info[0].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[0].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
                         
-                        if(is_sta)
+                        if(is_store[issue_id] && !sau_part_issued[issue_id] && !sdu_part_issued[issue_id])
                         {
                             component::store_buffer_item_t store_buffer_item;
                             store_buffer_item.rob_id = rev_pack.rob_id;//set the age of sta instruction temporarily
@@ -145,9 +153,40 @@ namespace cycle_model::pipeline
                             last_store_buffer_id = send_pack.op_info[0].store_buffer_id;
                             store_buffer->write_addr(send_pack.op_info[0].store_buffer_id, 0, 0, false);
                         }
-                        else if(is_store)
+                        else if(is_store[issue_id])
                         {
                             send_pack.op_info[0].store_buffer_id = last_store_buffer_id;
+                        }
+                        
+                        if(is_store[issue_id])
+                        {
+                            if(src1_ready[issue_id] && !sau_part_issued[issue_id])
+                            {
+                                send_pack.op_info[0].op_unit = op_unit_t::sau;
+                                
+                                switch(rev_pack.sub_op.sdu_op)
+                                {
+                                    case sdu_op_t::sb:
+                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::stab;
+                                        break;
+                                        
+                                    case sdu_op_t::sh:
+                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::stah;
+                                        break;
+                                        
+                                    case sdu_op_t::sw:
+                                        send_pack.op_info[0].sub_op.sau_op = sau_op_t::staw;
+                                        break;
+                                }
+                                
+                                sau_part_issued[issue_id] = true;
+                                send_pack.op_info[0].last_uop = sdu_part_issued[issue_id];
+                            }
+                            else if(src2_ready[issue_id] && !sdu_part_issued[issue_id])
+                            {
+                                sdu_part_issued[issue_id] = true;
+                                send_pack.op_info[0].last_uop = sau_part_issued[issue_id];
+                            }
                         }
                         
                         lsu_issue_readreg_port->set(send_pack);
@@ -525,6 +564,9 @@ namespace cycle_model::pipeline
                         wakeup_rd[issue_id] = rev_pack.op_info[i].rd_phy;
                         wakeup_rd_valid[issue_id] = rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception && rev_pack.op_info[i].need_rename;
                         wakeup_shift[issue_id] = lsu_issue::latency_to_wakeup_shift(LSU_LATENCY);
+                        is_store[issue_id] = rev_pack.op_info[i].op_unit == op_unit_t::sdu;
+                        sau_part_issued[issue_id] = false;
+                        sdu_part_issued[issue_id] = false;
                     }
                     else
                     {

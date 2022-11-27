@@ -474,6 +474,18 @@ namespace cycle_model
         sau_feedback_pack = execute_sau_stage[0]->run(bru_feedback_pack, commit_feedback_pack, true);
         wb_feedback_pack = wb_stage.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         
+        if(bru_feedback_pack.flush && sau_feedback_pack.flush)
+        {
+            if(component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage) < component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
+            {
+                bru_feedback_pack.flush = false;
+            }
+            else
+            {
+                sau_feedback_pack.flush = false;
+            }
+        }
+        
         uint32_t execute_feedback_channel = 0;
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
