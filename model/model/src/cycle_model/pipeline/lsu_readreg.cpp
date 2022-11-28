@@ -40,7 +40,7 @@ namespace cycle_model::pipeline
         this->hold_rev_pack = lsu_issue_readreg_pack_t();
     }
     
-    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_readreg_feedback_pack_t lsu_readreg::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_readreg_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;
@@ -170,6 +170,11 @@ namespace cycle_model::pipeline
                     if(sau_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                     {
                         continue;//skip this instruction due to which is younger than the flush age
+                    }
+    
+                    if(lu_feedback_pack.replay && ((rev_pack.op_info[i].lpv & 1) != 0))
+                    {
+                        continue;//skip this instruction due to replay
                     }
                     
                     //get value from physical register file/execute feedback and wb feedback

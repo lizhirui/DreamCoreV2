@@ -48,6 +48,7 @@ namespace cycle_model::pipeline
         uint32_t rd_phy = 0;
     
         uint32_t csr = 0;
+        uint32_t lpv = 0;
         op_t op = op_t::add;
         op_unit_t op_unit = op_unit_t::alu;
     

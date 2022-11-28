@@ -30,6 +30,7 @@ namespace cycle_model::pipeline
 #include "wb.h"
 #include "commit.h"
 #include "execute/bru_define.h"
+#include "execute/lu_define.h"
 #include "execute/sau_define.h"
 
 namespace cycle_model::pipeline
@@ -39,6 +40,7 @@ namespace cycle_model::pipeline
         bool wakeup_valid[INTEGER_ISSUE_WIDTH] = {false};
         uint32_t wakeup_rd[INTEGER_ISSUE_WIDTH] = {0};
         uint32_t wakeup_shift[INTEGER_ISSUE_WIDTH] = {0};
+        uint32_t wakeup_lpv[LSU_ISSUE_WIDTH] = {0};
         
         virtual json get_json()
         {
@@ -297,9 +299,11 @@ namespace cycle_model::pipeline
             
             uint32_t wakeup_shift_src1[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             bool src1_ready[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t src1_lpv[INTEGER_ISSUE_QUEUE_SIZE] = {false};
         
             uint32_t wakeup_shift_src2[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             bool src2_ready[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t src2_lpv[INTEGER_ISSUE_QUEUE_SIZE] = {false};
             
             uint32_t port_index[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t op_unit_seq[INTEGER_ISSUE_QUEUE_SIZE] = {0};//one-hot
@@ -309,6 +313,9 @@ namespace cycle_model::pipeline
             uint32_t wakeup_rd[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            
+            uint32_t lpv[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t issued[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
             uint32_t next_port_index = 0;
             
@@ -320,8 +327,8 @@ namespace cycle_model::pipeline
         public:
             integer_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_integer_issue_port, component::port<integer_issue_readreg_pack_t> *integer_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
             virtual void reset();
-            integer_issue_output_feedback_pack_t run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            integer_issue_output_feedback_pack_t run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             integer_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();

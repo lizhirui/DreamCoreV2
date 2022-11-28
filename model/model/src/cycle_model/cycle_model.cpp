@@ -515,7 +515,7 @@ namespace cycle_model
         
         for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_lu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            std::tie(execute_feedback_pack.channel[execute_feedback_channel++], lu_feedback_pack[i]) = execute_lu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
@@ -528,12 +528,12 @@ namespace cycle_model
             execute_sdu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         }
         
-        integer_readreg_stage.run(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        lsu_readreg_feedback_pack = lsu_readreg_stage.run(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        integer_issue_output_feedback_pack = integer_issue_stage.run_output(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
-        lsu_issue_output_feedback_pack = lsu_issue_stage.run_output(lsu_readreg_feedback_pack, bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
-        integer_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
-        lsu_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
+        integer_readreg_stage.run(bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        lsu_readreg_feedback_pack = lsu_readreg_stage.run(bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        integer_issue_output_feedback_pack = integer_issue_stage.run_output(bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, commit_feedback_pack);
+        lsu_issue_output_feedback_pack = lsu_issue_stage.run_output(lsu_readreg_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, commit_feedback_pack);
+        integer_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
+        lsu_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
         integer_issue_feedback_pack = integer_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
         lsu_issue_feedback_pack = lsu_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
         dispatch_feedback_pack = dispatch_stage.run(integer_issue_feedback_pack, lsu_issue_feedback_pack, bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);

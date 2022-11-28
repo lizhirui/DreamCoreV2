@@ -145,7 +145,7 @@ namespace cycle_model::pipeline
                     uint32_t found_rob_id = 0;
                     bool found_rob_id_stage = false;
                     
-                    for(uint32_t i = 0;i < RENAME_WIDTH;i++)
+                    for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
                     {
                         if(rev_pack.op_info[i].enable)
                         {

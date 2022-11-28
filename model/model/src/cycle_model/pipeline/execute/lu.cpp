@@ -40,14 +40,17 @@ namespace cycle_model::pipeline::execute
         this->l2_addr = 0;
     }
     
-    execute_feedback_channel_t lu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    std::tuple<execute_feedback_channel_t, lu_feedback_pack_t> lu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         //level 2 pipeline: get memory data
         execute_wb_pack_t send_pack;
+        lu_feedback_pack_t lu_feedback_pack;
         
         this->l2_stall = false;//cancel l2_stall signal temporarily
         
-        if(l2_rev_pack.enable && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||
+        lu_feedback_pack.replay = l2_conflict_found;
+        
+        if(l2_rev_pack.enable && !l2_conflict_found && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||
           (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
           && (!sau_feedback_pack.flush || (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
         {
@@ -222,9 +225,17 @@ namespace cycle_model::pipeline::execute
                                     bus->read8(l2_addr);
                                     
                                     {
-                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 1);
-                                        l2_feedback_value = feedback_param.first;
-                                        l2_feedback_mask = feedback_param.second;
+                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 1, rev_pack.rob_id, rev_pack.rob_id_stage);
+                                        
+                                        if(feedback_param == std::nullopt)
+                                        {
+                                            l2_conflict_found = true;
+                                        }
+                                        else
+                                        {
+                                            l2_conflict_found = false;
+                                            std::tie(l2_feedback_value, l2_feedback_mask) = feedback_param.value();
+                                        }
                                     }
                                     
                                     break;
@@ -236,9 +247,17 @@ namespace cycle_model::pipeline::execute
                                     bus->read16(l2_addr);
                                     
                                     {
-                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 2);
-                                        l2_feedback_value = feedback_param.first;
-                                        l2_feedback_mask = feedback_param.second;
+                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 2, rev_pack.rob_id, rev_pack.rob_id_stage);
+    
+                                        if(feedback_param == std::nullopt)
+                                        {
+                                            l2_conflict_found = true;
+                                        }
+                                        else
+                                        {
+                                            l2_conflict_found = false;
+                                            std::tie(l2_feedback_value, l2_feedback_mask) = feedback_param.value();
+                                        }
                                     }
                                     
                                     break;
@@ -249,9 +268,17 @@ namespace cycle_model::pipeline::execute
                                     bus->read32(l2_addr);
         
                                     {
-                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 4);
-                                        l2_feedback_value = feedback_param.first;
-                                        l2_feedback_mask = feedback_param.second;
+                                        auto feedback_param = store_buffer->get_feedback_value(l2_addr, 4, rev_pack.rob_id, rev_pack.rob_id_stage);
+    
+                                        if(feedback_param == std::nullopt)
+                                        {
+                                            l2_conflict_found = true;
+                                        }
+                                        else
+                                        {
+                                            l2_conflict_found = false;
+                                            std::tie(l2_feedback_value, l2_feedback_mask) = feedback_param.value();
+                                        }
                                     }
                                     
                                     break;
@@ -294,7 +321,7 @@ namespace cycle_model::pipeline::execute
         feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
         feedback_pack.phy_id = send_pack.rd_phy;
         feedback_pack.value = send_pack.rd_value;
-        return feedback_pack;
+        return {feedback_pack, lu_feedback_pack};
     }
     
     json lu::get_json()

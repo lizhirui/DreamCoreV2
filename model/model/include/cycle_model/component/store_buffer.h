@@ -147,7 +147,7 @@ namespace cycle_model::component
                 return this->buffer[id].get();
             }
             
-            std::pair<uint32_t, uint32_t> get_feedback_value(uint32_t addr, uint32_t size)
+            std::optional<std::tuple<uint32_t, uint32_t>> get_feedback_value(uint32_t addr, uint32_t size, uint32_t rob_id, bool rob_id_stage)
             {
                 uint32_t result = 0;
                 uint32_t cur_id;
@@ -163,6 +163,18 @@ namespace cycle_model::component
                         auto cur_item_addr = item_addr[cur_id].get_new();
                         auto cur_item_size = item_size[cur_id].get_new();
                         auto cur_item_addr_valid = item_addr_valid[cur_id].get_new();
+                        
+                        if(cur_item_addr_valid)
+                        {
+                            if(component::age_compare(cur_item.rob_id, cur_item.rob_id_stage) > component::age_compare(rob_id, rob_id_stage))
+                            {
+                                if(std::max(cur_item_addr, addr) < std::min(cur_item_addr + cur_item_size, addr + size))
+                                {
+                                    //conflict is found
+                                    return std::nullopt;
+                                }
+                            }
+                        }
                         
                         if(cur_item.data_valid && cur_item_addr_valid)
                         {
@@ -188,7 +200,7 @@ namespace cycle_model::component
                     }while(producer_get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
                 
-                return {result, feedback_mask};
+                return std::tuple{result, feedback_mask};
             }
             
             void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::execute::sau_feedback_pack_t &sau_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)

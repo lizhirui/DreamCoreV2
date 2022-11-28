@@ -50,6 +50,8 @@ const uint32_t DIV_LATENCY = 8;
 const uint32_t MUL_LATENCY = 1;
 const uint32_t LSU_LATENCY = 2;
 
+const uint32_t INIT_LPV = 0x04;//RF - 100 LU_L1 - 10 LU_L2 - 1
+
 const uint32_t INIT_PC = 0x80000000;
 
 const uint32_t MEMORY_BASE = 0x80000000;

@@ -74,7 +74,7 @@ namespace cycle_model::component
                         
                         if(cur_item.addr_valid)
                         {
-                            if(component::age_compare(cur_item.rob_id, cur_item.rob_id_stage) > component::age_compare(rob_id, rob_id_stage))
+                            if(component::age_compare(cur_item.rob_id, cur_item.rob_id_stage) < component::age_compare(rob_id, rob_id_stage))
                             {
                                 if(std::max(cur_item.addr, addr) < std::min(cur_item.addr + cur_item.size, addr + size))
                                 {

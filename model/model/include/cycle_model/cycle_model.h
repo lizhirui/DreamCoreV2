@@ -58,6 +58,9 @@
 #include "cycle_model/pipeline/execute/lu.h"
 #include "cycle_model/pipeline/execute/sau.h"
 #include "cycle_model/pipeline/execute/sdu.h"
+#include "cycle_model/pipeline/execute/bru_define.h"
+#include "cycle_model/pipeline/execute/lu_define.h"
+#include "cycle_model/pipeline/execute/sau_define.h"
 #include "cycle_model/pipeline/execute_wb.h"
 #include "cycle_model/pipeline/wb.h"
 #include "cycle_model/pipeline/execute_commit.h"
@@ -158,6 +161,7 @@ namespace cycle_model
             pipeline::lsu_issue_feedback_pack_t lsu_issue_feedback_pack;
             pipeline::lsu_readreg_feedback_pack_t lsu_readreg_feedback_pack;
             pipeline::execute::bru_feedback_pack_t bru_feedback_pack;
+            pipeline::execute::lu_feedback_pack_t lu_feedback_pack[LU_UNIT_NUM];
             pipeline::execute::sau_feedback_pack_t sau_feedback_pack;
             pipeline::execute_feedback_pack_t execute_feedback_pack;
             pipeline::wb_feedback_pack_t wb_feedback_pack;

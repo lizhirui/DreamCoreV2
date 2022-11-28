@@ -54,7 +54,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    lsu_issue_output_feedback_pack_t lsu_issue::run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         lsu_issue_output_feedback_pack_t feedback_pack;
         lsu_issue_readreg_pack_t send_pack;
@@ -81,6 +81,14 @@ namespace cycle_model::pipeline
                         if(sau_feedback_pack.flush && (component::age_compare(rob_id[i], rob_id_stage[i]) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
                         {
                             continue;
+                        }
+                        
+                        if(lu_feedback_pack.replay)
+                        {
+                            if(((src1_lpv[i] & 1) != 0) || ((src2_lpv[i] & 1) != 0))
+                            {
+                                continue;//skip the instruction for replay
+                            }
                         }
                         
                         if(!is_store[i])
@@ -161,6 +169,8 @@ namespace cycle_model::pipeline
 
                         send_pack.op_info[i].csr = rev_pack.csr;
                         send_pack.op_info[i].store_buffer_id = rev_pack.store_buffer_id;
+                        send_pack.op_info[i].load_queue_id = rev_pack.load_queue_id;
+                        send_pack.op_info[i].lpv = lpv[selected_issue_id[i]];
                         send_pack.op_info[i].op = rev_pack.op;
                         send_pack.op_info[i].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -220,6 +230,7 @@ namespace cycle_model::pipeline
                     feedback_pack.wakeup_issue_id[i] = selected_issue_id[i];
                     feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
                     feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
+                    feedback_pack.wakeup_lpv[i] = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]];
                 }
                 
                 lsu_issue_readreg_port->set(send_pack);
@@ -233,30 +244,10 @@ namespace cycle_model::pipeline
         return feedback_pack;
     }
     
-    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void lsu_issue::run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         if(!commit_feedback_pack.flush)
         {
-            if(bru_feedback_pack.flush || sau_feedback_pack.flush)
-            {
-                issue_q.customer_foreach([=](uint32_t id, bool stage, const issue_queue_item_t &item)->bool
-                {
-                    if(bru_feedback_pack.flush && component::age_compare(item.rob_id, item.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))
-                    {
-                        issue_q.update_wptr(id, stage);
-                        return false;
-                    }
-    
-                    if(sau_feedback_pack.flush && component::age_compare(item.rob_id, item.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))
-                    {
-                        issue_q.update_wptr(id, stage);
-                        return false;
-                    }
-                    
-                    return true;
-                });
-            }
-            
             for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
             {
                 if(issue_q.is_valid(i))
@@ -274,6 +265,39 @@ namespace cycle_model::pipeline
                         issue_q.set_valid(i, false);
                         continue;
                     }
+    
+                    //lpv check
+                    if(lu_feedback_pack.replay)
+                    {
+                        //cancel source operand ready and wakeup shift
+                        if((this->src1_lpv[i] & 1) != 0)
+                        {
+                            this->src1_ready[i] = false;
+                            this->wakeup_shift_src1[i] = 0;
+                        }
+        
+                        if((this->src2_lpv[i] & 1) != 0)
+                        {
+                            this->src2_ready[i] = false;
+                            this->wakeup_shift_src2[i] = 0;
+                        }
+                    }
+    
+                    if(this->issued[i])
+                    {
+                        if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0)))
+                        {
+                            issued[i] = false;//replay the instruction
+                        }
+                        else if((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1))
+                        {
+                            issue_q.set_valid(i, false);//remove the instruction from issue queue because it isn't in the speculative window of any load instruction
+                        }
+                    }
+    
+                    //lpv shift
+                    this->src1_lpv[i] >>= 1;
+                    this->src2_lpv[i] >>= 1;
     
                     //delay wakeup
                     if(!this->src1_ready[i] && this->wakeup_shift_src1[i] > 0)
@@ -315,6 +339,8 @@ namespace cycle_model::pipeline
                                     {
                                         this->wakeup_shift_src1[i] = integer_issue_output_feedback_pack.wakeup_shift[j];
                                     }
+    
+                                    this->src1_lpv[i] = integer_issue_output_feedback_pack.wakeup_lpv[j];
                                 }
                             }
                         
@@ -332,6 +358,8 @@ namespace cycle_model::pipeline
                                     {
                                         this->wakeup_shift_src2[i] = integer_issue_output_feedback_pack.wakeup_shift[j];
                                     }
+                                    
+                                    this->src2_lpv[i] = integer_issue_output_feedback_pack.wakeup_lpv[j];
                                 }
                             }
                         }
@@ -356,6 +384,8 @@ namespace cycle_model::pipeline
                                     {
                                         this->wakeup_shift_src1[i] = lsu_issue_output_feedback_pack.wakeup_shift[j];
                                     }
+                                    
+                                    this->src1_lpv[i] = lsu_issue_output_feedback_pack.wakeup_lpv[j];
                                 }
                             }
             
@@ -373,6 +403,8 @@ namespace cycle_model::pipeline
                                     {
                                         this->wakeup_shift_src2[i] = lsu_issue_output_feedback_pack.wakeup_shift[j];
                                     }
+                                    
+                                    this->src2_lpv[i] = lsu_issue_output_feedback_pack.wakeup_lpv[j];
                                 }
                             }
     
@@ -609,6 +641,12 @@ namespace cycle_model::pipeline
                         sdu_part_issued[issue_id] = false;
                         waiting_issue_id_ready[issue_id] = true;
                         waiting_issue_id[issue_id] = 0;
+    
+                        //initialize replay information
+                        src1_lpv[issue_id] = 0;
+                        src2_lpv[issue_id] = 0;
+                        lpv[issue_id] = (rev_pack.op_info[i].op_unit == op_unit_t::lu) ? INIT_LPV : 0;
+                        issued[issue_id] = false;
                     }
                     else
                     {
