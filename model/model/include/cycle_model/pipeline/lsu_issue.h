@@ -22,6 +22,7 @@ namespace cycle_model::pipeline
 #include "../component/port.h"
 #include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
+#include "../component/dff.h"
 #include "dispatch_issue.h"
 #include "lsu_issue_readreg.h"
 #include "integer_issue.h"
@@ -306,8 +307,9 @@ namespace cycle_model::pipeline
             bool waiting_issue_id_ready[LSU_ISSUE_QUEUE_SIZE] = {false};
             uint32_t waiting_issue_id[LSU_ISSUE_QUEUE_SIZE] = {0};
         
-            uint32_t lpv[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            uint32_t issued[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t lpv[LSU_ISSUE_QUEUE_SIZE] = {0};
+            uint32_t cur_lpv[LSU_ISSUE_QUEUE_SIZE] = {0};
+            component::dff<bool> issued[LSU_ISSUE_QUEUE_SIZE] = {false};
             
             trace::trace_database tdb;
         

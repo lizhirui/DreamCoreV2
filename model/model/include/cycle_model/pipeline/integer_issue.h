@@ -23,6 +23,7 @@ namespace cycle_model::pipeline
 #include "../component/port.h"
 #include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
+#include "../component/dff.h"
 #include "dispatch_issue.h"
 #include "integer_issue_readreg.h"
 #include "integer_readreg.h"
@@ -315,7 +316,7 @@ namespace cycle_model::pipeline
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
             uint32_t lpv[INTEGER_ISSUE_QUEUE_SIZE] = {0};
-            uint32_t issued[INTEGER_ISSUE_QUEUE_SIZE] = {0};
+            component::dff<bool> issued[INTEGER_ISSUE_QUEUE_SIZE] = {false};
             
             uint32_t next_port_index = 0;
             

@@ -88,7 +88,7 @@ namespace cycle_model::pipeline
             this->new_idle_shift[i] = 0;
             
             this->lpv[i] = 0;
-            this->issued[i] = 0;
+            this->issued[i].set(false);
         }
     
         this->next_port_index = 0;
@@ -114,7 +114,7 @@ namespace cycle_model::pipeline
             {
                 for(uint32_t j = 0;j < INTEGER_ISSUE_QUEUE_SIZE;j++)
                 {
-                    if(issue_q.is_valid(j) && !issued[j] && (op_unit_seq[j] & op_unit_seq_mask[i]) && port_index[j] == i && src1_ready[j] && src2_ready[j] && (!selected_valid[i] ||
+                    if(issue_q.is_valid(j) && !issued[j].get() && (op_unit_seq[j] & op_unit_seq_mask[i]) && port_index[j] == i && src1_ready[j] && src2_ready[j] && (!selected_valid[i] ||
                        (component::age_compare(rob_id[j], rob_id_stage[j]) > component::age_compare(selected_rob_id[i], selected_rob_id_stage[i]))) &&
                        (!bru_feedback_pack.flush || (component::age_compare(rob_id[j], rob_id_stage[j]) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))) &&
                        (!sau_feedback_pack.flush || (component::age_compare(rob_id[j], rob_id_stage[j]) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
@@ -148,7 +148,7 @@ namespace cycle_model::pipeline
                         issue_q.pop(selected_issue_id[i]);
                     }
                     
-                    issued[selected_issue_id[i]] = true;
+                    issued[selected_issue_id[i]].set(true);
                     
                     send_pack.op_info[i].enable = rev_pack.enable;
                     send_pack.op_info[i].value = rev_pack.value;
@@ -416,11 +416,11 @@ namespace cycle_model::pipeline
                         }
                     }
                     
-                    if(this->issued[i])
+                    if(this->issued[i].get())
                     {
                         if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0)))
                         {
-                            issued[i] = false;//replay the instruction
+                            issued[i].set(false);//replay the instruction
                         }
                         else if((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1))
                         {
@@ -813,7 +813,7 @@ namespace cycle_model::pipeline
                         src1_lpv[issue_id] = 0;
                         src2_lpv[issue_id] = 0;
                         lpv[issue_id] = 0;
-                        issued[issue_id] = false;
+                        issued[issue_id].set(false);
                         
                         switch(rev_pack.op_info[i].op_unit)
                         {

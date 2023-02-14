@@ -51,6 +51,7 @@ namespace cycle_model::pipeline
             this->is_store[i] = false;
             this->waiting_issue_id_ready[i] = false;
             this->waiting_issue_id[i] = 0;
+            this->issued[i].set(false);
         }
     }
     
@@ -89,6 +90,11 @@ namespace cycle_model::pipeline
                             {
                                 continue;//skip the instruction for replay
                             }
+                        }
+                        
+                        if(this->issued[i].get())
+                        {
+                            continue;//skip the issued instruction
                         }
                         
                         if(!is_store[i])
@@ -201,10 +207,13 @@ namespace cycle_model::pipeline
                             send_pack.op_info[i].last_uop = sau_part_issued[selected_issue_id[i]] || (selected_valid[1] && (selected_issue_id[1] == selected_issue_id[2]));
                         }
                         
-                        if(send_pack.op_info[i].last_uop)
+                        if(send_pack.op_info[i].last_uop && (send_pack.op_info[i].lpv == 0))
                         {
                             issue_q.pop(selected_issue_id[i]);
                         }
+                        
+                        cur_lpv[selected_issue_id[i]] = lpv[selected_issue_id[i]];
+                        issued[selected_issue_id[i]].set(send_pack.op_info[i].last_uop);
                     }
                     else
                     {
@@ -230,7 +239,7 @@ namespace cycle_model::pipeline
                     feedback_pack.wakeup_issue_id[i] = selected_issue_id[i];
                     feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
                     feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
-                    feedback_pack.wakeup_lpv[i] = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]];
+                    feedback_pack.wakeup_lpv[i] = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]] | lpv[selected_issue_id[i]];
                 }
                 
                 lsu_issue_readreg_port->set(send_pack);
@@ -283,16 +292,18 @@ namespace cycle_model::pipeline
                         }
                     }
     
-                    if(this->issued[i])
+                    if(this->issued[i].get())
                     {
-                        if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0)))
+                        if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0) || ((this->cur_lpv[i] & 1) != 0)))
                         {
-                            issued[i] = false;//replay the instruction
+                            issued[i].set(false);//replay the instruction
                         }
-                        else if((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1))
+                        else if((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1) && (this->cur_lpv[i] <= 1))
                         {
                             issue_q.set_valid(i, false);//remove the instruction from issue queue because it isn't in the speculative window of any load instruction
                         }
+                        
+                        this->cur_lpv[i] >>= 1;
                     }
     
                     //lpv shift
@@ -645,8 +656,8 @@ namespace cycle_model::pipeline
                         //initialize replay information
                         src1_lpv[issue_id] = 0;
                         src2_lpv[issue_id] = 0;
-                        lpv[issue_id] = (rev_pack.op_info[i].op_unit == op_unit_t::lu) ? INIT_LPV : 0;
-                        issued[issue_id] = false;
+                        cur_lpv[issue_id] = lpv[issue_id] = (rev_pack.op_info[i].op_unit == op_unit_t::lu) ? INIT_LPV : 0;
+                        issued[issue_id].set(false);
                     }
                     else
                     {
