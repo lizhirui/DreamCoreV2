@@ -65,6 +65,8 @@
 
 该流水级负责从fetch2_decode_fifo中获得指令，进行译码，并将译码结果送入decode_rename_fifo
 
+这里将Load指令全部分配到LU，Store指令则暂时分配到SDU，在指令发射时，Store指令将会被拆解成SAU和SDU指令
+
 ## Rename级
 
 该流水级负责从decode_rename_fifo中获得指令，进行重命名过程，并将重命名结果送入rename_dispatch_port
@@ -75,12 +77,32 @@
 
 重命名操作如下：
 
-* 将phy_id_free_list当前的读指针写入rob_item中（物理寄存器分配前读指针，用于中断现场恢复）
+* 将phy_id_free_list当前的读指针写入rob_item中（物理寄存器分配前读指针，用于中断现场恢复和Store/Load违例恢复，即本条指令和后续指令都需要撤销的场景）
 * 获取待重命名寄存器对应的旧物理寄存器编号
 * 从phy_id_free_list中取得新的物理寄存器编号
 * 将新的映射关系写入Speculative RAT
-* 将phy_id_free_list当前的读指针写入rob_item中（物理寄存器分配后读指针，用于异常和分支预测失败现场恢复）
+* 将phy_id_free_list当前的读指针写入rob_item中（物理寄存器分配后读指针，用于异常和分支预测失败现场恢复，即仅后续指令需要撤销的场景）
 * 填充rob_item的剩余项
+
+如果该指令是一条Load指令，还需要做如下操作：
+
+* 记录Load Queue当前的写指针，存储到ROB中
+* 将该写指针作为该Load指令的Load Queue ID，写入发送包中
+* 将空白项写入Load Queue中该指令对应的位置
+
+如果该指令是一条Store指令，还需要做如下操作：
+
+* 创建一条新的Store Buffer项，写入当前指令的ROB编号用于后续年龄判断
+* 将上述的Store Buffer项号写入发送包中
+
+对于被预测的条件分支指令和Load指令，还需要进行Checkpoint分配操作（前提是Checkpoint Buffer非满，若已满则不分配）：
+
+* 将Speculative RAT的Valid位写入Checkpoint
+* 将Free List的旧读指针（本次物理寄存器分配前读指针）和新读指针（本次物理寄存器分配后读指针）
+* 将Checkpoint Buffer的旧写指针（即本条Checkpoint写入前的写指针）和新写指针（即本条Checkpoint写入后的写指针）写入Checkpoint
+* 将Load Queue的旧写指针（即该Load指令对应的Load Queue项被写入前的Load Queue写指针）写入Checkpoint
+* 将Checkpoint写入Checkpoint Buffer
+* 在发送包中标记Checkpoint有效，并写入Checkpoint ID
 
 取得新指令的特殊规则：
 
@@ -99,9 +121,10 @@
 
 该流水级负责从rename_dispatch_port中获得指令，进行分发，将整数指令送入dispatch_integer_issue_port，将LSU指令送入dispatch_lsu_issue_port
 
-在正常状态下（无来自commit流水级的flush信号，不处于指令等待状态或Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态，可能处于流水级繁忙状态）：
+在正常状态下（无来自commit流水级的flush信号，不处于指令等待状态或Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态，可能处于流水级繁忙状态，可能有来自BRU或SAU的flush信号）：
 
 * 若不处于流水级繁忙状态，从rename_dispatch_port中获得指令，否则使用上一个周期获取到的指令，根据指令所属队列分配到integer_issue_pack与lsu_issue_pack中，每个pack的宽度都与rename_dispatch_port宽度一致，以保证送来的指令能够被一次性分发
+* 若收到了来自BRU或SAU的flush信号，则丢弃所有收到的新指令，否则执行下面的流程
 * 若遇到csr/mret指令，则处理分为两种情况
   * 若integer_issue不处于堵塞状态，且该指令是commit流水级的下一个待处理项，则将该指令送入dispatch_integer_issue_port并置该流水级为指令等待状态，等待该指令的完成后再分发下一个指令包，同时若lsu_issue不处于堵塞状态，则向dispatch_lsu_issue_port送空包，否则保持其不变
   * 若不满足上述情况，则向dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）送空包，置流水级繁忙状态，暂停本轮整数指令与LSU指令分发
@@ -120,13 +143,13 @@
 在指令等待状态下（无来自commit流水级的flush信号，可能同时处于Store Buffer空等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
 * 将空包送入dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）
-* 若等待的指令已退休，则解除指令等待状态，同时若处于Store Buffer空等待状态且Store Buffer为空，则解除Store Buffer空等待状态
-* 若等待的指令仍未退休，则什么都不做
+* 若等待的指令已退休或等待的指令年龄小于BRU反馈包中的ROB项（来自BRU的flush信号有效时）或小于等于SAU反馈包中的ROB项（来自SAU的flush信号有效时）时，则解除指令等待状态，同时若处于Store Buffer空等待状态且Store Buffer为空，则解除Store Buffer空等待状态
+* 若不满足上面的条件，则什么都不做
 
 在Store Buffer空等待状态下（无来自commit流水级的flush信号，不处于指令等待状态，不处于整数队列繁忙等待或LSU队列繁忙等待状态）：
 
 * 将空包送入dispatch_integer_issue_port（仅当integer_issue不处于堵塞状态时，否则保持不变）与dispatch_lsu_issue_port（仅当lsu_issue不处于堵塞状态时，否则保持不变）
-* 若Store Buffer为空，则解除Store Buffer空等待状态，否则什么都不做
+* 若Store Buffer为空或引起该等待状态的指令的年龄小于BRU反馈包中的ROB项（来自BRU的flush信号有效时）或小于等于SAU反馈包中的ROB项（来自SAU的flush信号有效时）时，则解除Store Buffer空等待状态，否则什么都不做
 
 **可以注意到，指令等待状态比Store Buffer空等待状态优先级更高，这是因为fence指令前可能存在LSU指令，这些LSU指令执行完之后Store Buffer就会为空，但是此时还没有执行到fence指令，使得fence指令没有成功阻断LSU指令提前fence指令执行，因此需要先等待fence指令退休，再同时或在之后等待Store Buffer为空**
 
@@ -149,6 +172,13 @@
 * 清除所有的保留包
 * 解除指令等待状态
 * 解除Store Buffer空等待状态
+
+收到来自BRU或SAU的flush信号时（二者可能同时有效）：
+
+* 清空hold_integer_issue_pack（当来自BRU的flush信号有效时，乱序流分支预测恢复）或清空hold_integer_issue_pack中年龄小于SAU反馈包中ROB项的指令（当来自SAU的flush信号有效时，乱序流Store/Load违例恢复）
+* 清空hold_lsu_issue_pack中年龄小于BRU反馈包中ROB项的指令（当来自BRU的flush信号有效时）或清空hold_lsu_issue_pack（当来自SAU的flush信号有效时）
+
+这里之所以针对hold_integer_issue_pack采取部分年龄筛选策略，是因为同类型的指令都是顺序派发的，而整数指令和LSU指令之间却是乱序派发的
 
 反馈信号产生：若当前状态为整数队列繁忙等待状态、LSU队列繁忙等待状态、流水级繁忙状态、（指令等待状态且没有收到等待指令的退休信号）或（Store Buffer空等待状态且当前Store Buffer不为空），则产生stall信号
 

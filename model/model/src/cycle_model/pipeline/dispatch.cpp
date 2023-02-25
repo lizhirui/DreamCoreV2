@@ -70,33 +70,56 @@ namespace cycle_model::pipeline
         {
             if(bru_feedback_pack.flush || sau_feedback_pack.flush)
             {
-                this->hold_integer_issue_pack = {};
+                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                {
+                    if(this->hold_integer_issue_pack.op_info[i].enable && (bru_feedback_pack.flush ||
+                    (sau_feedback_pack.flush && (component::age_compare(this->hold_lsu_issue_pack.op_info[i].rob_id, this->hold_lsu_issue_pack.op_info[i].rob_id_stage) < component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))))
+                    {
+                        this->hold_integer_issue_pack.op_info[i].enable = false;
+                    }
+                }
         
                 for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
                 {
                     if(this->hold_lsu_issue_pack.op_info[i].enable &&
                     ((bru_feedback_pack.flush && (component::age_compare(this->hold_lsu_issue_pack.op_info[i].rob_id, this->hold_lsu_issue_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))) ||
-                    (sau_feedback_pack.flush && (component::age_compare(this->hold_lsu_issue_pack.op_info[i].rob_id, this->hold_lsu_issue_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))))
+                    sau_feedback_pack.flush))
                     {
                         this->hold_lsu_issue_pack.op_info[i].enable = false;
                     }
                 }
-        
-                dispatch_integer_issue_port->set({});
-        
-                auto item = dispatch_lsu_issue_port->get();
-        
-                for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                
                 {
-                    if(item.op_info[i].enable &&
-                    (((bru_feedback_pack.flush && component::age_compare(item.op_info[i].rob_id, item.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))) ||
-                    (sau_feedback_pack.flush && component::age_compare(item.op_info[i].rob_id, item.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
-                    {
-                        item.op_info[i].enable = false;
-                    }
-                }
+                    auto item = dispatch_integer_issue_port->get();
         
-                dispatch_lsu_issue_port->set(item);
+                    for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                    {
+                        if(item.op_info[i].enable &&
+                           (bru_feedback_pack.flush ||
+                            (sau_feedback_pack.flush && component::age_compare(item.op_info[i].rob_id, item.op_info[i].rob_id_stage) < component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
+                        {
+                            item.op_info[i].enable = false;
+                        }
+                    }
+        
+                    dispatch_integer_issue_port->set(item);
+                }
+    
+                {
+                    auto item = dispatch_lsu_issue_port->get();
+            
+                    for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                    {
+                        if(item.op_info[i].enable &&
+                        (((bru_feedback_pack.flush && component::age_compare(item.op_info[i].rob_id, item.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage))) ||
+                        sau_feedback_pack.flush))
+                        {
+                            item.op_info[i].enable = false;
+                        }
+                    }
+            
+                    dispatch_lsu_issue_port->set(item);
+                }
         
                 this->integer_busy = false;
         
@@ -145,111 +168,104 @@ namespace cycle_model::pipeline
                     uint32_t found_rob_id = 0;
                     bool found_rob_id_stage = false;
                     
-                    for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
+                    if(!bru_feedback_pack.flush && !sau_feedback_pack.flush)
                     {
-                        if(rev_pack.op_info[i].enable)
+                        for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
                         {
-                            if(bru_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+                            if(rev_pack.op_info[i].enable)
                             {
-                                continue;//skip this instruction due to which is younger than the flush age
-                            }
-    
-                            if(sau_feedback_pack.flush && (component::age_compare(rev_pack.op_info[i].rob_id, rev_pack.op_info[i].rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
-                            {
-                                continue;//skip this instruction due to which is younger than the flush age
-                            }
-                            
-                            if((rev_pack.op_info[i].op_unit != op_unit_t::lu) && (rev_pack.op_info[i].op_unit != op_unit_t::sau) && (rev_pack.op_info[i].op_unit != op_unit_t::sdu))
-                            {
-                                integer_issue_pack.op_info[integer_issue_id].enable = rev_pack.op_info[i].enable;
-                                integer_issue_pack.op_info[integer_issue_id].value = rev_pack.op_info[i].value;
-                                integer_issue_pack.op_info[integer_issue_id].valid = rev_pack.op_info[i].valid;
-                                integer_issue_pack.op_info[integer_issue_id].last_uop = rev_pack.op_info[i].last_uop;
-                                
-                                integer_issue_pack.op_info[integer_issue_id].rob_id = rev_pack.op_info[i].rob_id;
-                                integer_issue_pack.op_info[integer_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
-                                integer_issue_pack.op_info[integer_issue_id].pc = rev_pack.op_info[i].pc;
-                                integer_issue_pack.op_info[integer_issue_id].imm = rev_pack.op_info[i].imm;
-                                integer_issue_pack.op_info[integer_issue_id].has_exception = rev_pack.op_info[i].has_exception;
-                                integer_issue_pack.op_info[integer_issue_id].exception_id = rev_pack.op_info[i].exception_id;
-                                integer_issue_pack.op_info[integer_issue_id].exception_value = rev_pack.op_info[i].exception_value;
-                                integer_issue_pack.op_info[integer_issue_id].branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
-                                
-                                integer_issue_pack.op_info[integer_issue_id].rs1 = rev_pack.op_info[i].rs1;
-                                integer_issue_pack.op_info[integer_issue_id].arg1_src = rev_pack.op_info[i].arg1_src;
-                                integer_issue_pack.op_info[integer_issue_id].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
-                                integer_issue_pack.op_info[integer_issue_id].rs1_phy = rev_pack.op_info[i].rs1_phy;
-                                
-                                integer_issue_pack.op_info[integer_issue_id].rs2 = rev_pack.op_info[i].rs2;
-                                integer_issue_pack.op_info[integer_issue_id].arg2_src = rev_pack.op_info[i].arg2_src;
-                                integer_issue_pack.op_info[integer_issue_id].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
-                                integer_issue_pack.op_info[integer_issue_id].rs2_phy = rev_pack.op_info[i].rs2_phy;
-                                
-                                integer_issue_pack.op_info[integer_issue_id].rd = rev_pack.op_info[i].rd;
-                                integer_issue_pack.op_info[integer_issue_id].rd_enable = rev_pack.op_info[i].rd_enable;
-                                integer_issue_pack.op_info[integer_issue_id].need_rename = rev_pack.op_info[i].need_rename;
-                                integer_issue_pack.op_info[integer_issue_id].rd_phy = rev_pack.op_info[i].rd_phy;
-                                
-                                integer_issue_pack.op_info[integer_issue_id].csr = rev_pack.op_info[i].csr;
-                                integer_issue_pack.op_info[integer_issue_id].op = rev_pack.op_info[i].op;
-                                integer_issue_pack.op_info[integer_issue_id].op_unit = rev_pack.op_info[i].op_unit;
-                                memcpy((void *)&integer_issue_pack.op_info[integer_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
-                                integer_issue_id++;
-                            }
-                            else
-                            {
-                                lsu_issue_pack.op_info[lsu_issue_id].enable = rev_pack.op_info[i].enable;
-                                lsu_issue_pack.op_info[lsu_issue_id].value = rev_pack.op_info[i].value;
-                                lsu_issue_pack.op_info[lsu_issue_id].valid = rev_pack.op_info[i].valid;
-                                lsu_issue_pack.op_info[lsu_issue_id].last_uop = rev_pack.op_info[i].last_uop;
-        
-                                lsu_issue_pack.op_info[lsu_issue_id].rob_id = rev_pack.op_info[i].rob_id;
-                                lsu_issue_pack.op_info[lsu_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
-                                lsu_issue_pack.op_info[lsu_issue_id].pc = rev_pack.op_info[i].pc;
-                                lsu_issue_pack.op_info[lsu_issue_id].imm = rev_pack.op_info[i].imm;
-                                lsu_issue_pack.op_info[lsu_issue_id].has_exception = rev_pack.op_info[i].has_exception;
-                                lsu_issue_pack.op_info[lsu_issue_id].exception_id = rev_pack.op_info[i].exception_id;
-                                lsu_issue_pack.op_info[lsu_issue_id].exception_value = rev_pack.op_info[i].exception_value;
-        
-                                lsu_issue_pack.op_info[lsu_issue_id].rs1 = rev_pack.op_info[i].rs1;
-                                lsu_issue_pack.op_info[lsu_issue_id].arg1_src = rev_pack.op_info[i].arg1_src;
-                                lsu_issue_pack.op_info[lsu_issue_id].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
-                                lsu_issue_pack.op_info[lsu_issue_id].rs1_phy = rev_pack.op_info[i].rs1_phy;
-        
-                                lsu_issue_pack.op_info[lsu_issue_id].rs2 = rev_pack.op_info[i].rs2;
-                                lsu_issue_pack.op_info[lsu_issue_id].arg2_src = rev_pack.op_info[i].arg2_src;
-                                lsu_issue_pack.op_info[lsu_issue_id].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
-                                lsu_issue_pack.op_info[lsu_issue_id].rs2_phy = rev_pack.op_info[i].rs2_phy;
-        
-                                lsu_issue_pack.op_info[lsu_issue_id].rd = rev_pack.op_info[i].rd;
-                                lsu_issue_pack.op_info[lsu_issue_id].rd_enable = rev_pack.op_info[i].rd_enable;
-                                lsu_issue_pack.op_info[lsu_issue_id].need_rename = rev_pack.op_info[i].need_rename;
-                                lsu_issue_pack.op_info[lsu_issue_id].rd_phy = rev_pack.op_info[i].rd_phy;
-        
-                                lsu_issue_pack.op_info[lsu_issue_id].csr = rev_pack.op_info[i].csr;
-                                lsu_issue_pack.op_info[lsu_issue_id].store_buffer_id = rev_pack.op_info[i].store_buffer_id;
-                                lsu_issue_pack.op_info[lsu_issue_id].load_queue_id = rev_pack.op_info[i].load_queue_id;
-                                lsu_issue_pack.op_info[lsu_issue_id].op = rev_pack.op_info[i].op;
-                                lsu_issue_pack.op_info[lsu_issue_id].op_unit = rev_pack.op_info[i].op_unit;
-                                memcpy((void *)&lsu_issue_pack.op_info[lsu_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
-                                lsu_issue_id++;
-                            }
-        
-                            if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
-                            {
-                                if(rev_pack.op_info[i].op_unit == op_unit_t::csr || rev_pack.op_info[i].op == op_t::mret)
+                                if((rev_pack.op_info[i].op_unit != op_unit_t::lu) && (rev_pack.op_info[i].op_unit != op_unit_t::sau) && (rev_pack.op_info[i].op_unit != op_unit_t::sdu))
                                 {
-                                    found_inst_waiting = true;
-                                    found_rob_id = this->rev_pack.op_info[i].rob_id;
-                                    found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
-                                    verify_only(i == 0);
-                                    break;
+                                    integer_issue_pack.op_info[integer_issue_id].enable = rev_pack.op_info[i].enable;
+                                    integer_issue_pack.op_info[integer_issue_id].value = rev_pack.op_info[i].value;
+                                    integer_issue_pack.op_info[integer_issue_id].valid = rev_pack.op_info[i].valid;
+                                    integer_issue_pack.op_info[integer_issue_id].last_uop = rev_pack.op_info[i].last_uop;
+                                    
+                                    integer_issue_pack.op_info[integer_issue_id].rob_id = rev_pack.op_info[i].rob_id;
+                                    integer_issue_pack.op_info[integer_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
+                                    integer_issue_pack.op_info[integer_issue_id].pc = rev_pack.op_info[i].pc;
+                                    integer_issue_pack.op_info[integer_issue_id].imm = rev_pack.op_info[i].imm;
+                                    integer_issue_pack.op_info[integer_issue_id].has_exception = rev_pack.op_info[i].has_exception;
+                                    integer_issue_pack.op_info[integer_issue_id].exception_id = rev_pack.op_info[i].exception_id;
+                                    integer_issue_pack.op_info[integer_issue_id].exception_value = rev_pack.op_info[i].exception_value;
+                                    integer_issue_pack.op_info[integer_issue_id].branch_predictor_info_pack = rev_pack.op_info[i].branch_predictor_info_pack;
+                                    
+                                    integer_issue_pack.op_info[integer_issue_id].rs1 = rev_pack.op_info[i].rs1;
+                                    integer_issue_pack.op_info[integer_issue_id].arg1_src = rev_pack.op_info[i].arg1_src;
+                                    integer_issue_pack.op_info[integer_issue_id].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
+                                    integer_issue_pack.op_info[integer_issue_id].rs1_phy = rev_pack.op_info[i].rs1_phy;
+                                    
+                                    integer_issue_pack.op_info[integer_issue_id].rs2 = rev_pack.op_info[i].rs2;
+                                    integer_issue_pack.op_info[integer_issue_id].arg2_src = rev_pack.op_info[i].arg2_src;
+                                    integer_issue_pack.op_info[integer_issue_id].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
+                                    integer_issue_pack.op_info[integer_issue_id].rs2_phy = rev_pack.op_info[i].rs2_phy;
+                                    
+                                    integer_issue_pack.op_info[integer_issue_id].rd = rev_pack.op_info[i].rd;
+                                    integer_issue_pack.op_info[integer_issue_id].rd_enable = rev_pack.op_info[i].rd_enable;
+                                    integer_issue_pack.op_info[integer_issue_id].need_rename = rev_pack.op_info[i].need_rename;
+                                    integer_issue_pack.op_info[integer_issue_id].rd_phy = rev_pack.op_info[i].rd_phy;
+                                    
+                                    integer_issue_pack.op_info[integer_issue_id].csr = rev_pack.op_info[i].csr;
+                                    integer_issue_pack.op_info[integer_issue_id].op = rev_pack.op_info[i].op;
+                                    integer_issue_pack.op_info[integer_issue_id].op_unit = rev_pack.op_info[i].op_unit;
+                                    memcpy((void *)&integer_issue_pack.op_info[integer_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                                    integer_issue_id++;
                                 }
-                                else if(rev_pack.op_info[i].op == op_t::fence)
+                                else
                                 {
-                                    found_fence = true;
-                                    found_rob_id = this->rev_pack.op_info[i].rob_id;
-                                    found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
+                                    lsu_issue_pack.op_info[lsu_issue_id].enable = rev_pack.op_info[i].enable;
+                                    lsu_issue_pack.op_info[lsu_issue_id].value = rev_pack.op_info[i].value;
+                                    lsu_issue_pack.op_info[lsu_issue_id].valid = rev_pack.op_info[i].valid;
+                                    lsu_issue_pack.op_info[lsu_issue_id].last_uop = rev_pack.op_info[i].last_uop;
+            
+                                    lsu_issue_pack.op_info[lsu_issue_id].rob_id = rev_pack.op_info[i].rob_id;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rob_id_stage = rev_pack.op_info[i].rob_id_stage;
+                                    lsu_issue_pack.op_info[lsu_issue_id].pc = rev_pack.op_info[i].pc;
+                                    lsu_issue_pack.op_info[lsu_issue_id].imm = rev_pack.op_info[i].imm;
+                                    lsu_issue_pack.op_info[lsu_issue_id].has_exception = rev_pack.op_info[i].has_exception;
+                                    lsu_issue_pack.op_info[lsu_issue_id].exception_id = rev_pack.op_info[i].exception_id;
+                                    lsu_issue_pack.op_info[lsu_issue_id].exception_value = rev_pack.op_info[i].exception_value;
+            
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs1 = rev_pack.op_info[i].rs1;
+                                    lsu_issue_pack.op_info[lsu_issue_id].arg1_src = rev_pack.op_info[i].arg1_src;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs1_need_map = rev_pack.op_info[i].rs1_need_map;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs1_phy = rev_pack.op_info[i].rs1_phy;
+            
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs2 = rev_pack.op_info[i].rs2;
+                                    lsu_issue_pack.op_info[lsu_issue_id].arg2_src = rev_pack.op_info[i].arg2_src;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs2_need_map = rev_pack.op_info[i].rs2_need_map;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rs2_phy = rev_pack.op_info[i].rs2_phy;
+            
+                                    lsu_issue_pack.op_info[lsu_issue_id].rd = rev_pack.op_info[i].rd;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rd_enable = rev_pack.op_info[i].rd_enable;
+                                    lsu_issue_pack.op_info[lsu_issue_id].need_rename = rev_pack.op_info[i].need_rename;
+                                    lsu_issue_pack.op_info[lsu_issue_id].rd_phy = rev_pack.op_info[i].rd_phy;
+            
+                                    lsu_issue_pack.op_info[lsu_issue_id].csr = rev_pack.op_info[i].csr;
+                                    lsu_issue_pack.op_info[lsu_issue_id].store_buffer_id = rev_pack.op_info[i].store_buffer_id;
+                                    lsu_issue_pack.op_info[lsu_issue_id].load_queue_id = rev_pack.op_info[i].load_queue_id;
+                                    lsu_issue_pack.op_info[lsu_issue_id].op = rev_pack.op_info[i].op;
+                                    lsu_issue_pack.op_info[lsu_issue_id].op_unit = rev_pack.op_info[i].op_unit;
+                                    memcpy((void *)&lsu_issue_pack.op_info[lsu_issue_id].sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
+                                    lsu_issue_id++;
+                                }
+            
+                                if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
+                                {
+                                    if(rev_pack.op_info[i].op_unit == op_unit_t::csr || rev_pack.op_info[i].op == op_t::mret)
+                                    {
+                                        found_inst_waiting = true;
+                                        found_rob_id = this->rev_pack.op_info[i].rob_id;
+                                        found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
+                                        verify_only(i == 0);
+                                        break;
+                                    }
+                                    else if(rev_pack.op_info[i].op == op_t::fence)
+                                    {
+                                        found_fence = true;
+                                        found_rob_id = this->rev_pack.op_info[i].rob_id;
+                                        found_rob_id_stage = this->rev_pack.op_info[i].rob_id_stage;
+                                    }
                                 }
                             }
                         }
