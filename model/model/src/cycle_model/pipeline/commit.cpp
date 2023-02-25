@@ -160,7 +160,7 @@ namespace cycle_model::pipeline
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
                             if(rob_item.last_uop || rob_item.has_exception)
                             {
-                                rob_retire_queue.push(std::pair(rob_item_id, rob_item));
+                                rob_retire_queue.emplace_back(rob_item_id, rob_item);
                             }
 #endif
                             feedback_pack.next_handle_rob_id_valid = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
@@ -188,6 +188,34 @@ namespace cycle_model::pipeline
                             else
                             {
                                 rob->pop();
+    
+                                //load handle
+                                if(rob_item.load_queue_id_valid)
+                                {
+                                    if(load_queue->get_conflict(rob_item.load_queue_id) && !rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                    {
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                                        if(rob_item.last_uop || rob_item.has_exception)
+                                        {
+                                            rob_retire_queue.pop_back();
+                                        }
+#endif
+                                        feedback_pack.jump_enable = true;
+                                        feedback_pack.jump = true;
+                                        feedback_pack.jump_next_pc = rob_item.pc;
+                                        feedback_pack.flush = true;
+                                        speculative_rat->load(retire_rat);
+                                        rob->flush();
+                                        phy_regfile->restore(retire_rat);
+                                        phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
+                                        load_queue->flush();
+                                        need_flush = true;
+                                        break;
+                                    }
+        
+                                    component::load_queue_item_t t_item;
+                                    load_queue->pop(&t_item);
+                                }
                                 
                                 if(rob_item.old_phy_reg_id_valid)
                                 {
@@ -207,30 +235,6 @@ namespace cycle_model::pipeline
                                 {
                                     csr_file->write(rob_item.csr_addr, rob_item.csr_newvalue);
                                     breakpoint_csr_trigger(rob_item.csr_addr, rob_item.csr_newvalue, true);
-                                }
-                                
-                                //load handle
-                                if(rob_item.load_queue_id_valid)
-                                {
-                                    if(load_queue->get_conflict(rob_item.load_queue_id) && !rob_item.branch_predictor_info_pack.checkpoint_id_valid)
-                                    {
-                                        feedback_pack.jump_enable = true;
-                                        feedback_pack.jump = true;
-                                        feedback_pack.jump_next_pc = rob_item.pc;
-                                        feedback_pack.flush = true;
-                                        speculative_rat->load(retire_rat);
-                                        rob->flush();
-                                        phy_regfile->restore(retire_rat);
-                                        phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
-                                        load_queue->flush();
-                                        rob->set_committed(true);
-                                        rob->add_commit_num(1);
-                                        need_flush = true;
-                                        break;
-                                    }
-                                    
-                                    component::load_queue_item_t t_item;
-                                    load_queue->pop(&t_item);
                                 }
             
                                 //branch handle

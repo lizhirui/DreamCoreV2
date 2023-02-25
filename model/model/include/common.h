@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cstring>
 #include <queue>
+#include <deque>
 #include <string>
 #include <iomanip>
 #include <type_traits>

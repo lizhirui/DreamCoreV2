@@ -109,7 +109,7 @@ namespace cycle_model::pipeline
         
         public:
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
-            std::queue<std::pair<uint32_t, component::rob_item_t>> rob_retire_queue;
+            std::deque<std::pair<uint32_t, component::rob_item_t>> rob_retire_queue;
 #endif
             commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue);
             void init();

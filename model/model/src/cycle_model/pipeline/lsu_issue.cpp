@@ -176,7 +176,7 @@ namespace cycle_model::pipeline
                         send_pack.op_info[i].csr = rev_pack.csr;
                         send_pack.op_info[i].store_buffer_id = rev_pack.store_buffer_id;
                         send_pack.op_info[i].load_queue_id = rev_pack.load_queue_id;
-                        send_pack.op_info[i].lpv = lpv[selected_issue_id[i]];
+                        send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
                         send_pack.op_info[i].op = rev_pack.op;
                         send_pack.op_info[i].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -207,7 +207,7 @@ namespace cycle_model::pipeline
                             send_pack.op_info[i].last_uop = sau_part_issued[selected_issue_id[i]] || (selected_valid[1] && (selected_issue_id[1] == selected_issue_id[2]));
                         }
                         
-                        if(send_pack.op_info[i].last_uop && (send_pack.op_info[i].lpv == 0))
+                        if(send_pack.op_info[i].last_uop && (send_pack.op_info[i].lpv == 0) && (lpv[selected_issue_id[i]] == 0))
                         {
                             issue_q.pop(selected_issue_id[i]);
                         }
@@ -239,7 +239,7 @@ namespace cycle_model::pipeline
                     feedback_pack.wakeup_issue_id[i] = selected_issue_id[i];
                     feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
                     feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
-                    feedback_pack.wakeup_lpv[i] = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]] | lpv[selected_issue_id[i]];
+                    feedback_pack.wakeup_lpv[i] = ((src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1) | lpv[selected_issue_id[i]];
                 }
                 
                 lsu_issue_readreg_port->set(send_pack);

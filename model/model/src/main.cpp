@@ -319,7 +319,7 @@ static void run(const command_line_arg_t &arg)
         while(!cycle_model_inst->commit_stage.rob_retire_queue.empty())
         {
             auto rob_item = cycle_model_inst->commit_stage.rob_retire_queue.front();
-            cycle_model_inst->commit_stage.rob_retire_queue.pop();
+            cycle_model_inst->commit_stage.rob_retire_queue.pop_front();
             
             if(compare_error)
             {

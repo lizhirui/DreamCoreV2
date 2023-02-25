@@ -154,6 +154,7 @@ namespace cycle_model::pipeline::execute
                     if(conflict_ret != std::nullopt)
                     {
                         auto [item_id, item_stage, item] = conflict_ret.value();
+                        load_queue->write_conflict(item_id, true);
                         
                         if(item.checkpoint_id_valid)
                         {

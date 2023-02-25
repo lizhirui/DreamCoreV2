@@ -142,14 +142,6 @@ namespace cycle_model::pipeline
                 {
                     auto rev_pack = issue_q.customer_get_item(selected_issue_id[i]);
                     
-                    //check whether selected instructions need replay support
-                    if(lpv[selected_issue_id[i]] == 0)
-                    {
-                        issue_q.pop(selected_issue_id[i]);
-                    }
-                    
-                    issued[selected_issue_id[i]].set(true);
-                    
                     send_pack.op_info[i].enable = rev_pack.enable;
                     send_pack.op_info[i].value = rev_pack.value;
                     send_pack.op_info[i].valid = rev_pack.valid;
@@ -180,10 +172,18 @@ namespace cycle_model::pipeline
                     send_pack.op_info[i].rd_phy = rev_pack.rd_phy;
                     
                     send_pack.op_info[i].csr = rev_pack.csr;
-                    send_pack.op_info[i].lpv = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]];
+                    send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
                     send_pack.op_info[i].op = rev_pack.op;
                     send_pack.op_info[i].op_unit = rev_pack.op_unit;
                     memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
+    
+                    //check whether selected instructions need replay support
+                    if(send_pack.op_info[i].lpv == 0)
+                    {
+                        issue_q.pop(selected_issue_id[i]);
+                    }
+    
+                    issued[selected_issue_id[i]].set(true);
                 }
                 else
                 {
@@ -197,7 +197,7 @@ namespace cycle_model::pipeline
                 feedback_pack.wakeup_valid[i] = selected_valid[i] && wakeup_rd_valid[selected_issue_id[i]];
                 feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
                 feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
-                feedback_pack.wakeup_lpv[i] = src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]];
+                feedback_pack.wakeup_lpv[i] = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
             }
             
             //calculate busy

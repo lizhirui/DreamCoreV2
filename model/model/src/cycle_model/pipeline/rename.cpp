@@ -231,6 +231,7 @@ namespace cycle_model::pipeline
                                         component::load_queue_item_t load_queue_item;
                                         rob_item.load_queue_id_valid = true;
                                         rob_item.load_queue_id = old_load_queue_wptr;
+                                        send_pack.op_info[i].load_queue_id = old_load_queue_wptr;
                                         verify(load_queue->push(load_queue_item));
                                     }
                                     else if(rev_pack.op_unit == op_unit_t::sdu)
@@ -248,7 +249,7 @@ namespace cycle_model::pipeline
                                 verify(rob->push(rob_item));
                                 
                                 //generate checkpoint items
-                                if(rev_pack.enable && rev_pack.valid && rev_pack.branch_predictor_info_pack.predicted)
+                                if(rev_pack.enable && rev_pack.valid && (rev_pack.branch_predictor_info_pack.predicted || (rev_pack.op_unit == op_unit_t::lu)))
                                 {
 #ifdef ENABLE_CHECKPOINT
                                     if(!checkpoint_buffer->producer_is_full())

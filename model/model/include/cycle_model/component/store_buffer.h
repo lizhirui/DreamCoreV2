@@ -177,6 +177,14 @@ namespace cycle_model::component
                             }
                         }
                         
+                        if(cur_item_addr_valid)
+                        {
+                            if(component::age_compare(cur_item.rob_id, cur_item.rob_id_stage) < component::age_compare(rob_id, rob_id_stage))
+                            {
+                                continue;//skip feedback from younger store item
+                            }
+                        }
+                        
                         if(cur_item.data_valid && cur_item_addr_valid)
                         {
                             if((cur_item_addr >= addr) && (cur_item_addr < (addr + size)))
