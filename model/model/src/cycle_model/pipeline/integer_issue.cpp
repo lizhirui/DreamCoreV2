@@ -87,7 +87,6 @@ namespace cycle_model::pipeline
             this->wakeup_shift[i] = 0;
             this->new_idle_shift[i] = 0;
             
-            this->lpv[i] = 0;
             this->issued[i].set(false);
         }
     
@@ -812,7 +811,6 @@ namespace cycle_model::pipeline
                         //initialize replay information
                         src1_lpv[issue_id] = 0;
                         src2_lpv[issue_id] = 0;
-                        lpv[issue_id] = 0;
                         issued[issue_id].set(false);
                         
                         switch(rev_pack.op_info[i].op_unit)

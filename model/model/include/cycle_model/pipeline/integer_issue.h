@@ -315,7 +315,6 @@ namespace cycle_model::pipeline
             uint32_t wakeup_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
-            uint32_t lpv[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             component::dff<bool> issued[INTEGER_ISSUE_QUEUE_SIZE] = {false};
             
             uint32_t next_port_index = 0;
