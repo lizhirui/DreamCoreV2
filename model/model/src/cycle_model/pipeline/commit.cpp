@@ -144,6 +144,7 @@ namespace cycle_model::pipeline
                 phy_regfile->restore(retire_rat);
                 phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
                 load_queue->flush();
+                checkpoint_buffer->flush();
                 rob->set_committed(true);
                 need_flush = true;
             }
@@ -180,6 +181,7 @@ namespace cycle_model::pipeline
                                 phy_regfile->restore(retire_rat);
                                 phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
                                 load_queue->flush();
+                                checkpoint_buffer->flush();
                                 rob->set_committed(true);
                                 rob->add_commit_num(1);
                                 need_flush = true;
@@ -209,8 +211,15 @@ namespace cycle_model::pipeline
                                         phy_regfile->restore(retire_rat);
                                         phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
                                         load_queue->flush();
+                                        checkpoint_buffer->flush();
                                         need_flush = true;
                                         break;
+                                    }
+                                    
+                                    if(rob_item.branch_predictor_info_pack.checkpoint_id_valid)
+                                    {
+                                        component::checkpoint_t t_cp;
+                                        checkpoint_buffer->pop(&t_cp);
                                     }
         
                                     component::load_queue_item_t t_item;
@@ -335,6 +344,7 @@ namespace cycle_model::pipeline
                                                 phy_regfile->restore(retire_rat);
                                                 phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
                                                 load_queue->flush();
+                                                checkpoint_buffer->flush();
                                                 need_flush = true;
                                             }
                                         }

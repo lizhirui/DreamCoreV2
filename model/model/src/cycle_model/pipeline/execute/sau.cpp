@@ -68,11 +68,6 @@ namespace cycle_model::pipeline::execute
             {
                 goto exit;
             }
-    
-            if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
-            {
-                goto exit;
-            }
 
             verify_only(rev_pack.valid);
             send_pack.enable = rev_pack.enable;

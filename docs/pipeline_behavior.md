@@ -385,7 +385,12 @@
 
 如果收到了来自SAU的flush请求，且收到的指令的年龄小于等于反馈包指令的年龄，则直接丢弃该指令
 
-反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+如果检测到当前分支预测是失败的，且拥有Checkpoint，则直接进行乱序流中的分支预测快速现场恢复
+
+反馈信号生成：
+
+* 数据反馈：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+* 分支预测状态反馈：若当前检测到分支预测是失败的，且该指令拥有Checkpoint，则生成flush请求，填充当前分支指令的rob年龄信息和下一地址信息，用于乱序流分支预测快速现场恢复
 
 ### CSR
 
@@ -427,9 +432,9 @@
 
 反馈信号生成：若当前指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
 
-### LSU
+### LU
 
-该流水级负责处理LSU类指令，包括lb/lbu/lh/lhu/lw/sb/sh/sw指令，且实际分为两个流水级
+该流水级负责处理Load指令，包括lb/lbu/lh/lhu/lw指令，且实际分为两个流水级
 
 第一个流水级的行为如下：
 
@@ -437,29 +442,62 @@
 * 若第二级流水级处于堵塞状态，则什么都不做，否则按照如下流程走
 * 若readreg_lsu_hdff为空，则清零l2_addr与l2_rev_pack，否则按照如下流程走
 * 从readreg_lsu_hdff读入一条指令
+* 若收到来自BRU或SAU的flush请求，且当前的指令年龄小于（对于BRU）或小于等于（对于SAU）反馈包中的指令年龄，则丢弃该指令，否则继续往下走
 * 计算有效地址
 * 检查地址的对齐情况，若地址不对齐，则产生load_address_misaligned异常
-* 将地址送到总线
+* 将地址送到总线与Store Buffer
 * 将指令送到下一流水级
 
 第二个流水级的行为如下：
 
 * 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包
+* 若收到来自BRU或SAU的flush请求，且l2_rev_pack中的指令指令年龄小于（对于BRU）或小于等于（对于SAU）反馈包中的指令年龄，则丢弃该指令，否则继续往下走
+* 若从Store Buffer接收到了冲突信号，则说明发生了Store/Load违例（即该Load指令本应在Store指令之后执行，但是对应的Store指令的数据还没有准备好），因此需要执行replay操作
 * 分析l2_rev_pack的指令，若没有产生异常，则按如下流程走，否则将数据包直接发送到lsu_wb_port
-* 若为Load类指令且总线未返回数据，则发送stall信号，在本周期流水线暂停什么都不做，否则继续如下流程
-* 若为Store类指令且Store Buffer空间不足，则发送stall信号，在本周期流水线暂停什么都不做，否则继续如下流程
-* 若为Load类指令，从总线取得结果，并送入Store Buffer进行反馈处理，将结果填入send_pack并发送到lsu_wb_port
-* 若为Store类指令，将请求压入Store Buffer
+* 若总线未返回数据，则发送stall信号，在本周期流水线暂停什么都不做，否则继续如下流程
+* 从总线取得结果，并从Store Buffer获得反馈信息，合并结果后将结果填入send_pack并发送到lsu_wb_port
 
-反馈信号生成：若第二级流水线的指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+反馈信号生成：
+
+* 数据反馈：若第二级流水线的指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包，否则反馈包为无效包
+* replay反馈：若第二流水级产生了replay请求，则在replay反馈包中置replay信号有效
+
+### SAU
+
+该流水级负责处理Store指令的地址计算，包括sb/sh/sw指令
+
+行为如下：
+
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则什么也不做
+* 若收到来自BRU的flush请求，且当前的指令年龄小于反馈包中的指令年龄，则丢弃该指令，否则继续往下走
+* 对收到的指令进行地址计算，如果该指令没有发生异常，则：
+  * 将地址填充到Store Buffer中
+  * 检查地址是否对齐，若未对齐，则生成未对齐异常
+  * 检查Load Queue中是否存在与该Store指令地址重叠且年龄小于该Store指令的表项，若存在，则发生Store/Load违例（即该Load指令本应在Store指令之后执行，依赖Store的数据，但却在Store之前执行，这时候Load获取到的数据是错误的），将违例标志写入Load Queue以便对应Load指令退休时进行现场还原，若对应Load指令拥有Checkpoint，则直接使用该Checkpoint进行乱序流快速现场恢复，减少违例的代价
+
+反馈信号生成：若当前发现Store/Load违例，则生成flush请求，并将当前指令的ROB年龄信息和PC填入，用于乱序流快速现场恢复
+
+### SDU
+
+该流水级负责处理Store指令的数据填充，包括sb/sh/sw指令
+
+行为如下：
+
+* 若没有从commit流水级收到flush信号，则按照如下流程走，否则什么也不做
+* 若收到来自BRU或SAU的flush请求，且当前的指令年龄小于（对于BRU）或小于等于（对于SAU）反馈包中的指令年龄，则丢弃该指令，否则继续往下走
+* 将数据填充到Store Buffer中
 
 ## WB级
 
 该流水级负责phy_regfile的写回与反馈，步骤如下：
 
 * 若没有从commit流水级收到flush信号，则按照如下流程走，否则直接发送空包到wb_commit_port
-* 从每一个execute_wb_port读入一条指令，若指令的有效、没有产生异常且需要重命名，则执行phy_regfile的写回操作，并将写回的数据送到反馈通道上
-* 将指令送到wb_commit_port
+* 从每一个execute_wb_port读入一条指令，执行如下流程：
+  * 若收到了来自BRU或SAU的flush请求，且该指令的年龄小于（对于BRU）或小于等于（对于SAU）反馈包中的指令年龄，则丢弃该指令
+  * 若指令有效、没有产生异常且需要重命名，则执行phy_regfile的写回操作，并将写回的数据送到反馈通道上
+  * 将指令送到wb_commit_port
+
+反馈信号生成：若某条指令有效且需要重命名（这说明存在有效的rd寄存器，且不为x0）且没有发生异常，则将rd_phy和结果填入反馈包对应位置，否则反馈包对应位置为无效项
 
 ## Commit级
 
@@ -474,7 +512,7 @@
 
 * 若rob为空，则什么都不做，否则按照如下流程走
 * 从rob顶端读出一项，置为rob_item，并在反馈包中标记下一个待处理ROB为该项
-* 若检测到中断发生，则执行如下序列：
+* 若检测到中断发生，且ROB当前项为最后一条微指令或发生了异常，则执行如下序列：
   * 将rob_item.pc写入CSR_MEPC
   * 将0写入CSR_MTVAL
   * 将中断ID与0x80000000的或写入CSR_MCAUSE
@@ -485,7 +523,9 @@
   * 对ROB执行flush操作
   * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
   * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
-* 若未检测到中断发生，则执行如下序列：
+  * 对Load Queue执行flush操作
+  * 对Checkpoint Buffer执行flush操作
+* 否则：
   * 准备退休最多COMMIT_WIDTH指令，开始从ROB顶端遍历
   * 从ROB顶端读入一项，置为rob_item
   * 若rob_item.finish为真，表明指令已完成执行，准备退休，否则终止下述流程
@@ -497,10 +537,20 @@
     * 对ROB执行flush操作
     * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
     * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+    * 对Load Queue执行flush操作
+    * 对Checkpoint Buffer执行flush操作
     * 标记一条指令已完成提交
     * 终止后续的指令处理
   * 若该指令未发生异常，则执行如下流程
     * 将ROB的顶端项弹出
+    * 若该指令被分配了Load Queue项，则检查其中的冲突标志是否被标记，若被标记且未使用Checkpoint，则执行如下操作，同时不再执行下面的操作，否则将对应的Load Queue项释放，且若使用了Checkpoint，则释放对应的Checkpoint项，并继续往下走：
+      * 产生flush反馈，跳转地址设为当前指令的地址
+      * 将Retire RAT整体复制到Speculative RAT
+      * 对ROB执行flush操作
+      * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
+      * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+      * 对Load Queue执行flush操作
+      * 对Checkpoint Buffer执行flush操作
     * 若该指令发生了重命名，则从Speculative RAT中释放旧物理寄存器，并在Retire RAT中提交新的物理寄存器映射，同时在Retire RAT中移除旧的物理寄存器映射，并在phy_regfile中标记旧的物理寄存器无效
     * 标记一条指令已完成提交
     * 若该指令需要对CSR执行写操作，则向csr_file发出写请求
@@ -512,11 +562,14 @@
         * 若预测错误，则执行如下序列：
           * 自增branch_miss性能计数器
           * 更新bi_mode和L1_BTB预测器
-          * 产生jump反馈请求，跳转地址为该指令的跳转目标
-          * 产生flush反馈
-          * 将Retire RAT整体复制到Speculative RAT
-          * 对ROB执行flush操作
-          * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
-          * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+          * 若该指令未使用Checkpoint，则继续执行如下序列：
+            * 产生jump反馈请求，跳转地址为该指令的跳转目标
+            * 产生flush反馈
+            * 将Retire RAT整体复制到Speculative RAT
+            * 对ROB执行flush操作
+            * 将Retire RAT的Valid标志位整体复制到phy_regfile的Valid标志位
+            * 将rob_item对应的phy_id_free_list修改前的读指针恢复到phy_id_free_list
+            * 对Checkpoint Buffer执行flush操作
+        * 若该指令使用了Checkpoint，则释放对应的Checkpoint项
       * 否则，产生jump反馈请求，跳转地址为该指令的跳转目标
-    * 终止后续的指令处理
+      * 终止后续的指令处理（一次只退休一条bru指令）

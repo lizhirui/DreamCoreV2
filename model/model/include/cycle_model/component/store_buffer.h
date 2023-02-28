@@ -164,7 +164,6 @@ namespace cycle_model::component
                         auto cur_item_size = item_size[cur_id].get_new();
                         auto cur_item_addr_valid = item_addr_valid[cur_id].get_new();
                         
-                        //lu replay失败，暂时绕过（通过加入!cur_item.data_valid）
                         if(!cur_item.data_valid && cur_item_addr_valid)
                         {
                             if(component::age_compare(cur_item.rob_id, cur_item.rob_id_stage) > component::age_compare(rob_id, rob_id_stage))
