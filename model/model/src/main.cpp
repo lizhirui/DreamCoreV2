@@ -775,6 +775,10 @@ static void atexit_func()
         std::cout << MESSAGE_OUTPUT_PREFIX << "Instruction Num: " << cycle_model_inst->committed_instruction_num << std::endl;
         std::cout << MESSAGE_OUTPUT_PREFIX << "IPC: " << ((long double)cycle_model_inst->committed_instruction_num) / cycle_model_inst->cpu_clock_cycle << std::endl;
         std::cout << MESSAGE_OUTPUT_PREFIX << "PC: 0x" << outhex(get_current_pc()) << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Load Num: " << cycle_model_inst->global.load_num << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Replay Num: " << cycle_model_inst->global.replay_num << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Replay Load Num: " << cycle_model_inst->global.replay_load_num << std::endl;
+        std::cout << MESSAGE_OUTPUT_PREFIX << "Conflict Load Num: " << cycle_model_inst->global.conflict_load_num << std::endl;
     }
 #else
     if(isa_model_inst != nullptr)

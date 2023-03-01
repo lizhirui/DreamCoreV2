@@ -233,6 +233,7 @@ namespace cycle_model::pipeline
                                         rob_item.load_queue_id = old_load_queue_wptr;
                                         send_pack.op_info[i].load_queue_id = old_load_queue_wptr;
                                         verify(load_queue->push(load_queue_item));
+                                        load_queue->clear_replay_num(rob_item.load_queue_id);
                                     }
                                     else if(rev_pack.op_unit == op_unit_t::sdu)
                                     {

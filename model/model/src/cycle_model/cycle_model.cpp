@@ -247,6 +247,14 @@ namespace cycle_model
         csr_file.map(CSR_BRANCHHITH, true, std::make_shared<component::csr::mhpmcounterh>("branchhith"));
         csr_file.map(CSR_BRANCHMISS, true, std::make_shared<component::csr::mhpmcounter>("branchmiss"));
         csr_file.map(CSR_BRANCHMISSH, true, std::make_shared<component::csr::mhpmcounterh>("branchmissh"));
+        csr_file.map(CSR_LOADNUM, true, std::make_shared<component::csr::mhpmcounter>("loadnum"));
+        csr_file.map(CSR_LOADNUMH, true, std::make_shared<component::csr::mhpmcounterh>("loadnumh"));
+        csr_file.map(CSR_REPLAYNUM, true, std::make_shared<component::csr::mhpmcounter>("replaynum"));
+        csr_file.map(CSR_REPLAYNUMH, true, std::make_shared<component::csr::mhpmcounterh>("replaynumh"));
+        csr_file.map(CSR_REPLAYLOADNUM, true, std::make_shared<component::csr::mhpmcounter>("replayloadnum"));
+        csr_file.map(CSR_REPLAYLOADNUMH, true, std::make_shared<component::csr::mhpmcounterh>("replayloadnumh"));
+        csr_file.map(CSR_CONFLICTLOADNUM, true, std::make_shared<component::csr::mhpmcounter>("conflictloadnum"));
+        csr_file.map(CSR_CONFLICTLOADNUMH, true, std::make_shared<component::csr::mhpmcounterh>("conflictloadnumh"));
     
         for(auto i = 0;i < 16;i++)
         {
@@ -435,6 +443,8 @@ namespace cycle_model
         rob.reset();
         csr_file.reset();
         store_buffer.reset();
+        load_queue.reset();
+        checkpoint_buffer.reset();
         interrupt_interface.reset();
         ((component::slave::memory *)bus.get_slave_obj(0x80000000, false))->reset();
         clint.reset();
@@ -561,6 +571,14 @@ namespace cycle_model
         csr_file.write_sys(CSR_BRANCHHITH, (uint32_t)(global.branch_hit >> 32));
         csr_file.write_sys(CSR_BRANCHMISS, (uint32_t)(global.branch_miss & 0xffffffffu));
         csr_file.write_sys(CSR_BRANCHMISSH, (uint32_t)(global.branch_miss >> 32));
+        csr_file.write_sys(CSR_LOADNUM, (uint32_t)(global.load_num & 0xffffffffu));
+        csr_file.write_sys(CSR_LOADNUMH, (uint32_t)(global.load_num >> 32));
+        csr_file.write_sys(CSR_REPLAYNUM, (uint32_t)(global.replay_num & 0xffffffffu));
+        csr_file.write_sys(CSR_REPLAYNUMH, (uint32_t)(global.replay_num >> 32));
+        csr_file.write_sys(CSR_REPLAYLOADNUM, (uint32_t)(global.replay_load_num & 0xffffffffu));
+        csr_file.write_sys(CSR_REPLAYLOADNUMH, (uint32_t)(global.replay_load_num >> 32));
+        csr_file.write_sys(CSR_CONFLICTLOADNUM, (uint32_t)(global.conflict_load_num & 0xffffffffu));
+        csr_file.write_sys(CSR_CONFLICTLOADNUMH, (uint32_t)(global.conflict_load_num >> 32));
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {

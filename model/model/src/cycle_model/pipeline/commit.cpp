@@ -194,6 +194,19 @@ namespace cycle_model::pipeline
                                 //load handle
                                 if(rob_item.load_queue_id_valid)
                                 {
+                                    global->load_num_add();
+                                    
+                                    if(load_queue->get_replay_num(rob_item.load_queue_id) > 0)
+                                    {
+                                        global->replay_load_num_add();
+                                        global->replay_num_add(load_queue->get_replay_num(rob_item.load_queue_id));
+                                    }
+                                    
+                                    if(load_queue->get_conflict(rob_item.load_queue_id))
+                                    {
+                                        global->conflict_load_num_add();
+                                    }
+                                    
                                     if(load_queue->get_conflict(rob_item.load_queue_id) && !rob_item.branch_predictor_info_pack.checkpoint_id_valid)
                                     {
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE

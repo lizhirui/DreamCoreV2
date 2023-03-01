@@ -50,6 +50,11 @@ namespace cycle_model::pipeline::execute
         
         lu_feedback_pack.replay = l2_conflict_found;
         
+        if(l2_rev_pack.enable && l2_conflict_found)
+        {
+            load_queue->add_replay_num(l2_rev_pack.load_queue_id);
+        }
+        
         if(l2_rev_pack.enable && !l2_conflict_found && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||
           (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) >= component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
           && (!sau_feedback_pack.flush || (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
