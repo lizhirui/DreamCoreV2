@@ -20,7 +20,7 @@
 
 namespace cycle_model::pipeline::execute
 {
-    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue) : tdb(TRACE_EXECUTE_LSU)
+    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue, component::wait_table *wait_table) : tdb(TRACE_EXECUTE_LSU)
     {
         this->global = global;
         this->id = id;
@@ -30,6 +30,7 @@ namespace cycle_model::pipeline::execute
         this->store_buffer = store_buffer;
         this->clint = clint;
         this->load_queue = load_queue;
+        this->wait_table = wait_table;
         this->lu::reset();
     }
     
@@ -53,6 +54,7 @@ namespace cycle_model::pipeline::execute
         if(l2_rev_pack.enable && l2_conflict_found)
         {
             load_queue->add_replay_num(l2_rev_pack.load_queue_id);
+            wait_table->set_wait_bit(l2_rev_pack.pc);
         }
         
         if(l2_rev_pack.enable && !l2_conflict_found && !commit_feedback_pack.flush && (!bru_feedback_pack.flush ||

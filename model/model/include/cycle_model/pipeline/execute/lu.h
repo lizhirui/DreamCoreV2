@@ -16,6 +16,7 @@
 #include "../../component/store_buffer.h"
 #include "../../component/slave/clint.h"
 #include "../../component/load_queue.h"
+#include "../../component/wait_table.h"
 #include "../lsu_readreg_execute.h"
 #include "../execute_wb.h"
 #include "../execute.h"
@@ -35,6 +36,7 @@ namespace cycle_model::pipeline::execute
             component::port<execute_wb_pack_t> *lu_wb_port;
             component::bus *bus;
             component::store_buffer *store_buffer;
+            component::wait_table *wait_table;
             
             bool l2_stall = false;
             lsu_readreg_execute_pack_t l2_rev_pack;
@@ -57,7 +59,7 @@ namespace cycle_model::pipeline::execute
             clint_sync_info_t clint_sync_list[ROB_SIZE] = {{0, 0, 0}};
             component::load_queue *load_queue;
             
-            lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue);
+            lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue, component::wait_table *wait_table);
             virtual void reset();
             std::tuple<execute_feedback_channel_t, lu_feedback_pack_t> run(const bru_feedback_pack_t &bru_feedback_pack, const sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual json get_json();

@@ -22,10 +22,11 @@
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/free_list.h"
 #include "cycle_model/component/checkpoint.h"
+#include "cycle_model/component/wait_table.h"
 
 namespace cycle_model::pipeline::execute
 {
-    sau::sau(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_sau_hdff, component::port<execute_wb_pack_t> *sau_wb_port, component::store_buffer *store_buffer, component::load_queue *load_queue, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer) : tdb(TRACE_EXECUTE_LSU)
+    sau::sau(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_sau_hdff, component::port<execute_wb_pack_t> *sau_wb_port, component::store_buffer *store_buffer, component::load_queue *load_queue, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::wait_table *wait_table) : tdb(TRACE_EXECUTE_LSU)
     {
         this->global = global;
         this->id = id;
@@ -38,6 +39,7 @@ namespace cycle_model::pipeline::execute
         this->phy_regfile = phy_regfile;
         this->phy_id_free_list = phy_id_free_list;
         this->checkpoint_buffer = checkpoint_buffer;
+        this->wait_table = wait_table;
         this->sau::reset();
     }
     
@@ -150,6 +152,7 @@ namespace cycle_model::pipeline::execute
                     {
                         auto [item_id, item_stage, item] = conflict_ret.value();
                         load_queue->write_conflict(item_id, true);
+                        wait_table->set_wait_bit(item.pc);
                         
                         if(item.checkpoint_id_valid)
                         {

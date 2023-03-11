@@ -83,6 +83,8 @@ const uint32_t RAS_SIZE = 256;
 const uint32_t CHARFIFO_SEND_FIFO_SIZE = 1024;
 const uint32_t CHARFIFO_REV_FIFO_SIZE = 1024;
 
+const uint32_t WAIT_TABLE_SIZE = 1024;
+
 typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_SEND_FIFO_SIZE>> charfifo_send_fifo_t;
 typedef boost::lockfree::spsc_queue<char, boost::lockfree::capacity<CHARFIFO_REV_FIFO_SIZE>> charfifo_rev_fifo_t;
 

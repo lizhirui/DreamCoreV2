@@ -130,13 +130,14 @@ namespace cycle_model
     clint(&bus, &interrupt_interface),
     checkpoint_buffer(CHECKPOINT_BUFFER_SIZE),
     load_queue(LOAD_QUEUE_SIZE),
+    wait_table(WAIT_TABLE_SIZE),
     fetch1_stage(&global, &bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
     fetch2_stage(&global, &fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
     decode_stage(&global, &fetch2_decode_fifo, &decode_rename_fifo),
     rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list, &checkpoint_buffer, &load_queue, &store_buffer),
     dispatch_stage(&global, &rename_dispatch_port, &dispatch_integer_issue_port, &dispatch_lsu_issue_port, &store_buffer),
     integer_issue_stage(&global, &dispatch_integer_issue_port, &integer_issue_readreg_port, &phy_regfile),
-    lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile),
+    lsu_issue_stage(&global, &dispatch_lsu_issue_port, &lsu_issue_readreg_port, &phy_regfile, &wait_table),
     integer_readreg_stage(&global, &integer_issue_readreg_port, readreg_alu_hdff, readreg_bru_hdff, readreg_csr_hdff, readreg_div_hdff, readreg_mul_hdff, &phy_regfile),
     lsu_readreg_stage(&global, &lsu_issue_readreg_port, readreg_lu_hdff, readreg_sau_hdff, readreg_sdu_hdff, &phy_regfile),
     execute_alu_stage{nullptr},
@@ -198,7 +199,7 @@ namespace cycle_model
             readreg_lu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             lu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
             lu_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
-            execute_lu_stage[i] = new pipeline::execute::lu(&global, i, readreg_lu_hdff[i], lu_wb_port[i], &bus, &store_buffer, &clint, &load_queue);
+            execute_lu_stage[i] = new pipeline::execute::lu(&global, i, readreg_lu_hdff[i], lu_wb_port[i], &bus, &store_buffer, &clint, &load_queue, &wait_table);
         }
     
         for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
@@ -206,7 +207,7 @@ namespace cycle_model
             readreg_sau_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             sau_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
             sau_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
-            execute_sau_stage[i] = new pipeline::execute::sau(&global, i, readreg_sau_hdff[i], sau_wb_port[i], &store_buffer, &load_queue, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer);
+            execute_sau_stage[i] = new pipeline::execute::sau(&global, i, readreg_sau_hdff[i], sau_wb_port[i], &store_buffer, &load_queue, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer, &wait_table);
         }
     
         for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
@@ -449,6 +450,7 @@ namespace cycle_model
         ((component::slave::memory *)bus.get_slave_obj(0x80000000, false))->reset();
         clint.reset();
         checkpoint_buffer.reset();
+        wait_table.reset();
         
         fetch1_stage.reset();
         fetch2_stage.reset();
@@ -556,6 +558,7 @@ namespace cycle_model
         store_buffer.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         bus.run();
         bus.sync();
+        wait_table.run(cpu_clock_cycle);
         component::branch_predictor_base::batch_sync();
         cpu_clock_cycle++;
         committed_instruction_num = rob.get_global_commit_num();

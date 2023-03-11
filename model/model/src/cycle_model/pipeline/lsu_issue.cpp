@@ -14,6 +14,7 @@
 #include "cycle_model/component/port.h"
 #include "cycle_model/component/ooo_issue_queue.h"
 #include "cycle_model/component/regfile.h"
+#include "cycle_model/component/wait_table.h"
 #include "cycle_model/component/age_compare.h"
 #include "cycle_model/pipeline/rename_dispatch.h"
 #include "cycle_model/pipeline/lsu_issue_readreg.h"
@@ -25,12 +26,13 @@
 
 namespace cycle_model::pipeline
 {
-    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
+    lsu_issue::lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::wait_table *wait_table) : issue_q(component::ooo_issue_queue<issue_queue_item_t>(LSU_ISSUE_QUEUE_SIZE)), tdb(TRACE_LSU_ISSUE)
     {
         this->global = global;
         this->dispatch_lsu_issue_port = dispatch_lsu_issue_port;
         this->lsu_issue_readreg_port = lsu_issue_readreg_port;
         this->phy_regfile = phy_regfile;
+        this->wait_table = wait_table;
         this->lsu_issue::reset();
     }
     
@@ -51,6 +53,7 @@ namespace cycle_model::pipeline
             this->is_store[i] = false;
             this->waiting_issue_id_ready[i] = false;
             this->waiting_issue_id[i] = 0;
+            this->waiting_store[i] = false;
             this->issued[i].set(false);
         }
     }
@@ -95,6 +98,11 @@ namespace cycle_model::pipeline
                         if(this->issued[i].get())
                         {
                             continue;//skip the issued instruction
+                        }
+                        
+                        if(this->waiting_store[i])
+                        {
+                            continue;//skip the waiting store instruction
                         }
                         
                         if(!is_store[i])
@@ -257,6 +265,29 @@ namespace cycle_model::pipeline
     {
         if(!commit_feedback_pack.flush)
         {
+            //find oldest store instruction
+            bool has_store = false;
+            uint32_t store_rob_id = 0;
+            bool store_rob_id_stage = false;
+            
+            for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
+            {
+                if(issue_q.is_valid(i) && !issued[i] && is_store[i])
+                {
+                    if(!has_store)
+                    {
+                        has_store = true;
+                        store_rob_id = issue_q.customer_get_item(i).rob_id;
+                        store_rob_id_stage = issue_q.customer_get_item(i).rob_id_stage;
+                    }
+                    else if(component::age_compare(issue_q.customer_get_item(i).rob_id, issue_q.customer_get_item(i).rob_id_stage) > component::age_compare(store_rob_id, store_rob_id_stage))
+                    {
+                        store_rob_id = issue_q.customer_get_item(i).rob_id;
+                        store_rob_id_stage = issue_q.customer_get_item(i).rob_id_stage;
+                    }
+                }
+            }
+            
             for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
             {
                 if(issue_q.is_valid(i))
@@ -455,6 +486,12 @@ namespace cycle_model::pipeline
                             }
                         }
                     }
+                    
+                    //waiting_store wakeup
+                    if(this->waiting_store[i] && (!has_store || (component::age_compare(store_rob_id, store_rob_id_stage) < component::age_compare(this->waiting_store_rob_id[i], this->waiting_store_rob_id_stage[i]))))
+                    {
+                        this->waiting_store[i] = false;
+                    }
                 }
             }
         }
@@ -652,6 +689,35 @@ namespace cycle_model::pipeline
                         sdu_part_issued[issue_id] = false;
                         waiting_issue_id_ready[issue_id] = true;
                         waiting_issue_id[issue_id] = 0;
+                    
+                        //find youngest store instruction
+                        {
+                            bool has_store = false;
+                            uint32_t last_rob_id = 0;
+                            bool last_rob_id_stage = false;
+                            
+                            for(uint32_t j = 0;j < LSU_ISSUE_QUEUE_SIZE;j++)
+                            {
+                                if(issue_q.is_valid(j) && !issued[j] && is_store[j])
+                                {
+                                    if(!has_store)
+                                    {
+                                        has_store = true;
+                                        last_rob_id = rob_id[j];
+                                        last_rob_id_stage = rob_id_stage[j];
+                                    }
+                                    else if(component::age_compare(rob_id[j], rob_id_stage[j]) < component::age_compare(last_rob_id, last_rob_id_stage))
+                                    {
+                                        last_rob_id = rob_id[j];
+                                        last_rob_id_stage = rob_id_stage[j];
+                                    }
+                                }
+                            }
+    
+                            waiting_store[issue_id] = (rev_pack.op_info[i].op_unit == op_unit_t::lu) ? (wait_table->get_wait_bit(rev_pack.op_info[i].pc) && has_store) : false;
+                            waiting_store_rob_id[issue_id] = last_rob_id;
+                            waiting_store_rob_id_stage[issue_id] = last_rob_id_stage;
+                        }
     
                         //initialize replay information
                         src1_lpv[issue_id] = 0;

@@ -22,6 +22,7 @@ namespace cycle_model::pipeline
 #include "../component/port.h"
 #include "../component/ooo_issue_queue.h"
 #include "../component/regfile.h"
+#include "../component/wait_table.h"
 #include "../component/dff.h"
 #include "dispatch_issue.h"
 #include "lsu_issue_readreg.h"
@@ -282,6 +283,7 @@ namespace cycle_model::pipeline
             component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port;
             
             component::regfile<uint32_t> *phy_regfile;
+            component::wait_table *wait_table;
             
             component::ooo_issue_queue<issue_queue_item_t> issue_q;
             bool busy = false;
@@ -309,12 +311,15 @@ namespace cycle_model::pipeline
         
             uint32_t lpv[LSU_ISSUE_QUEUE_SIZE] = {0};
             uint32_t cur_lpv[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool waiting_store[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t waiting_store_rob_id[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool waiting_store_rob_id_stage[LSU_ISSUE_QUEUE_SIZE] = {0};
             component::dff<bool> issued[LSU_ISSUE_QUEUE_SIZE] = {false};
             
             trace::trace_database tdb;
         
         public:
-            lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile);
+            lsu_issue(global_inst *global, component::port<dispatch_issue_pack_t> *dispatch_lsu_issue_port, component::port<lsu_issue_readreg_pack_t> *lsu_issue_readreg_port, component::regfile<uint32_t> *phy_regfile, component::wait_table *wait_table);
             virtual void reset();
             lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);

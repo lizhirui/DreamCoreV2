@@ -30,6 +30,7 @@
 #include "cycle_model/component/branch_predictor_set.h"
 #include "cycle_model/component/checkpoint.h"
 #include "cycle_model/component/load_queue.h"
+#include "cycle_model/component/wait_table.h"
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/fetch1.h"
 #include "cycle_model/pipeline/fetch1_fetch2.h"
@@ -130,6 +131,7 @@ namespace cycle_model
             component::branch_predictor_set branch_predictor_set;
             component::fifo<component::checkpoint_t> checkpoint_buffer;
             component::load_queue load_queue;
+            component::wait_table wait_table;
             
             pipeline::fetch1 fetch1_stage;
             pipeline::fetch2 fetch2_stage;
