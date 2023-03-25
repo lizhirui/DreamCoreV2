@@ -49,7 +49,8 @@ namespace cycle_model::pipeline::execute
             {
                 goto exit;
             }
-            
+    
+            send_pack.inst_common_info = rev_pack.inst_common_info;
             send_pack.enable = rev_pack.enable;
             send_pack.value = rev_pack.value;
             send_pack.valid = rev_pack.valid;

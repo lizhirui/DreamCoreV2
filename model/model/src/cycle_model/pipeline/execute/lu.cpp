@@ -62,6 +62,7 @@ namespace cycle_model::pipeline::execute
           && (!sau_feedback_pack.flush || (component::age_compare(l2_rev_pack.rob_id, l2_rev_pack.rob_id_stage) > component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage))))
         {
             verify_only(l2_rev_pack.valid);
+            send_pack.inst_common_info = l2_rev_pack.inst_common_info;
             send_pack.enable = l2_rev_pack.enable;
             send_pack.value = l2_rev_pack.value;
             send_pack.valid = l2_rev_pack.valid;
@@ -173,6 +174,7 @@ namespace cycle_model::pipeline::execute
                     }
                     
                     l2_addr = 0;
+                    l2_rev_pack.inst_common_info = rev_pack.inst_common_info;
                     l2_rev_pack.enable = rev_pack.enable;
                     l2_rev_pack.value = rev_pack.value;
                     l2_rev_pack.valid = rev_pack.valid;

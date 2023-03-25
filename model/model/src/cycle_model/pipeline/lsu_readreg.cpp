@@ -122,6 +122,7 @@ namespace cycle_model::pipeline
             for(uint32_t i = 0;i < LSU_READREG_WIDTH;i++)
             {
                 lsu_readreg_execute_pack_t send_pack;
+                send_pack.inst_common_info = rev_pack.op_info[i].inst_common_info;
                 send_pack.enable = rev_pack.op_info[i].enable;
                 send_pack.value = rev_pack.op_info[i].value;
                 send_pack.valid = rev_pack.op_info[i].valid;

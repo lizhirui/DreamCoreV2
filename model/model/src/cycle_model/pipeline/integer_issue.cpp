@@ -140,7 +140,8 @@ namespace cycle_model::pipeline
                 if(selected_valid[i])
                 {
                     auto rev_pack = issue_q.customer_get_item(selected_issue_id[i]);
-                    
+    
+                    send_pack.op_info[i].inst_common_info = rev_pack.inst_common_info;
                     send_pack.op_info[i].enable = rev_pack.enable;
                     send_pack.op_info[i].value = rev_pack.value;
                     send_pack.op_info[i].valid = rev_pack.valid;
@@ -629,6 +630,7 @@ namespace cycle_model::pipeline
                 {
                     issue_queue_item_t item;
                     
+                    item.inst_common_info = rev_pack.op_info[i].inst_common_info;
                     item.enable = rev_pack.op_info[i].enable;
                     item.value = rev_pack.op_info[i].value;
                     item.valid = rev_pack.op_info[i].valid;

@@ -25,6 +25,7 @@ namespace cycle_model::pipeline
         this->store_buffer = store_buffer;
         this->branch_predictor_set = branch_predictor_set;
         this->init_pc = init_pc;
+        this->next_inst_id = 0;
         this->fetch1::reset();
     }
     
@@ -32,6 +33,7 @@ namespace cycle_model::pipeline
     {
         this->pc = init_pc;
         this->jump_wait = false;
+        this->next_inst_id = 0;
     }
     
     void fetch1::run(const fetch2_feedback_pack_t &fetch2_feedback_pack, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
@@ -83,7 +85,8 @@ namespace cycle_model::pipeline
                         {
                             break;
                         }
-
+                        
+                        send_pack.op_info[i].inst_common_info.id = this->next_inst_id++;
                         send_pack.op_info[i].enable = true;
                         send_pack.op_info[i].value = opcode;
                         send_pack.op_info[i].pc = cur_pc;

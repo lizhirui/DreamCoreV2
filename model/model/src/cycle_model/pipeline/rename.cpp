@@ -102,6 +102,7 @@ namespace cycle_model::pipeline
                             
                             verify(decode_rename_fifo->pop(&rev_pack));
                             
+                            send_pack.op_info[i].inst_common_info = rev_pack.inst_common_info;
                             send_pack.op_info[i].enable = rev_pack.enable;
                             send_pack.op_info[i].value = rev_pack.value;
                             send_pack.op_info[i].valid = rev_pack.valid;
@@ -142,6 +143,7 @@ namespace cycle_model::pipeline
                                 }
                                 
                                 phy_id_free_list->save(&rob_item.old_phy_id_free_list_rptr, &rob_item.old_phy_id_free_list_rstage);
+                                rob_item.inst_common_info = rev_pack.inst_common_info;
                                 
                                 if(rev_pack.valid)
                                 {
@@ -238,6 +240,7 @@ namespace cycle_model::pipeline
                                     else if(rev_pack.op_unit == op_unit_t::sdu)
                                     {
                                         component::store_buffer_item_t store_buffer_item;
+                                        store_buffer_item.inst_common_info = rev_pack.inst_common_info;
                                         store_buffer_item.rob_id = send_pack.op_info[i].rob_id;//set the age of sta instruction temporarily
                                         store_buffer_item.rob_id_stage = send_pack.op_info[i].rob_id_stage;
                                         verify(store_buffer->push(store_buffer_item));

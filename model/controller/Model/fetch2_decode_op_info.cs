@@ -10,6 +10,8 @@ namespace DreamCoreV2_model_controller.Model
     [Serializable]
     public class fetch2_decode_op_info
     {
+        [JsonProperty("inst_common_info")]
+        public inst_common_info_t? inst_common_info { get; set; }
         [JsonProperty("enable")]
         public bool enable { get; set; }
         [JsonProperty("pc")]

@@ -113,6 +113,7 @@ namespace cycle_model::pipeline
             
             for(uint32_t i = 0;i < FETCH_WIDTH;i++)
             {
+                send_pack.inst_common_info = this->rev_pack.op_info[i].inst_common_info;
                 send_pack.enable = this->rev_pack.op_info[i].enable;
                 send_pack.pc = this->rev_pack.op_info[i].pc;
                 send_pack.value = this->rev_pack.op_info[i].value;

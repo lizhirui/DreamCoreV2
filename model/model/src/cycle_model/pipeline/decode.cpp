@@ -723,6 +723,7 @@ namespace cycle_model::pipeline
                         
                         for(auto i = 0;i < MAX_UOP_NUM;i++)
                         {
+                            op_info[i].inst_common_info = rev_pack.inst_common_info;
                             op_info[i].rs1_need_map = (op_info[i].arg1_src == arg_src_t::reg) && (op_info[i].rs1 > 0);
                             op_info[i].rs2_need_map = (op_info[i].arg2_src == arg_src_t::reg) && (op_info[i].rs2 > 0);
                             op_info[i].need_rename = op_info[i].rd_enable && (op_info[i].rd > 0);

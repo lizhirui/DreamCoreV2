@@ -12,11 +12,13 @@
 #include "common.h"
 #include "fifo.h"
 #include "branch_predictor_base.h"
+#include "../pipeline/pipeline_common.h"
 
 namespace cycle_model::component
 {
     typedef struct rob_item_t : public if_print_t
     {
+        cycle_model::pipeline::inst_common_info_t inst_common_info;
         uint32_t new_phy_reg_id = 0;
         uint32_t old_phy_reg_id = 0;
         bool old_phy_reg_id_valid = false;
@@ -64,6 +66,7 @@ namespace cycle_model::component
         {
             json ret;
             
+            ret["inst_common_info"] = inst_common_info.get_json();
             ret["new_phy_reg_id"] = new_phy_reg_id;
             ret["old_phy_reg_id"] = old_phy_reg_id;
             ret["old_phy_reg_id_valid"] = old_phy_reg_id_valid;

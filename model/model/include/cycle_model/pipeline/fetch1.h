@@ -35,6 +35,7 @@ namespace cycle_model::pipeline
             uint32_t init_pc = 0;
             uint32_t pc = 0;
             bool jump_wait = false;
+            uint64_t next_inst_id = 0;
             trace::trace_database tdb;
     
         public:

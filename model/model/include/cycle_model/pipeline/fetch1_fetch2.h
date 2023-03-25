@@ -11,13 +11,16 @@
 #pragma once
 #include "common.h"
 #include "config.h"
+#include "pipeline_common.h"
 #include "../component/branch_predictor_base.h"
 
 namespace cycle_model::pipeline
 {
     typedef struct fetch1_fetch2_op_info_t
     {
+        inst_common_info_t inst_common_info;
         bool enable = false;
+        uint64_t id = 0;
         uint32_t pc = 0;
         uint32_t value = 0;
         bool has_exception = false;
@@ -40,6 +43,7 @@ namespace cycle_model::pipeline
         virtual json get_json()
         {
             json t;
+            t["inst_common_info"] = inst_common_info.get_json();
             t["enable"] = enable;
             t["pc"] = pc;
             t["value"] = value;

@@ -176,6 +176,7 @@ namespace cycle_model::pipeline
                             {
                                 if((rev_pack.op_info[i].op_unit != op_unit_t::lu) && (rev_pack.op_info[i].op_unit != op_unit_t::sau) && (rev_pack.op_info[i].op_unit != op_unit_t::sdu))
                                 {
+                                    integer_issue_pack.op_info[integer_issue_id].inst_common_info = rev_pack.op_info[i].inst_common_info;
                                     integer_issue_pack.op_info[integer_issue_id].enable = rev_pack.op_info[i].enable;
                                     integer_issue_pack.op_info[integer_issue_id].value = rev_pack.op_info[i].value;
                                     integer_issue_pack.op_info[integer_issue_id].valid = rev_pack.op_info[i].valid;
@@ -213,6 +214,7 @@ namespace cycle_model::pipeline
                                 }
                                 else
                                 {
+                                    lsu_issue_pack.op_info[lsu_issue_id].inst_common_info = rev_pack.op_info[i].inst_common_info;
                                     lsu_issue_pack.op_info[lsu_issue_id].enable = rev_pack.op_info[i].enable;
                                     lsu_issue_pack.op_info[lsu_issue_id].value = rev_pack.op_info[i].value;
                                     lsu_issue_pack.op_info[lsu_issue_id].valid = rev_pack.op_info[i].valid;

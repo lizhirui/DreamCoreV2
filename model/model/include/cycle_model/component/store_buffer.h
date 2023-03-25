@@ -12,6 +12,7 @@
 #include "common.h"
 #include "fifo.h"
 #include "bus.h"
+#include "../pipeline/pipeline_common.h"
 #include "../pipeline/execute/bru_define.h"
 #include "../pipeline/execute/sau_define.h"
 #include "../pipeline/commit.h"
@@ -23,6 +24,7 @@ namespace cycle_model::component
 {
     typedef struct store_buffer_item_t : public if_print_t
     {
+        pipeline::inst_common_info_t inst_common_info;
         bool data_valid = false;
         bool committed = false;
         uint32_t rob_id = 0;

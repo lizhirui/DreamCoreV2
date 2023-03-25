@@ -82,6 +82,7 @@ namespace cycle_model::pipeline
         private:
             typedef struct issue_queue_item_t : public if_print_t
             {
+                inst_common_info_t inst_common_info;
                 bool enable = false;//this item has op
                 uint32_t value = 0;
                 bool valid = false;//this item has valid op
@@ -209,6 +210,7 @@ namespace cycle_model::pipeline
                 virtual json get_json()
                 {
                     json t;
+                    t["inst_common_info"] = inst_common_info.get_json();
                     t["enable"] = enable;
                     t["value"] = value;
                     t["valid"] = valid;

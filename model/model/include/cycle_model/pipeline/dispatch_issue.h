@@ -18,6 +18,7 @@ namespace cycle_model::pipeline
 {
     typedef struct dispatch_issue_op_info_t
     {
+        inst_common_info_t inst_common_info;
         bool enable = false;//this item has op
         uint32_t value = 0;
         bool valid = false;//this item has valid op
@@ -160,6 +161,7 @@ namespace cycle_model::pipeline
             for(uint32_t i = 0;i < DISPATCH_WIDTH;i++)
             {
                 json t;
+                t["inst_common_info"] = op_info[i].inst_common_info.get_json();
                 t["enable"] = op_info[i].enable;
                 t["value"] = op_info[i].value;
                 t["valid"] = op_info[i].valid;

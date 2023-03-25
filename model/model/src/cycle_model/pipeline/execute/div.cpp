@@ -60,7 +60,8 @@ namespace cycle_model::pipeline::execute
                         div_wb_port->set(execute_wb_pack_t());
                         return feedback_pack;
                     }
-                    
+    
+                    send_pack.inst_common_info = rev_pack.inst_common_info;
                     send_pack.enable = rev_pack.enable;
                     send_pack.value = rev_pack.value;
                     send_pack.valid = rev_pack.valid;

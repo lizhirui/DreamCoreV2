@@ -171,4 +171,21 @@ namespace cycle_model::pipeline
         csrrs,
         csrrw
     };
+    
+    struct inst_common_info_t : public if_print_t
+    {
+        uint64_t id = 0;
+        
+        virtual void print(std::string indent)
+        {
+        
+        }
+        
+        virtual json get_json()
+        {
+            json ret;
+            ret["id"] = id;
+            return ret;
+        }
+    };
 }

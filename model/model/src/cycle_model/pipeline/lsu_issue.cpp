@@ -152,6 +152,7 @@ namespace cycle_model::pipeline
                     {
                         auto rev_pack = issue_q.customer_get_item(selected_issue_id[i]);
 
+                        send_pack.op_info[i].inst_common_info = rev_pack.inst_common_info;
                         send_pack.op_info[i].enable = rev_pack.enable;
                         send_pack.op_info[i].value = rev_pack.value;
                         send_pack.op_info[i].valid = rev_pack.valid;
@@ -184,7 +185,20 @@ namespace cycle_model::pipeline
                         send_pack.op_info[i].csr = rev_pack.csr;
                         send_pack.op_info[i].store_buffer_id = rev_pack.store_buffer_id;
                         send_pack.op_info[i].load_queue_id = rev_pack.load_queue_id;
-                        send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
+                        
+                        if(i == 1)
+                        {
+                            send_pack.op_info[i].lpv = src1_lpv[selected_issue_id[i]] >> 1;
+                        }
+                        else if(i == 2)
+                        {
+                            send_pack.op_info[i].lpv = src2_lpv[selected_issue_id[i]] >> 1;
+                        }
+                        else
+                        {
+                            send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
+                        }
+                        
                         send_pack.op_info[i].op = rev_pack.op;
                         send_pack.op_info[i].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -215,7 +229,7 @@ namespace cycle_model::pipeline
                             send_pack.op_info[i].last_uop = sau_part_issued[selected_issue_id[i]] || (selected_valid[1] && (selected_issue_id[1] == selected_issue_id[2]));
                         }
                         
-                        if(send_pack.op_info[i].last_uop && (send_pack.op_info[i].lpv == 0) && (lpv[selected_issue_id[i]] == 0))
+                        if(send_pack.op_info[i].last_uop && (((src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1) == 0) && (lpv[selected_issue_id[i]] == 0))
                         {
                             issue_q.pop(selected_issue_id[i]);
                         }
@@ -335,6 +349,19 @@ namespace cycle_model::pipeline
                         }
                         
                         this->cur_lpv[i] >>= 1;
+                    }
+                    
+                    if(this->is_store[i])
+                    {
+                        if(this->sau_part_issued[i] && ((this->src1_lpv[i] & 1) != 0))
+                        {
+                            this->sau_part_issued[i] = false;
+                        }
+    
+                        if(this->sdu_part_issued[i] && ((this->src2_lpv[i] & 1) != 0))
+                        {
+                            this->sdu_part_issued[i] = false;
+                        }
                     }
     
                     //lpv shift
@@ -551,6 +578,7 @@ namespace cycle_model::pipeline
                 {
                     issue_queue_item_t item;
     
+                    item.inst_common_info = rev_pack.op_info[i].inst_common_info;
                     item.enable = rev_pack.op_info[i].enable;
                     item.value = rev_pack.op_info[i].value;
                     item.valid = rev_pack.op_info[i].valid;
