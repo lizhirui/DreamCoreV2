@@ -39,11 +39,14 @@ namespace cycle_model::pipeline::execute
             component::wait_table *wait_table;
             
             bool l2_stall = false;
+            bool l2_last_stall = false;
+            bool l2_last_last_stall = false;
             lsu_readreg_execute_pack_t l2_rev_pack;
             uint32_t l2_addr = 0;
             uint32_t l2_feedback_value = 0;
             uint32_t l2_feedback_mask = 0;
             bool l2_conflict_found = false;
+            uint32_t l2_length = 0;
             trace::trace_database tdb;
             
             component::slave::clint *clint;//only for debug
@@ -61,7 +64,7 @@ namespace cycle_model::pipeline::execute
             
             lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue, component::wait_table *wait_table);
             virtual void reset();
-            std::tuple<execute_feedback_channel_t, lu_feedback_pack_t> run(const bru_feedback_pack_t &bru_feedback_pack, const sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            std::tuple<execute_feedback_channel_t, lu_feedback_pack_t> run(const bru_feedback_pack_t &bru_feedback_pack, const sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_lu_feedback_only);
             virtual json get_json();
     };
 }

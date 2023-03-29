@@ -127,6 +127,7 @@ namespace cycle_model
     phy_regfile(PHY_REG_NUM),
     rob(ROB_SIZE),
     store_buffer(STORE_BUFFER_SIZE, &bus),
+    memory(&bus, 1),
     clint(&bus, &interrupt_interface),
     checkpoint_buffer(CHECKPOINT_BUFFER_SIZE),
     load_queue(LOAD_QUEUE_SIZE),
@@ -151,7 +152,8 @@ namespace cycle_model
     wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lu_wb_port, &phy_regfile),
     commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue)
     {
-        bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus), true);
+        //bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus, 0), true);
+        bus.map(MEMORY_BASE, MEMORY_SIZE, std::shared_ptr<component::slave::memory>(&memory, boost::null_deleter()), true);
         bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
@@ -478,13 +480,16 @@ namespace cycle_model
     void cycle_model::run()
     {
         rob.set_committed(false);
+        memory.run_pre();
         clint.run_pre();
-        commit_feedback_pack = commit_stage.run();
+        commit_feedback_pack.flush = false;
         bru_feedback_pack.flush = false;
         sau_feedback_pack.flush = false;
-        bru_feedback_pack = std::get<pipeline::execute::bru_feedback_pack_t>(execute_bru_stage[0]->run(sau_feedback_pack, commit_feedback_pack, true));
-        sau_feedback_pack = execute_sau_stage[0]->run(bru_feedback_pack, commit_feedback_pack, true);
-        wb_feedback_pack = wb_stage.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+        lu_feedback_pack[0] = std::get<pipeline::execute::lu_feedback_pack_t>(execute_lu_stage[0]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack, true));
+        bru_feedback_pack = std::get<pipeline::execute::bru_feedback_pack_t>(execute_bru_stage[0]->run(sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack, true));
+        sau_feedback_pack = execute_sau_stage[0]->run(bru_feedback_pack, lu_feedback_pack[0], commit_feedback_pack, true);
+        commit_feedback_pack = commit_stage.run(lu_feedback_pack[0]);
+        wb_feedback_pack = wb_stage.run(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack);
         
         if(bru_feedback_pack.flush && sau_feedback_pack.flush)
         {
@@ -498,16 +503,39 @@ namespace cycle_model
             }
         }
         
+        if(bru_feedback_pack.flush)
+        {
+            if(component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage) > component::age_compare(lu_feedback_pack[0].rob_id, lu_feedback_pack[0].rob_id_stage))
+            {
+                lu_feedback_pack[0].replay = false;
+            }
+        }
+    
+        if(sau_feedback_pack.flush)
+        {
+            if(component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage) > component::age_compare(lu_feedback_pack[0].rob_id, lu_feedback_pack[0].rob_id_stage))
+            {
+                lu_feedback_pack[0].replay = false;
+            }
+        }
+        
+        if(commit_feedback_pack.flush)
+        {
+            bru_feedback_pack.flush = false;
+            sau_feedback_pack.flush = false;
+            lu_feedback_pack[0].replay = false;
+        }
+        
         uint32_t execute_feedback_channel = 0;
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_alu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < BRU_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = std::get<pipeline::execute_feedback_channel_t>(execute_bru_stage[i]->run(sau_feedback_pack, commit_feedback_pack, false));
+            execute_feedback_pack.channel[execute_feedback_channel++] = std::get<pipeline::execute_feedback_channel_t>(execute_bru_stage[i]->run(sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack, false));
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
@@ -517,27 +545,27 @@ namespace cycle_model
         
         for(uint32_t i = 0;i < DIV_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_div_stage[i]->run(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack);
         }
         
         for(uint32_t i = 0;i < MUL_UNIT_NUM;i++)
         {
-            execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            execute_feedback_pack.channel[execute_feedback_channel++] = execute_mul_stage[i]->run(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack);
         }
-        
+    
         for(uint32_t i = 0;i < LU_UNIT_NUM;i++)
         {
-            std::tie(execute_feedback_pack.channel[execute_feedback_channel++], lu_feedback_pack[i]) = execute_lu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            std::tie(execute_feedback_pack.channel[execute_feedback_channel++], lu_feedback_pack[i]) = execute_lu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack, false);
         }
         
         for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
         {
-            execute_sau_stage[i]->run(bru_feedback_pack, commit_feedback_pack, false);
+            execute_sau_stage[i]->run(bru_feedback_pack, lu_feedback_pack[0], commit_feedback_pack, false);
         }
         
         for(uint32_t i = 0;i < SDU_UNIT_NUM;i++)
         {
-            execute_sdu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+            execute_sdu_stage[i]->run(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], commit_feedback_pack);
         }
         
         integer_readreg_stage.run(bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
@@ -546,19 +574,21 @@ namespace cycle_model
         lsu_issue_output_feedback_pack = lsu_issue_stage.run_output(lsu_readreg_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, commit_feedback_pack);
         integer_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
         lsu_issue_stage.run_wakeup(integer_issue_output_feedback_pack, lsu_issue_output_feedback_pack, bru_feedback_pack, lu_feedback_pack[0], sau_feedback_pack, execute_feedback_pack, commit_feedback_pack);
-        integer_issue_feedback_pack = integer_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
-        lsu_issue_feedback_pack = lsu_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        integer_issue_feedback_pack = integer_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
+        lsu_issue_feedback_pack = lsu_issue_stage.run_input(bru_feedback_pack, sau_feedback_pack, lu_feedback_pack[0], execute_feedback_pack, wb_feedback_pack, commit_feedback_pack);
         dispatch_feedback_pack = dispatch_stage.run(integer_issue_feedback_pack, lsu_issue_feedback_pack, bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         rename_feedback_pack = rename_stage.run(dispatch_feedback_pack, bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         decode_feedback_pack = decode_stage.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         fetch2_feedback_pack = fetch2_stage.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         fetch1_stage.run(fetch2_feedback_pack, decode_feedback_pack, rename_feedback_pack, bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         interrupt_interface.run();
+        memory.run_post();
         clint.run_post();
         store_buffer.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         bus.run();
         bus.sync();
         wait_table.run(cpu_clock_cycle);
+        phy_regfile.run(lu_feedback_pack[0]);
         component::branch_predictor_base::batch_sync();
         cpu_clock_cycle++;
         committed_instruction_num = rob.get_global_commit_num();
@@ -630,6 +660,7 @@ namespace cycle_model
     {
         pipeline::execute_commit_pack_t send_pack;
     
+        send_pack.inst_common_info = rev_pack.inst_common_info;
         send_pack.enable = rev_pack.enable;
         send_pack.value = rev_pack.value;
         send_pack.valid = rev_pack.valid;
@@ -665,6 +696,7 @@ namespace cycle_model
         send_pack.rd_value = rev_pack.rd_value;
     
         send_pack.csr = rev_pack.csr;
+        send_pack.lpv = rev_pack.lpv;
         send_pack.load_queue_id = rev_pack.load_queue_id;
         send_pack.csr_newvalue = rev_pack.csr_newvalue;
         send_pack.csr_newvalue_valid = rev_pack.csr_newvalue_valid;

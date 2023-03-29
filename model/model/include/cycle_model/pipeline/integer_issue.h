@@ -42,6 +42,8 @@ namespace cycle_model::pipeline
         uint32_t wakeup_rd[INTEGER_ISSUE_WIDTH] = {0};
         uint32_t wakeup_shift[INTEGER_ISSUE_WIDTH] = {0};
         uint32_t wakeup_lpv[LSU_ISSUE_WIDTH] = {0};
+        uint32_t wakeup_rob_id[LSU_ISSUE_WIDTH] = {0};
+        bool wakeup_rob_id_stage[LSU_ISSUE_WIDTH] = {false};
         
         virtual json get_json()
         {
@@ -318,6 +320,10 @@ namespace cycle_model::pipeline
             uint32_t new_idle_shift[INTEGER_ISSUE_QUEUE_SIZE] = {0};
             
             component::dff<bool> issued[INTEGER_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rob_id_src1[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rob_id_stage_src1[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rob_id_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rob_id_stage_src2[LSU_ISSUE_QUEUE_SIZE] = {false};
             
             uint32_t next_port_index = 0;
             
@@ -331,7 +337,7 @@ namespace cycle_model::pipeline
             virtual void reset();
             integer_issue_output_feedback_pack_t run_output(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            integer_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            integer_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             virtual void print(std::string indent);
             virtual json get_json();
     };

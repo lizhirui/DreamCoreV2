@@ -77,6 +77,7 @@ namespace cycle_model::pipeline::execute
                 send_pack.rd_phy = rev_pack.rd_phy;
                 
                 send_pack.csr = rev_pack.csr;
+                send_pack.lpv = 0;
                 send_pack.op = rev_pack.op;
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -146,6 +147,9 @@ namespace cycle_model::pipeline::execute
         feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
         feedback_pack.phy_id = send_pack.rd_phy;
         feedback_pack.value = send_pack.rd_value;
+        feedback_pack.lpv = send_pack.lpv;
+        feedback_pack.rob_id = send_pack.rob_id;
+        feedback_pack.rob_id_stage = send_pack.rob_id_stage;
         return feedback_pack;
     }
 }

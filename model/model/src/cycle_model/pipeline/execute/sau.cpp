@@ -48,7 +48,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    sau_feedback_pack_t sau::run(const bru_feedback_pack_t &bru_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_sau_feedback_only)
+    sau_feedback_pack_t sau::run(const bru_feedback_pack_t &bru_feedback_pack, const lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_sau_feedback_only)
     {
         execute_wb_pack_t send_pack;
         lsu_readreg_execute_pack_t rev_pack;
@@ -67,6 +67,11 @@ namespace cycle_model::pipeline::execute
             }
             
             if(bru_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) < component::age_compare(bru_feedback_pack.rob_id, bru_feedback_pack.rob_id_stage)))
+            {
+                goto exit;
+            }
+    
+            if(lu_feedback_pack.replay && ((rev_pack.lpv & 1) != 0))
             {
                 goto exit;
             }
@@ -118,6 +123,7 @@ namespace cycle_model::pipeline::execute
                     addr = rev_pack.src1_value + rev_pack.imm;
                     uint32_t size = 0;
                     send_pack.exception_value = addr;
+                    send_pack.lpv = lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1);
                     
                     switch(rev_pack.sub_op.sau_op)
                     {

@@ -55,6 +55,10 @@ namespace cycle_model::pipeline
             this->waiting_issue_id[i] = 0;
             this->waiting_store[i] = false;
             this->issued[i].set(false);
+            this->wakeup_rob_id_src1[i] = 0;
+            this->wakeup_rob_id_stage_src1[i] = false;
+            this->wakeup_rob_id_src2[i] = 0;
+            this->wakeup_rob_id_stage_src2[i] = false;
         }
     }
     
@@ -65,7 +69,7 @@ namespace cycle_model::pipeline
         
         if(!commit_feedback_pack.flush)
         {
-            if(!lsu_readreg_feedback_pack.stall)
+            if(!lsu_readreg_feedback_pack.stall && !lu_feedback_pack.stall)
             {
                 uint32_t selected_issue_id[LSU_ISSUE_WIDTH] = {0};
                 uint32_t selected_rob_id[LSU_ISSUE_WIDTH] = {0};
@@ -185,20 +189,8 @@ namespace cycle_model::pipeline
                         send_pack.op_info[i].csr = rev_pack.csr;
                         send_pack.op_info[i].store_buffer_id = rev_pack.store_buffer_id;
                         send_pack.op_info[i].load_queue_id = rev_pack.load_queue_id;
-                        
-                        if(i == 1)
-                        {
-                            send_pack.op_info[i].lpv = src1_lpv[selected_issue_id[i]] >> 1;
-                        }
-                        else if(i == 2)
-                        {
-                            send_pack.op_info[i].lpv = src2_lpv[selected_issue_id[i]] >> 1;
-                        }
-                        else
-                        {
-                            send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
-                        }
-                        
+    
+                        send_pack.op_info[i].lpv = (src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1;
                         send_pack.op_info[i].op = rev_pack.op;
                         send_pack.op_info[i].op_unit = rev_pack.op_unit;
                         memcpy((void *)&send_pack.op_info[i].sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -262,9 +254,15 @@ namespace cycle_model::pipeline
                     feedback_pack.wakeup_rd[i] = wakeup_rd[selected_issue_id[i]];
                     feedback_pack.wakeup_shift[i] = wakeup_shift[selected_issue_id[i]];
                     feedback_pack.wakeup_lpv[i] = ((src1_lpv[selected_issue_id[i]] | src2_lpv[selected_issue_id[i]]) >> 1) | lpv[selected_issue_id[i]];
+                    feedback_pack.wakeup_rob_id[i] = rob_id[selected_issue_id[i]];
+                    feedback_pack.wakeup_rob_id_stage[i] = rob_id_stage[selected_issue_id[i]];
                 }
                 
                 lsu_issue_readreg_port->set(send_pack);
+            }
+            else
+            {
+                lsu_issue_readreg_port->set(lsu_issue_readreg_pack_t());
             }
         }
         else
@@ -321,16 +319,19 @@ namespace cycle_model::pipeline
                     }
     
                     //lpv check
+                    //no any instruction can wakeup those direct source operands again, so keep ready state
+                    //indirect source operands can be wakeup by other instructions(direct/indirect source operands provider), and must do wakeup
+                    //if indirect source operands keep ready, a missing source operands may be obtained in readreg stage
                     if(lu_feedback_pack.replay)
                     {
                         //cancel source operand ready and wakeup shift
-                        if((this->src1_lpv[i] & 1) != 0)
+                        if(((this->src1_lpv[i] & 1) != 0) && (!lu_feedback_pack.replay_following_only || (wakeup_rob_id_src1[i] != lu_feedback_pack.rob_id) || (wakeup_rob_id_stage_src1[i] != lu_feedback_pack.rob_id_stage)))
                         {
                             this->src1_ready[i] = false;
                             this->wakeup_shift_src1[i] = 0;
                         }
         
-                        if((this->src2_lpv[i] & 1) != 0)
+                        if(((this->src2_lpv[i] & 1) != 0) && (!lu_feedback_pack.replay_following_only || (wakeup_rob_id_src2[i] != lu_feedback_pack.rob_id) || (wakeup_rob_id_stage_src2[i] != lu_feedback_pack.rob_id_stage)))
                         {
                             this->src2_ready[i] = false;
                             this->wakeup_shift_src2[i] = 0;
@@ -339,34 +340,40 @@ namespace cycle_model::pipeline
     
                     if(this->issued[i].get())
                     {
-                        if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0) || ((this->cur_lpv[i] & 1) != 0)))
+                        if(lu_feedback_pack.replay && (((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0) || (((this->cur_lpv[i] & 1) != 0) && !lu_feedback_pack.replay_following_only)))
                         {
                             issued[i].set(false);//replay the instruction
                         }
-                        else if((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1) && (this->cur_lpv[i] <= 1))
+                        else if(((this->src1_lpv[i] == 0) && (this->src2_lpv[i] == 0) && (this->cur_lpv[i] == 0)) || (((this->src1_lpv[i] <= 1) && (this->src2_lpv[i] <= 1) && (this->cur_lpv[i] <= 1)) && !lu_feedback_pack.stall))
                         {
                             issue_q.set_valid(i, false);//remove the instruction from issue queue because it isn't in the speculative window of any load instruction
                         }
                         
-                        this->cur_lpv[i] >>= 1;
+                        if((!lu_feedback_pack.replay || !lu_feedback_pack.replay_following_only || ((this->cur_lpv[i] & 1) == 0)) && !lu_feedback_pack.stall)
+                        {
+                            this->cur_lpv[i] >>= 1;
+                        }
                     }
                     
-                    if(this->is_store[i])
+                    if(lu_feedback_pack.replay && this->is_store[i])
                     {
-                        if(this->sau_part_issued[i] && ((this->src1_lpv[i] & 1) != 0))
+                        if(((this->src1_lpv[i] & 1) != 0) || ((this->src2_lpv[i] & 1) != 0))
                         {
                             this->sau_part_issued[i] = false;
-                        }
-    
-                        if(this->sdu_part_issued[i] && ((this->src2_lpv[i] & 1) != 0))
-                        {
                             this->sdu_part_issued[i] = false;
                         }
                     }
     
                     //lpv shift
-                    this->src1_lpv[i] >>= 1;
-                    this->src2_lpv[i] >>= 1;
+                    if((!lu_feedback_pack.replay || !lu_feedback_pack.replay_following_only || ((this->src1_lpv[i] & 1) == 0)) && !lu_feedback_pack.stall)
+                    {
+                        this->src1_lpv[i] >>= 1;
+                    }
+    
+                    if((!lu_feedback_pack.replay || !lu_feedback_pack.replay_following_only || ((this->src2_lpv[i] & 1) == 0)) && !lu_feedback_pack.stall)
+                    {
+                        this->src2_lpv[i] >>= 1;
+                    }
     
                     //delay wakeup
                     if(!this->src1_ready[i] && this->wakeup_shift_src1[i] > 0)
@@ -410,6 +417,8 @@ namespace cycle_model::pipeline
                                     }
     
                                     this->src1_lpv[i] = integer_issue_output_feedback_pack.wakeup_lpv[j];
+                                    this->wakeup_rob_id_src1[i] = integer_issue_output_feedback_pack.wakeup_rob_id[j];
+                                    this->wakeup_rob_id_stage_src1[i] = integer_issue_output_feedback_pack.wakeup_rob_id_stage[j];
                                 }
                             }
                         
@@ -429,6 +438,8 @@ namespace cycle_model::pipeline
                                     }
                                     
                                     this->src2_lpv[i] = integer_issue_output_feedback_pack.wakeup_lpv[j];
+                                    this->wakeup_rob_id_src2[i] = integer_issue_output_feedback_pack.wakeup_rob_id[j];
+                                    this->wakeup_rob_id_stage_src2[i] = integer_issue_output_feedback_pack.wakeup_rob_id_stage[j];
                                 }
                             }
                         }
@@ -455,6 +466,8 @@ namespace cycle_model::pipeline
                                     }
                                     
                                     this->src1_lpv[i] = lsu_issue_output_feedback_pack.wakeup_lpv[j];
+                                    this->wakeup_rob_id_src1[i] = lsu_issue_output_feedback_pack.wakeup_rob_id[j];
+                                    this->wakeup_rob_id_stage_src1[i] = lsu_issue_output_feedback_pack.wakeup_rob_id_stage[j];
                                 }
                             }
             
@@ -474,6 +487,8 @@ namespace cycle_model::pipeline
                                     }
                                     
                                     this->src2_lpv[i] = lsu_issue_output_feedback_pack.wakeup_lpv[j];
+                                    this->wakeup_rob_id_src2[i] = lsu_issue_output_feedback_pack.wakeup_rob_id[j];
+                                    this->wakeup_rob_id_stage_src2[i] = lsu_issue_output_feedback_pack.wakeup_rob_id_stage[j];
                                 }
                             }
     
@@ -498,6 +513,9 @@ namespace cycle_model::pipeline
                                 if(item.rs1_phy == execute_feedback_pack.channel[j].phy_id)
                                 {
                                     this->src1_ready[i] = true;
+                                    this->src1_lpv[i] = execute_feedback_pack.channel[j].lpv;
+                                    this->wakeup_rob_id_src1[i] = execute_feedback_pack.channel[j].rob_id;
+                                    this->wakeup_rob_id_stage_src1[i] = execute_feedback_pack.channel[j].rob_id_stage;
                                 }
                             }
                         
@@ -509,6 +527,9 @@ namespace cycle_model::pipeline
                                 if(item.rs2_phy == execute_feedback_pack.channel[j].phy_id)
                                 {
                                     this->src2_ready[i] = true;
+                                    this->src2_lpv[i] = execute_feedback_pack.channel[j].lpv;
+                                    this->wakeup_rob_id_src2[i] = execute_feedback_pack.channel[j].rob_id;
+                                    this->wakeup_rob_id_stage_src2[i] = execute_feedback_pack.channel[j].rob_id_stage;
                                 }
                             }
                         }
@@ -524,7 +545,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
+    lsu_issue_feedback_pack_t lsu_issue::run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack)
     {
         lsu_issue_feedback_pack_t feedback_pack;
         feedback_pack.stall = this->busy;//generate stall signal to prevent dispatch from dispatching new instructions
@@ -622,6 +643,15 @@ namespace cycle_model::pipeline
                         src1_ready[issue_id] = false;
                         wakeup_shift_src2[issue_id] = 0;
                         src2_ready[issue_id] = false;
+    
+                        wakeup_rob_id_src1[issue_id] = 0;
+                        wakeup_rob_id_stage_src1[issue_id] = false;
+                        wakeup_rob_id_src2[issue_id] = 0;
+                        wakeup_rob_id_stage_src2[issue_id] = false;
+    
+                        //initialize replay information
+                        src1_lpv[issue_id] = 0;
+                        src2_lpv[issue_id] = 0;
         
                         //execute and wb feedback and physical register file check
                         if(rev_pack.op_info[i].valid && !rev_pack.op_info[i].has_exception)
@@ -633,6 +663,9 @@ namespace cycle_model::pipeline
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
                                         src1_ready[issue_id] = true;
+                                        src1_lpv[issue_id] = execute_feedback_pack.channel[j].lpv;
+                                        wakeup_rob_id_src1[issue_id] = execute_feedback_pack.channel[j].rob_id;
+                                        wakeup_rob_id_stage_src1[issue_id] = execute_feedback_pack.channel[j].rob_id_stage;
                                         break;
                                     }
                                 }
@@ -644,6 +677,9 @@ namespace cycle_model::pipeline
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
                                             src1_ready[issue_id] = true;
+                                            src1_lpv[issue_id] = wb_feedback_pack.channel[j].lpv;
+                                            wakeup_rob_id_src1[issue_id] = wb_feedback_pack.channel[j].rob_id;
+                                            wakeup_rob_id_stage_src1[issue_id] = wb_feedback_pack.channel[j].rob_id_stage;
                                             break;
                                         }
                                     }
@@ -652,6 +688,12 @@ namespace cycle_model::pipeline
                                 if(!src1_ready[issue_id])
                                 {
                                     src1_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy);
+                                    std::tie(wakeup_rob_id_src1[issue_id], wakeup_rob_id_stage_src1[issue_id], std::ignore) = this->phy_regfile->read_age_information(rev_pack.op_info[i].rs1_phy);
+    
+                                    if(lu_feedback_pack.replay && ((this->phy_regfile->get_lpv(rev_pack.op_info[i].rs1_phy) & 1) != 0))
+                                    {
+                                        src1_ready[issue_id] = false;
+                                    }
                                 }
                             }
                             else
@@ -673,6 +715,9 @@ namespace cycle_model::pipeline
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
                                         src2_ready[issue_id] = true;
+                                        src2_lpv[issue_id] = execute_feedback_pack.channel[j].lpv;
+                                        wakeup_rob_id_src2[issue_id] = execute_feedback_pack.channel[j].rob_id;
+                                        wakeup_rob_id_stage_src2[issue_id] = execute_feedback_pack.channel[j].rob_id_stage;
                                         break;
                                     }
                                 }
@@ -684,6 +729,9 @@ namespace cycle_model::pipeline
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {
                                             src2_ready[issue_id] = true;
+                                            src2_lpv[issue_id] = wb_feedback_pack.channel[j].lpv;
+                                            wakeup_rob_id_src2[issue_id] = wb_feedback_pack.channel[j].rob_id;
+                                            wakeup_rob_id_stage_src2[issue_id] = wb_feedback_pack.channel[j].rob_id_stage;
                                             break;
                                         }
                                     }
@@ -692,6 +740,12 @@ namespace cycle_model::pipeline
                                 if(!src2_ready[issue_id])
                                 {
                                     src2_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy);
+                                    std::tie(wakeup_rob_id_src2[issue_id], wakeup_rob_id_stage_src2[issue_id], std::ignore) = this->phy_regfile->read_age_information(rev_pack.op_info[i].rs2_phy);
+    
+                                    if(lu_feedback_pack.replay && ((this->phy_regfile->get_lpv(rev_pack.op_info[i].rs2_phy) & 1) != 0))
+                                    {
+                                        src2_ready[issue_id] = false;
+                                    }
                                 }
                             }
                             else
@@ -747,9 +801,6 @@ namespace cycle_model::pipeline
                             waiting_store_rob_id_stage[issue_id] = last_rob_id_stage;
                         }
     
-                        //initialize replay information
-                        src1_lpv[issue_id] = 0;
-                        src2_lpv[issue_id] = 0;
                         cur_lpv[issue_id] = lpv[issue_id] = (rev_pack.op_info[i].op_unit == op_unit_t::lu) ? INIT_LPV : 0;
                         issued[issue_id].set(false);
                     }
@@ -821,6 +872,21 @@ namespace cycle_model::pipeline
         t["src1_ready"] = src1_ready;
         t["wakeup_shift_src2"] = wakeup_shift_src2;
         t["src2_ready"] = src2_ready;
+        
+        auto cur_lpv = json::array();
+        auto src1_lpv = json::array();
+        auto src2_lpv = json::array();
+        
+        for(uint32_t i = 0;i < LSU_ISSUE_QUEUE_SIZE;i++)
+        {
+            cur_lpv.push_back(this->cur_lpv[i]);
+            src1_lpv.push_back(this->src1_lpv[i]);
+            src2_lpv.push_back(this->src2_lpv[i]);
+        }
+        
+        t["cur_lpv"] = cur_lpv;
+        t["src1_lpv"] = src1_lpv;
+        t["src2_lpv"] = src2_lpv;
         return t;
     }
 }

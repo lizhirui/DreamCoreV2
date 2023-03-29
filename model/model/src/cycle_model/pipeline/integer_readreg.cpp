@@ -181,6 +181,7 @@ namespace cycle_model::pipeline
                 send_pack.rd_phy = rev_pack.op_info[i].rd_phy;
                 
                 send_pack.csr = rev_pack.op_info[i].csr;
+                send_pack.lpv = lu_feedback_pack.stall ? rev_pack.op_info[i].lpv : (rev_pack.op_info[i].lpv >> 1);
                 send_pack.op = rev_pack.op_info[i].op;
                 send_pack.op_unit = rev_pack.op_info[i].op_unit;
                 memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.op_info[i].sub_op, sizeof(rev_pack.op_info[i].sub_op));
@@ -230,6 +231,11 @@ namespace cycle_model::pipeline
                             if(from_prf)
                             {
                                 //verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy));
+                                
+                                if(!this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy))
+                                {
+                                    send_pack.enable = false;
+                                }
                             }
                         }
                         else if(rev_pack.op_info[i].arg1_src == arg_src_t::imm)
@@ -262,6 +268,11 @@ namespace cycle_model::pipeline
                             if(from_prf)
                             {
                                 //verify_only(this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy));
+    
+                                if(!this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy))
+                                {
+                                    send_pack.enable = false;
+                                }
                             }
                         }
                         else if(rev_pack.op_info[i].arg2_src == arg_src_t::imm)

@@ -950,6 +950,12 @@ namespace DreamCoreV2_model_controller
                             ready_string += Global.Onehot2Binary(pipelineStatus.integer_issue.wakeup_shift_src2[i]);
                         }
 
+                        ready_string += ",";
+                        ready_string += Convert.ToString(pipelineStatus.integer_issue.src1_lpv[i], 2).PadLeft(3, '0');
+                        
+                        ready_string += ",";
+                        ready_string += Convert.ToString(pipelineStatus.integer_issue.src2_lpv[i], 2).PadLeft(3, '0');
+
                         ready_string += ">";
                         listView_Integer_Issue_Queue.Items.Add(new{Highlight = false, ID = i, Value = i + ": " + ready_string + getDisplayText(item.Instruction, item.pc, true, item.rob_id, item.inst_common_info)});
                     }
@@ -983,6 +989,15 @@ namespace DreamCoreV2_model_controller
                         {
                             ready_string += Global.Onehot2Binary(pipelineStatus.lsu_issue.wakeup_shift_src2[i]);
                         }
+
+                        ready_string += ",";
+                        ready_string += Convert.ToString(pipelineStatus.lsu_issue.cur_lpv[i], 2).PadLeft(3, '0');
+
+                        ready_string += ",";
+                        ready_string += Convert.ToString(pipelineStatus.lsu_issue.src1_lpv[i], 2).PadLeft(3, '0');
+                        
+                        ready_string += ",";
+                        ready_string += Convert.ToString(pipelineStatus.lsu_issue.src2_lpv[i], 2).PadLeft(3, '0');
 
                         ready_string += ">";
                         listView_LSU_Issue_Queue.Items.Add(new{Highlight = false, ID = i, Value = i + ": " + ready_string + getDisplayText(item.Instruction, item.pc, true, item.rob_id, item.inst_common_info)});

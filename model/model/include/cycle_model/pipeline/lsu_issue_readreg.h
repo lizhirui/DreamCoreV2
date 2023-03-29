@@ -185,6 +185,9 @@ namespace cycle_model::pipeline
                 t["need_rename"] = op_info[i].need_rename;
                 t["rd_phy"] = op_info[i].rd_phy;
                 t["csr"] = op_info[i].csr;
+                t["lpv"] = op_info[i].lpv;
+                t["store_buffer_id"] = op_info[i].store_buffer_id;
+                t["load_queue_id"] = op_info[i].load_queue_id;
                 t["op"] = outenum(op_info[i].op);
                 t["op_unit"] = outenum(op_info[i].op_unit);
                 

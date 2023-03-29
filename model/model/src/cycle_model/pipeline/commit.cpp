@@ -103,7 +103,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    commit_feedback_pack_t commit::run()
+    commit_feedback_pack_t commit::run(const execute::lu_feedback_pack_t &lu_feedback_pack)
     {
         commit_feedback_pack_t feedback_pack;
         bool need_flush = false;
@@ -158,6 +158,11 @@ namespace cycle_model::pipeline
     
                         if(rob_item.finish)
                         {
+                            if(lu_feedback_pack.replay && ((rob_item.lpv & 1) != 0))
+                            {
+                                break;//stop retire due to replay
+                            }
+                            
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
                             if(rob_item.last_uop || rob_item.has_exception)
                             {
@@ -386,6 +391,24 @@ namespace cycle_model::pipeline
                     }
                 }
                 
+                for(uint32_t i = 0;i < ROB_SIZE;i++)
+                {
+                    if(rob->customer_check_id_valid(i))
+                    {
+                        auto item = rob->get_item(i);
+                        
+                        if(lu_feedback_pack.replay && ((item.lpv & 1) != 0))
+                        {
+                            item.finish = false;
+                        }
+                        
+                        if(!lu_feedback_pack.stall)
+                        {
+                            item.lpv >>= 1;
+                        }
+                    }
+                }
+                
                 if(!need_flush)
                 {
                     for(uint32_t i = 0;i < EXECUTE_UNIT_NUM;i++)
@@ -395,6 +418,11 @@ namespace cycle_model::pipeline
                         if(rev_pack.enable)
                         {
                             auto rob_item = rob->get_item(rev_pack.rob_id);
+                            
+                            if(lu_feedback_pack.replay && ((rev_pack.lpv & 1) != 0))
+                            {
+                                continue;//skip this instruction due to replay
+                            }
                             
                             if(rev_pack.last_uop)
                             {
@@ -414,6 +442,7 @@ namespace cycle_model::pipeline
                             rob_item.bru_next_pc = rev_pack.bru_next_pc;
                             rob_item.csr_newvalue = rev_pack.csr_newvalue;
                             rob_item.csr_newvalue_valid = rev_pack.csr_newvalue_valid;
+                            rob_item.lpv = lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1);
                             rob->set_item(rev_pack.rob_id, rob_item);
                         }
                     }

@@ -35,7 +35,7 @@ namespace cycle_model::pipeline::execute
     
     }
     
-    void sdu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    void sdu::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         execute_wb_pack_t send_pack;
         lsu_readreg_execute_pack_t rev_pack;
@@ -51,6 +51,11 @@ namespace cycle_model::pipeline::execute
                 }
     
                 if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
+                {
+                    goto exit;
+                }
+    
+                if(lu_feedback_pack.replay && ((rev_pack.lpv & 1) != 0))
                 {
                     goto exit;
                 }
@@ -88,6 +93,7 @@ namespace cycle_model::pipeline::execute
                 send_pack.rd_phy = rev_pack.rd_phy;
                 
                 send_pack.csr = rev_pack.csr;
+                send_pack.lpv = lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1);
                 send_pack.op = rev_pack.op;
                 send_pack.op_unit = rev_pack.op_unit;
                 memcpy((void *)&send_pack.sub_op, (void *)&rev_pack.sub_op, sizeof(rev_pack.sub_op));
@@ -114,6 +120,7 @@ namespace cycle_model::pipeline::execute
                                 break;
     
                             case sdu_op_t::sh:
+                                item = store_buffer->get_item(rev_pack.store_buffer_id);
                                 item.data_valid = true;
                                 item.data = rev_pack.src2_value & 0xffff;
                                 item.committed = false;
@@ -125,6 +132,7 @@ namespace cycle_model::pipeline::execute
                                 break;
     
                             case sdu_op_t::sw:
+                                item = store_buffer->get_item(rev_pack.store_buffer_id);
                                 item.data_valid = true;
                                 item.data = rev_pack.src2_value;
                                 item.committed = false;

@@ -50,6 +50,7 @@ namespace cycle_model::pipeline
         uint32_t rd_phy = 0;
     
         uint32_t csr = 0;
+        uint32_t lpv = 0;
         uint32_t store_buffer_id = 0;
         uint32_t load_queue_id = 0;
         op_t op = op_t::add;
@@ -175,6 +176,9 @@ namespace cycle_model::pipeline
             t["need_rename"] = need_rename;
             t["rd_phy"] = rd_phy;
             t["csr"] = csr;
+            t["lpv"] = lpv;
+            t["store_buffer_id"] = store_buffer_id;
+            t["load_queue_id"] = load_queue_id;
             t["op"] = outenum(op);
             t["op_unit"] = outenum(op_unit);
             

@@ -70,7 +70,7 @@ namespace cycle_model::pipeline
         }
     }
     
-    wb_feedback_pack_t wb::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    wb_feedback_pack_t wb::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         wb_feedback_pack_t feedback_pack;
         
@@ -97,15 +97,24 @@ namespace cycle_model::pipeline
                 {
                     continue;//skip this instruction due to which is younger than the flush age
                 }
+    
+                if(lu_feedback_pack.replay && ((rev_pack.lpv & 1) != 0))
+                {
+                    continue;//skip this instruction due to replay
+                }
                 
                 if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception && rev_pack.need_rename)
                 {
                     phy_regfile->write(rev_pack.rd_phy, rev_pack.rd_value, true, rev_pack.rob_id, rev_pack.rob_id_stage, false);
+                    phy_regfile->set_lpv(rev_pack.rd_phy, lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1));
                 }
                 
                 feedback_pack.channel[i].enable = rev_pack.enable && rev_pack.valid && rev_pack.need_rename && !rev_pack.has_exception;
                 feedback_pack.channel[i].phy_id = rev_pack.rd_phy;
                 feedback_pack.channel[i].value = rev_pack.rd_value;
+                feedback_pack.channel[i].lpv = lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1);
+                feedback_pack.channel[i].rob_id = rev_pack.rob_id;
+                feedback_pack.channel[i].rob_id_stage = rev_pack.rob_id_stage;
             }
         }
         

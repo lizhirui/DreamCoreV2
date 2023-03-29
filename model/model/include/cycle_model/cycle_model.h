@@ -127,6 +127,7 @@ namespace cycle_model
             component::regfile<uint32_t> phy_regfile;
             component::rob rob;
             component::store_buffer store_buffer;
+            component::slave::memory memory;
             component::slave::clint clint;
             component::branch_predictor_set branch_predictor_set;
             component::fifo<component::checkpoint_t> checkpoint_buffer;

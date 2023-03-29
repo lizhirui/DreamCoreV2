@@ -24,5 +24,11 @@ namespace DreamCoreV2_model_controller.Model
         public uint[]? wakeup_shift_src2 { get; set; }
         [JsonProperty("src2_ready")]
         public bool[]? src2_ready { get; set; }
+        [JsonProperty("cur_lpv")]
+        public uint[]? cur_lpv { get; set; }
+        [JsonProperty("src1_lpv")]
+        public uint[]? src1_lpv { get; set; }
+        [JsonProperty("src2_lpv")]
+        public uint[]? src2_lpv { get; set; }
     }
 }

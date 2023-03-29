@@ -13,6 +13,7 @@
 #include "dff.h"
 #include "rat.h"
 #include "age_compare.h"
+#include "../pipeline/execute/lu_define.h"
 
 namespace cycle_model::component
 {
@@ -27,6 +28,7 @@ namespace cycle_model::component
             dff<uint32_t> *reg_rob_id;
             dff<bool> *reg_rob_id_stage;
             dff<bool> *reg_oldest;
+            dff<uint32_t> *reg_lpv;
             uint32_t size = 0;
         
             trace::trace_database tdb;
@@ -40,6 +42,7 @@ namespace cycle_model::component
                 reg_rob_id = new dff<uint32_t>[size];
                 reg_rob_id_stage = new dff<bool>[size];
                 reg_oldest = new dff<bool>[size];
+                reg_lpv = new dff<uint32_t>[size];
                 this->reset();
             }
         
@@ -114,6 +117,18 @@ namespace cycle_model::component
                 verify_only(addr < size);
                 return {reg_rob_id[addr], reg_rob_id_stage[addr], reg_oldest[addr]};
             }
+        
+            void set_lpv(uint32_t addr, uint32_t lpv)
+            {
+                verify_only(addr < size);
+                reg_lpv[addr].set(lpv);
+            }
+            
+            uint32_t get_lpv(uint32_t addr)
+            {
+                verify_only(addr < size);
+                return reg_lpv[addr].get();
+            }
             
             void restore(rat *element)
             {
@@ -149,6 +164,22 @@ namespace cycle_model::component
                             reg_data_valid[i].set(false);
                             reg_oldest[i].set(true);
                         }
+                    }
+                }
+            }
+            
+            void run(const pipeline::execute::lu_feedback_pack_t &lu_feedback_pack)
+            {
+                for(uint32_t i = 0;i < size;i++)
+                {
+                    if(lu_feedback_pack.replay && ((reg_lpv[i].get() & 1) != 0))
+                    {
+                        reg_data_valid[i].set(false);
+                    }
+                    
+                    if(!lu_feedback_pack.stall)
+                    {
+                        reg_lpv[i].set(reg_lpv[i].get() >> 1);
                     }
                 }
             }

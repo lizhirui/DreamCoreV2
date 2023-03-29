@@ -56,6 +56,8 @@ namespace cycle_model::component
             dff<uint32_t> data_value;
             dff<bool> data_value_valid;
             
+            uint32_t revoke_data_cnt;
+            
             trace::trace_database tdb;
             
             bool check_addr_override(uint32_t base, uint32_t size)
@@ -144,6 +146,7 @@ namespace cycle_model::component
             virtual void reset()
             {
                 clear_queue(sync_request_q);
+                revoke_data_cnt = 0;
             }
             
             void trace_pre()
@@ -402,8 +405,22 @@ namespace cycle_model::component
             
             void set_data_value(uint32_t value)
             {
+                if(revoke_data_cnt > 0)
+                {
+                    revoke_data_cnt--;
+                    return;
+                }
+                
                 data_value_valid.set(true);
                 data_value = value;
+            }
+            
+            void revoke_data_request()
+            {
+                if(!data_value_valid.get())
+                {
+                    revoke_data_cnt++;
+                }
             }
             
             void run()

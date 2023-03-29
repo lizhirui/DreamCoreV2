@@ -43,6 +43,8 @@ namespace cycle_model::pipeline
         uint32_t wakeup_rd[LSU_ISSUE_WIDTH] = {0};
         uint32_t wakeup_shift[LSU_ISSUE_WIDTH] = {0};
         uint32_t wakeup_lpv[LSU_ISSUE_WIDTH] = {0};
+        uint32_t wakeup_rob_id[LSU_ISSUE_WIDTH] = {0};
+        bool wakeup_rob_id_stage[LSU_ISSUE_WIDTH] = {false};
         
         virtual json get_json()
         {
@@ -234,6 +236,8 @@ namespace cycle_model::pipeline
                     t["need_rename"] = need_rename;
                     t["rd_phy"] = rd_phy;
                     t["csr"] = csr;
+                    t["store_buffer_id"] = this->store_buffer_id;
+                    t["load_queue_id"] = this->load_queue_id;
                     t["op"] = outenum(op);
                     t["op_unit"] = outenum(op_unit);
                     
@@ -317,6 +321,10 @@ namespace cycle_model::pipeline
             uint32_t waiting_store_rob_id[LSU_ISSUE_QUEUE_SIZE] = {0};
             bool waiting_store_rob_id_stage[LSU_ISSUE_QUEUE_SIZE] = {0};
             component::dff<bool> issued[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rob_id_src1[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rob_id_stage_src1[LSU_ISSUE_QUEUE_SIZE] = {false};
+            uint32_t wakeup_rob_id_src2[LSU_ISSUE_QUEUE_SIZE] = {0};
+            bool wakeup_rob_id_stage_src2[LSU_ISSUE_QUEUE_SIZE] = {false};
             
             trace::trace_database tdb;
         
@@ -325,7 +333,7 @@ namespace cycle_model::pipeline
             virtual void reset();
             lsu_issue_output_feedback_pack_t run_output(const lsu_readreg_feedback_pack_t &lsu_readreg_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             void run_wakeup(const integer_issue_output_feedback_pack_t &integer_issue_output_feedback_pack, const lsu_issue_output_feedback_pack_t &lsu_issue_output_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
-            lsu_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
+            lsu_issue_feedback_pack_t run_input(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const execute_feedback_pack_t &execute_feedback_pack, const wb_feedback_pack_t &wb_feedback_pack, commit_feedback_pack_t commit_feedback_pack);
             uint32_t latency_to_wakeup_shift(uint32_t latency);
             virtual void print(std::string indent);
             virtual json get_json();
