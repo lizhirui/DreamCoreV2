@@ -27,7 +27,6 @@
 #include "../commit.h"
 #include "bru_define.h"
 #include "sau_define.h"
-#include "lu_define.h"
 
 namespace cycle_model::pipeline::execute
 {
@@ -51,6 +50,6 @@ namespace cycle_model::pipeline::execute
         public:
             bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::branch_predictor_set *branch_predictor_set, component::load_queue *load_queue);
             virtual void reset();
-            std::variant<execute_feedback_channel_t, bru_feedback_pack_t> run(const sau_feedback_pack_t &sau_feedback_pack, const lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_bru_feedback_only);
+            std::variant<execute_feedback_channel_t, bru_feedback_pack_t> run(const sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack, bool need_bru_feedback_only);
     };
 }

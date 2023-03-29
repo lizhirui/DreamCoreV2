@@ -19,7 +19,6 @@ namespace cycle_model::pipeline
         bool enable = false;
         uint32_t phy_id = 0;
         uint32_t value = 0;
-        uint32_t lpv = 0;
         uint32_t rob_id = 0;
         bool rob_id_stage = false;
         

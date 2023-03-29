@@ -51,7 +51,6 @@ namespace cycle_model::pipeline
         uint32_t rd_phy = 0;
     
         uint32_t csr = 0;
-        uint32_t lpv = 0;
         op_t op = op_t::add;
         op_unit_t op_unit = op_unit_t::alu;
     
@@ -176,7 +175,6 @@ namespace cycle_model::pipeline
             t["need_rename"] = need_rename;
             t["rd_phy"] = rd_phy;
             t["csr"] = csr;
-            t["lpv"] = lpv;
             t["op"] = outenum(op);
             t["op_unit"] = outenum(op_unit);
             

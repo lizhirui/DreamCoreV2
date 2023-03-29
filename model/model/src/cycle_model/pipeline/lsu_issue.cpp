@@ -513,7 +513,7 @@ namespace cycle_model::pipeline
                                 if(item.rs1_phy == execute_feedback_pack.channel[j].phy_id)
                                 {
                                     this->src1_ready[i] = true;
-                                    this->src1_lpv[i] = execute_feedback_pack.channel[j].lpv;
+                                    this->src1_lpv[i] = 0;
                                     this->wakeup_rob_id_src1[i] = execute_feedback_pack.channel[j].rob_id;
                                     this->wakeup_rob_id_stage_src1[i] = execute_feedback_pack.channel[j].rob_id_stage;
                                 }
@@ -527,7 +527,7 @@ namespace cycle_model::pipeline
                                 if(item.rs2_phy == execute_feedback_pack.channel[j].phy_id)
                                 {
                                     this->src2_ready[i] = true;
-                                    this->src2_lpv[i] = execute_feedback_pack.channel[j].lpv;
+                                    this->src2_lpv[i] = 0;
                                     this->wakeup_rob_id_src2[i] = execute_feedback_pack.channel[j].rob_id;
                                     this->wakeup_rob_id_stage_src2[i] = execute_feedback_pack.channel[j].rob_id_stage;
                                 }
@@ -663,7 +663,7 @@ namespace cycle_model::pipeline
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                     {
                                         src1_ready[issue_id] = true;
-                                        src1_lpv[issue_id] = execute_feedback_pack.channel[j].lpv;
+                                        src1_lpv[issue_id] = 0;
                                         wakeup_rob_id_src1[issue_id] = execute_feedback_pack.channel[j].rob_id;
                                         wakeup_rob_id_stage_src1[issue_id] = execute_feedback_pack.channel[j].rob_id_stage;
                                         break;
@@ -677,7 +677,7 @@ namespace cycle_model::pipeline
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs1_phy)
                                         {
                                             src1_ready[issue_id] = true;
-                                            src1_lpv[issue_id] = wb_feedback_pack.channel[j].lpv;
+                                            src1_lpv[issue_id] = 0;
                                             wakeup_rob_id_src1[issue_id] = wb_feedback_pack.channel[j].rob_id;
                                             wakeup_rob_id_stage_src1[issue_id] = wb_feedback_pack.channel[j].rob_id_stage;
                                             break;
@@ -689,11 +689,6 @@ namespace cycle_model::pipeline
                                 {
                                     src1_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs1_phy);
                                     std::tie(wakeup_rob_id_src1[issue_id], wakeup_rob_id_stage_src1[issue_id], std::ignore) = this->phy_regfile->read_age_information(rev_pack.op_info[i].rs1_phy);
-    
-                                    if(lu_feedback_pack.replay && ((this->phy_regfile->get_lpv(rev_pack.op_info[i].rs1_phy) & 1) != 0))
-                                    {
-                                        src1_ready[issue_id] = false;
-                                    }
                                 }
                             }
                             else
@@ -715,7 +710,7 @@ namespace cycle_model::pipeline
                                     if(execute_feedback_pack.channel[j].enable && execute_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                     {
                                         src2_ready[issue_id] = true;
-                                        src2_lpv[issue_id] = execute_feedback_pack.channel[j].lpv;
+                                        src2_lpv[issue_id] = 0;
                                         wakeup_rob_id_src2[issue_id] = execute_feedback_pack.channel[j].rob_id;
                                         wakeup_rob_id_stage_src2[issue_id] = execute_feedback_pack.channel[j].rob_id_stage;
                                         break;
@@ -729,7 +724,7 @@ namespace cycle_model::pipeline
                                         if(wb_feedback_pack.channel[j].enable && wb_feedback_pack.channel[j].phy_id == rev_pack.op_info[i].rs2_phy)
                                         {
                                             src2_ready[issue_id] = true;
-                                            src2_lpv[issue_id] = wb_feedback_pack.channel[j].lpv;
+                                            src2_lpv[issue_id] = 0;
                                             wakeup_rob_id_src2[issue_id] = wb_feedback_pack.channel[j].rob_id;
                                             wakeup_rob_id_stage_src2[issue_id] = wb_feedback_pack.channel[j].rob_id_stage;
                                             break;
@@ -741,11 +736,6 @@ namespace cycle_model::pipeline
                                 {
                                     src2_ready[issue_id] = this->phy_regfile->read_data_valid(rev_pack.op_info[i].rs2_phy);
                                     std::tie(wakeup_rob_id_src2[issue_id], wakeup_rob_id_stage_src2[issue_id], std::ignore) = this->phy_regfile->read_age_information(rev_pack.op_info[i].rs2_phy);
-    
-                                    if(lu_feedback_pack.replay && ((this->phy_regfile->get_lpv(rev_pack.op_info[i].rs2_phy) & 1) != 0))
-                                    {
-                                        src2_ready[issue_id] = false;
-                                    }
                                 }
                             }
                             else

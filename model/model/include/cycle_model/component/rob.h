@@ -44,7 +44,6 @@ namespace cycle_model::component
         component::branch_predictor_info_pack_t branch_predictor_info_pack;
         bool load_queue_id_valid = false;
         uint32_t load_queue_id = 0;
-        uint32_t lpv = 0;
         //-----only for debug-----
         std::string sub_op;
         //-----only for debug-----

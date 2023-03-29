@@ -17,7 +17,6 @@
 #include "commit.h"
 #include "execute/bru_define.h"
 #include "execute/sau_define.h"
-#include "execute/lu_define.h"
 
 namespace cycle_model::pipeline
 {
@@ -26,7 +25,6 @@ namespace cycle_model::pipeline
         bool enable = false;
         uint32_t phy_id = 0;
         uint32_t value = 0;
-        uint32_t lpv = 0;
         uint32_t rob_id = 0;
         bool rob_id_stage = false;
         
@@ -77,6 +75,6 @@ namespace cycle_model::pipeline
             wb(global_inst *global, component::port<execute_wb_pack_t> **alu_wb_port, component::port<execute_wb_pack_t> **bru_wb_port, component::port<execute_wb_pack_t> **csr_wb_port, component::port<execute_wb_pack_t> **div_wb_port, component::port<execute_wb_pack_t> **mul_wb_port, component::port<execute_wb_pack_t> **lu_wb_port, component::regfile<uint32_t> *phy_regfile);
             void init();
             virtual void reset();
-            wb_feedback_pack_t run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const execute::lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
+            wb_feedback_pack_t run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
     };
 }

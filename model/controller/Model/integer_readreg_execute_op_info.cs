@@ -62,8 +62,6 @@ namespace DreamCoreV2_model_controller.Model
         public uint rd_phy { get; set; }
         [JsonProperty("csr")]
         public uint csr { get; set; }
-        [JsonProperty("lpv")]
-        public uint lpv { get; set; }
         [JsonProperty("op")]
         public string? op { get; set; }
         [JsonProperty("op_unit")]

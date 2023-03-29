@@ -33,7 +33,7 @@ namespace cycle_model::pipeline::execute
         this->progress = 0;
     }
     
-    execute_feedback_channel_t div::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const lu_feedback_pack_t &lu_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
+    execute_feedback_channel_t div::run(const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack)
     {
         execute_feedback_channel_t feedback_pack;
         feedback_pack.enable = false;
@@ -56,12 +56,6 @@ namespace cycle_model::pipeline::execute
                     }
     
                     if(sau_feedback_pack.flush && (component::age_compare(rev_pack.rob_id, rev_pack.rob_id_stage) <= component::age_compare(sau_feedback_pack.rob_id, sau_feedback_pack.rob_id_stage)))
-                    {
-                        div_wb_port->set(execute_wb_pack_t());
-                        return feedback_pack;
-                    }
-    
-                    if(lu_feedback_pack.replay && ((rev_pack.lpv & 1) != 0))
                     {
                         div_wb_port->set(execute_wb_pack_t());
                         return feedback_pack;
@@ -127,8 +121,6 @@ namespace cycle_model::pipeline::execute
                                 send_pack.rd_value = (rev_pack.src2_value == 0) ? rev_pack.src1_value : (((uint32_t)((int32_t)rev_pack.src1_value) % ((int32_t)rev_pack.src2_value)));
                                 break;
                         }
-                        
-                        lpv = send_pack.lpv = lu_feedback_pack.stall ? rev_pack.lpv : (rev_pack.lpv >> 1);
                     }
                     
                     this->busy = true;
@@ -152,22 +144,13 @@ namespace cycle_model::pipeline::execute
                     this->progress = 0;
                     div_wb_port->set(execute_wb_pack_t());
                 }
-                else if(lu_feedback_pack.replay && ((this->lpv & 1) != 0))
-                {
-                    this->busy = false;
-                    this->progress = 0;
-                    this->lpv = 0;
-                    div_wb_port->set(execute_wb_pack_t());
-                }
                 else if(this->progress == 0)
                 {
-                    send_pack.lpv = lu_feedback_pack.stall ? this->lpv : (this->lpv >> 1);
                     div_wb_port->set(send_pack);
                     this->busy = false;
                     feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
                     feedback_pack.phy_id = send_pack.rd_phy;
                     feedback_pack.value = send_pack.rd_value;
-                    feedback_pack.lpv = send_pack.lpv;
                     feedback_pack.rob_id = send_pack.rob_id;
                     feedback_pack.rob_id_stage = send_pack.rob_id_stage;
                 }
@@ -176,15 +159,12 @@ namespace cycle_model::pipeline::execute
                     this->progress--;
                     div_wb_port->set(execute_wb_pack_t());
                 }
-                
-                this->lpv = send_pack.lpv = lu_feedback_pack.stall ? this->lpv : (this->lpv >> 1);
             }
         }
         else
         {
             this->busy = false;
             this->progress = 0;
-            this->lpv = 0;
             div_wb_port->set(execute_wb_pack_t());
         }
         

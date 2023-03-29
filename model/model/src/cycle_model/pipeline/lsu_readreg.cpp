@@ -157,7 +157,6 @@ namespace cycle_model::pipeline
                     send_pack.rd_phy = rev_pack.op_info[i].rd_phy;
                 
                     send_pack.csr = rev_pack.op_info[i].csr;
-                    send_pack.lpv = rev_pack.op_info[i].lpv >> 1;
                     send_pack.store_buffer_id = rev_pack.op_info[i].store_buffer_id;
                     send_pack.load_queue_id = rev_pack.op_info[i].load_queue_id;
                     send_pack.op = rev_pack.op_info[i].op;

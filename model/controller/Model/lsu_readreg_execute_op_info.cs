@@ -62,8 +62,6 @@ namespace DreamCoreV2_model_controller.Model
         public uint rd_phy { get; set; }
         [JsonProperty("csr")]
         public uint csr { get; set; }
-        [JsonProperty("lpv")]
-        public uint lpv { get; set; }
         [JsonProperty("store_buffer_id")]
         public uint store_buffer_id { get; set; }
         [JsonProperty("load_queue_id")]

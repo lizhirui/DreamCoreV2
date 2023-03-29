@@ -103,7 +103,6 @@ namespace cycle_model::pipeline::execute
             send_pack.rd_phy = l2_rev_pack.rd_phy;
             
             send_pack.csr = l2_rev_pack.csr;
-            send_pack.lpv = l2_rev_pack.lpv >> 1;
             send_pack.load_queue_id = l2_rev_pack.load_queue_id;
             send_pack.op = l2_rev_pack.op;
             send_pack.op_unit = l2_rev_pack.op_unit;
@@ -237,7 +236,6 @@ namespace cycle_model::pipeline::execute
                         l2_rev_pack.rd_phy = rev_pack.rd_phy;
         
                         l2_rev_pack.csr = rev_pack.csr;
-                        l2_rev_pack.lpv = rev_pack.lpv >> 1;
                         l2_rev_pack.store_buffer_id = rev_pack.store_buffer_id;
                         l2_rev_pack.load_queue_id = rev_pack.load_queue_id;
                         l2_rev_pack.op = rev_pack.op;
@@ -381,7 +379,6 @@ namespace cycle_model::pipeline::execute
         feedback_pack.enable = send_pack.enable && send_pack.valid && send_pack.need_rename && !send_pack.has_exception;
         feedback_pack.phy_id = send_pack.rd_phy;
         feedback_pack.value = send_pack.rd_value;
-        feedback_pack.lpv = send_pack.lpv;
         feedback_pack.rob_id = send_pack.rob_id;
         feedback_pack.rob_id_stage = send_pack.rob_id_stage;
         return {feedback_pack, lu_feedback_pack};
