@@ -13,9 +13,9 @@
 #include "fifo.h"
 #include "bus.h"
 #include "../pipeline/pipeline_common.h"
-#include "../pipeline/execute/bru_define.h"
-#include "../pipeline/execute/sau_define.h"
-#include "../pipeline/commit.h"
+//#include "../pipeline/execute/bru_define.h"
+//#include "../pipeline/execute/sau_define.h"
+//#include "../pipeline/commit.h"
 #include "slave/memory.h"
 #include "slave/clint.h"
 #include "age_compare.h"
@@ -142,6 +142,18 @@ namespace cycle_model::component
                 this->item_size[id].set(size);
                 this->item_addr_valid[id].set(addr_valid);
             }
+            
+            uint32_t get_addr(uint32_t id)
+            {
+                verify(check_id_valid(id));
+                return this->item_addr[id].get();
+            }
+            
+            uint32_t get_size(uint32_t id)
+            {
+                verify(check_id_valid(id));
+                return this->item_size[id].get();
+            }
         
             store_buffer_item_t get_item(uint32_t id)
             {
@@ -213,7 +225,7 @@ namespace cycle_model::component
                 return std::tuple{result, feedback_mask};
             }
             
-            void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::execute::sau_feedback_pack_t &sau_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)
+            /*void run(const pipeline::execute::bru_feedback_pack_t &bru_feedback_pack, const pipeline::execute::sau_feedback_pack_t &sau_feedback_pack, const pipeline::commit_feedback_pack_t &commit_feedback_pack)
             {
                 if(commit_feedback_pack.flush)
                 {
@@ -351,6 +363,6 @@ namespace cycle_model::component
                         }
                     }while(get_next_id(cur_id, &cur_id) && (cur_id != first_id));
                 }
-            }
+            }*/
     };
 }

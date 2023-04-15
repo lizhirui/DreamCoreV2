@@ -225,6 +225,8 @@ namespace cycle_model::pipeline
                                 phy_id_free_list->save(&rob_item.new_phy_id_free_list_rptr, &rob_item.new_phy_id_free_list_rstage);
                                 auto old_load_queue_wptr = load_queue->producer_get_wptr();
                                 auto old_load_queue_wstage = load_queue->producer_get_wstage();
+                                auto old_store_buffer_wptr = store_buffer->producer_get_wptr();
+                                auto old_store_buffer_wstage = store_buffer->producer_get_wstage();
                                 
                                 if(rev_pack.enable && rev_pack.valid && !rev_pack.has_exception)
                                 {
@@ -240,6 +242,8 @@ namespace cycle_model::pipeline
                                     else if(rev_pack.op_unit == op_unit_t::sdu)
                                     {
                                         component::store_buffer_item_t store_buffer_item;
+                                        rob_item.store_buffer_id_valid = true;
+                                        rob_item.store_buffer_id = old_store_buffer_wptr;
                                         store_buffer_item.inst_common_info = rev_pack.inst_common_info;
                                         store_buffer_item.rob_id = send_pack.op_info[i].rob_id;//set the age of sta instruction temporarily
                                         store_buffer_item.rob_id_stage = send_pack.op_info[i].rob_id_stage;
@@ -272,6 +276,8 @@ namespace cycle_model::pipeline
                                         cp.new_checkpoint_buffer_wstage = new_checkpoint_wstage;
                                         cp.old_load_queue_wptr = old_load_queue_wptr;
                                         cp.old_load_queue_wstage = old_load_queue_wstage;
+                                        cp.old_store_buffer_wptr = old_store_buffer_wptr;
+                                        cp.old_store_buffer_wstage = old_store_buffer_wstage;
                                         verify(checkpoint_buffer->push(cp));
                                         send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id_valid = true;
                                         verify(checkpoint_buffer->producer_get_tail_id(&send_pack.op_info[i].branch_predictor_info_pack.checkpoint_id));

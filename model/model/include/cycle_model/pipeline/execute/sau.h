@@ -16,6 +16,7 @@
 #include "../../component/store_buffer.h"
 #include "../../component/slave/clint.h"
 #include "../../component/load_queue.h"
+#include "../../component/store_buffer.h"
 #include "../../component/wait_table.h"
 #include "../lsu_readreg_execute.h"
 #include "../execute_wb.h"

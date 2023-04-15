@@ -171,6 +171,7 @@ namespace cycle_model::pipeline::execute
                                 checkpoint_buffer->update_wptr(cp.old_checkpoint_buffer_wptr, cp.old_checkpoint_buffer_wstage);
                                 phy_id_free_list->restore(cp.old_phy_id_free_list_rptr, cp.old_phy_id_free_list_rstage);
                                 load_queue->update_wptr(cp.old_load_queue_wptr, cp.old_load_queue_wstage);
+                                store_buffer->update_wptr(cp.old_store_buffer_wptr, cp.old_store_buffer_wstage);
                             }
                         }
                     }

@@ -150,7 +150,7 @@ namespace cycle_model
     execute_sau_stage{nullptr},
     execute_sdu_stage{nullptr},
     wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lu_wb_port, &phy_regfile),
-    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue, &decode_rename_fifo)
+    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue, &store_buffer, &decode_rename_fifo, &bus)
     {
         //bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus, 0), true);
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::shared_ptr<component::slave::memory>(&memory, boost::null_deleter()), true);
@@ -169,7 +169,7 @@ namespace cycle_model
             readreg_bru_hdff[i] = new component::handshake_dff<pipeline::integer_readreg_execute_pack_t>();
             bru_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
             bru_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
-            execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer, &branch_predictor_set, &load_queue);
+            execute_bru_stage[i] = new pipeline::execute::bru(&global, i, readreg_bru_hdff[i], bru_wb_port[i], &csr_file, &speculative_rat, &rob, &phy_regfile, &phy_id_free_list, &checkpoint_buffer, &branch_predictor_set, &load_queue, &store_buffer);
         }
         
         for(uint32_t i = 0;i < CSR_UNIT_NUM;i++)
@@ -568,7 +568,7 @@ namespace cycle_model
         interrupt_interface.run();
         memory.run_post();
         clint.run_post();
-        store_buffer.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
+        //store_buffer.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
         bus.run();
         bus.sync();
         wait_table.run(cpu_clock_cycle);

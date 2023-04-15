@@ -24,7 +24,7 @@
 
 namespace cycle_model::pipeline
 {
-    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue, component::fifo<decode_rename_pack_t> *decode_rename_fifo) :
+    commit::commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue, component::store_buffer *store_buffer, component::fifo<decode_rename_pack_t> *decode_rename_fifo, component::bus *bus_if) :
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
     branch_predictor_update_dump_stream(BRANCH_PREDICTOR_UPDATE_DUMP_FILE),
 #endif
@@ -52,7 +52,9 @@ namespace cycle_model::pipeline
         this->branch_predictor_set = branch_predictor_set;
         this->checkpoint_buffer = checkpoint_buffer;
         this->load_queue = load_queue;
+        this->store_buffer = store_buffer;
         this->decode_rename_fifo = decode_rename_fifo;
+        this->bus_if = bus_if;
         this->commit::reset();
     }
     
@@ -161,18 +163,15 @@ namespace cycle_model::pipeline
 
                     if(rob_item.finish)
                     {
-#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
-                        if(rob_item.last_uop || rob_item.has_exception)
-                        {
-                            rob_retire_queue.emplace_back(rob_item_id, rob_item);
-                        }
-#endif
                         feedback_pack.next_handle_rob_id_valid = rob->get_next_id(rob_item_id, &feedback_pack.next_handle_rob_id) && (feedback_pack.next_handle_rob_id != first_id);
                         feedback_pack.committed_rob_id_valid[i] = true;
                         feedback_pack.committed_rob_id[i] = rob_item_id;
     
                         if(rob_item.has_exception)
                         {
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                            rob_retire_queue.emplace_back(rob_item_id, rob_item);
+#endif
                             csr_file->write_sys(CSR_MEPC, rob_item.pc);
                             csr_file->write_sys(CSR_MTVAL, rob_item.exception_value);
                             csr_file->write_sys(CSR_MCAUSE, static_cast<uint32_t>(rob_item.exception_id));
@@ -184,6 +183,7 @@ namespace cycle_model::pipeline
                             phy_regfile->restore(retire_rat);
                             phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
                             load_queue->flush();
+                            store_buffer->flush();
                             checkpoint_buffer->flush();
                             rob->set_committed(true);
                             rob->add_commit_num(1);
@@ -192,7 +192,17 @@ namespace cycle_model::pipeline
                         }
                         else
                         {
+                            //store instruction must be retired in first order
+                            if(rob_item.store_buffer_id_valid && (i != 0))
+                            {
+                                break;
+                            }
+                            
                             rob->pop();
+                            
+#ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
+                            rob_retire_queue.emplace_back(rob_item_id, rob_item);
+#endif
 
                             //load handle
                             if(rob_item.load_queue_id_valid)
@@ -227,6 +237,7 @@ namespace cycle_model::pipeline
                                     phy_regfile->restore(retire_rat);
                                     phy_id_free_list->restore(rob_item.old_phy_id_free_list_rptr, rob_item.old_phy_id_free_list_rstage);
                                     load_queue->flush();
+                                    store_buffer->flush();
                                     checkpoint_buffer->flush();
                                     need_flush = true;
                                     break;
@@ -240,6 +251,33 @@ namespace cycle_model::pipeline
     
                                 component::load_queue_item_t t_item;
                                 load_queue->pop(&t_item);
+                            }
+                            
+                            //store handle
+                            if(rob_item.store_buffer_id_valid)
+                            {
+                                component::store_buffer_item_t t_item = store_buffer->get_item(rob_item.store_buffer_id);
+                                uint32_t t_addr = store_buffer->get_addr(rob_item.store_buffer_id);
+                                uint32_t t_size = store_buffer->get_size(rob_item.store_buffer_id);
+                                
+                                verify_only((t_size == 1) || (t_size == 2) || (t_size == 4));
+                                
+                                switch(t_size)
+                                {
+                                    case 1:
+                                        bus_if->write8_sync(t_addr, (uint8_t)t_item.data);
+                                        break;
+                                    
+                                    case 2:
+                                        bus_if->write16_sync(t_addr, (uint16_t)t_item.data);
+                                        break;
+                                    
+                                    case 4:
+                                        bus_if->write32_sync(t_addr, t_item.data);
+                                        break;
+                                }
+                                
+                                store_buffer->pop(&t_item);
                             }
                             
                             if(rob_item.old_phy_reg_id_valid)
@@ -360,6 +398,7 @@ namespace cycle_model::pipeline
                                             phy_regfile->restore(retire_rat);
                                             phy_id_free_list->restore(rob_item.new_phy_id_free_list_rptr, rob_item.new_phy_id_free_list_rstage);
                                             load_queue->flush();
+                                            store_buffer->flush();
                                             checkpoint_buffer->flush();
                                             need_flush = true;
                                         }

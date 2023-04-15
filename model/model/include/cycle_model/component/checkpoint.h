@@ -29,6 +29,8 @@ namespace cycle_model::component
         bool new_checkpoint_buffer_wstage = false;
         uint32_t old_load_queue_wptr = 0;
         bool old_load_queue_wstage = false;
+        uint32_t old_store_buffer_wptr = 0;
+        bool old_store_buffer_wstage = false;
         
         void clone_to(checkpoint_t &cp)
         {
@@ -39,6 +41,8 @@ namespace cycle_model::component
             cp.new_checkpoint_buffer_wstage = new_checkpoint_buffer_wstage;
             cp.old_load_queue_wptr = old_load_queue_wptr;
             cp.old_load_queue_wstage = old_load_queue_wstage;
+            cp.old_store_buffer_wptr = old_store_buffer_wptr;
+            cp.old_store_buffer_wstage = old_store_buffer_wstage;
         }
     }checkpoint_t;
 }

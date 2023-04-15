@@ -12,6 +12,7 @@
 #include "common.h"
 #include "config.h"
 #include "pipeline_common.h"
+#include "../component/branch_predictor_base.h"
 
 namespace cycle_model::pipeline
 {

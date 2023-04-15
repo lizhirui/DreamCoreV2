@@ -17,7 +17,7 @@
 
 namespace cycle_model::pipeline::execute
 {
-    bru::bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::branch_predictor_set *branch_predictor_set, component::load_queue *load_queue) : tdb(TRACE_EXECUTE_BRU)
+    bru::bru(global_inst *global, uint32_t id, component::handshake_dff<integer_readreg_execute_pack_t> *readreg_bru_hdff, component::port<execute_wb_pack_t> *bru_wb_port, component::csrfile *csr_file, component::rat *speculative_rat, component::rob *rob, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::branch_predictor_set *branch_predictor_set, component::load_queue *load_queue, component::store_buffer *store_buffer) : tdb(TRACE_EXECUTE_BRU)
     {
         this->global = global;
         this->id = id;
@@ -31,6 +31,7 @@ namespace cycle_model::pipeline::execute
         this->checkpoint_buffer = checkpoint_buffer;
         this->branch_predictor_set = branch_predictor_set;
         this->load_queue = load_queue;
+        this->store_buffer = store_buffer;
         this->bru::reset();
     }
     
@@ -192,6 +193,7 @@ namespace cycle_model::pipeline::execute
                 checkpoint_buffer->update_wptr(cp.new_checkpoint_buffer_wptr, cp.new_checkpoint_buffer_wstage);
                 phy_id_free_list->restore(cp.new_phy_id_free_list_rptr, cp.new_phy_id_free_list_rstage);
                 load_queue->update_wptr(cp.old_load_queue_wptr, cp.old_load_queue_wstage);
+                store_buffer->update_wptr(cp.old_store_buffer_wptr, cp.old_store_buffer_wstage);
                 branch_predictor_set->bi_mode.bru_speculative_update_sync(send_pack.pc, send_pack.bru_jump, send_pack.bru_next_pc, false, send_pack.branch_predictor_info_pack);
                 branch_predictor_set->l1_btb.bru_speculative_update_sync(send_pack.pc, send_pack.bru_jump, send_pack.bru_next_pc, false, send_pack.branch_predictor_info_pack);
             }
