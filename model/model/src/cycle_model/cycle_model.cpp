@@ -150,7 +150,7 @@ namespace cycle_model
     execute_sau_stage{nullptr},
     execute_sdu_stage{nullptr},
     wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lu_wb_port, &phy_regfile),
-    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue)
+    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue, &decode_rename_fifo)
     {
         //bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus, 0), true);
         bus.map(MEMORY_BASE, MEMORY_SIZE, std::shared_ptr<component::slave::memory>(&memory, boost::null_deleter()), true);

@@ -46,7 +46,7 @@ namespace cycle_model::pipeline
         bool found_fence = false;
         feedback_pack.idle = decode_rename_fifo->customer_is_empty();
         
-        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !sau_feedback_pack.flush)
+        if(!commit_feedback_pack.flush && !bru_feedback_pack.flush && !sau_feedback_pack.flush && !commit_feedback_pack.waiting_for_interrupt)
         {
             if(!dispatch_feedback_pack.stall)
             {

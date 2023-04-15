@@ -15,6 +15,7 @@
 #include "../component/port.h"
 #include "../component/rat.h"
 #include "../component/rob.h"
+#include "../component/fifo.h"
 #include "../component/csrfile.h"
 #include "../component/regfile.h"
 #include "../component/free_list.h"
@@ -23,6 +24,7 @@
 #include "../component/checkpoint.h"
 #include "../component/load_queue.h"
 #include "execute_commit.h"
+#include "decode_rename.h"
 
 namespace cycle_model::pipeline
 {
@@ -40,6 +42,8 @@ namespace cycle_model::pipeline
         bool jump_enable = false;
         bool jump = false;
         uint32_t jump_next_pc = 0;
+        
+        bool waiting_for_interrupt = false;
         
         bool has_interrupt = false;//only for debug
         riscv_interrupt_t interrupt_id = riscv_interrupt_t::user_software;//only for debug
@@ -98,6 +102,7 @@ namespace cycle_model::pipeline
             component::branch_predictor_set *branch_predictor_set;
             component::fifo<component::checkpoint_t> *checkpoint_buffer;
             component::load_queue *load_queue;
+            component::fifo<decode_rename_pack_t> *decode_rename_fifo;
         
 #ifdef BRANCH_PREDICTOR_UPDATE_DUMP
             std::ofstream branch_predictor_update_dump_stream;
@@ -111,7 +116,7 @@ namespace cycle_model::pipeline
 #ifdef NEED_ISA_AND_CYCLE_MODEL_COMPARE
             std::deque<std::pair<uint32_t, component::rob_item_t>> rob_retire_queue;
 #endif
-            commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue);
+            commit(global_inst *global, component::port<execute_commit_pack_t> **alu_commit_port, component::port<execute_commit_pack_t> **bru_commit_port, component::port<execute_commit_pack_t> **csr_commit_port, component::port<execute_commit_pack_t> **div_commit_port, component::port<execute_commit_pack_t> **mul_commit_port, component::port<execute_commit_pack_t> **lu_commit_port, component::port<execute_commit_pack_t> **sau_commit_port, component::port<execute_commit_pack_t> **sdu_commit_port, component::rat *speculative_rat, component::rat *retire_rat, component::rob *rob, component::csrfile *csr_file, component::regfile<uint32_t> *phy_regfile, component::free_list *phy_id_free_list, component::interrupt_interface *interrupt_interface, component::branch_predictor_set *branch_predictor_set, component::fifo<component::checkpoint_t> *checkpoint_buffer, component::load_queue *load_queue, component::fifo<decode_rename_pack_t> *decode_rename_fifo);
             void init();
             virtual void reset();
             commit_feedback_pack_t run();
