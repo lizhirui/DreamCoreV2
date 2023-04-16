@@ -57,6 +57,21 @@ namespace cycle_model::component
             
             }
             
+            virtual void _write8_sys(uint32_t addr, uint8_t value)
+            {
+            
+            }
+            
+            virtual void _write16_sys(uint32_t addr, uint16_t value)
+            {
+            
+            }
+            
+            virtual void _write32_sys(uint32_t addr, uint32_t value)
+            {
+            
+            }
+            
             virtual void _read8(uint32_t addr)
             {
             
@@ -175,6 +190,30 @@ namespace cycle_model::component
                 if(check(addr, 4))
                 {
                     _write32(addr, value);
+                }
+            }
+            
+            void write8_sys(uint32_t addr, uint8_t value)
+            {
+                if(check(addr, 1))
+                {
+                    _write8_sys(addr, value);
+                }
+            }
+            
+            void write16_sys(uint32_t addr, uint16_t value)
+            {
+                if(check(addr, 2))
+                {
+                    _write16_sys(addr, value);
+                }
+            }
+            
+            void write32_sys(uint32_t addr, uint32_t value)
+            {
+                if(check(addr, 4))
+                {
+                    _write32_sys(addr, value);
                 }
             }
             

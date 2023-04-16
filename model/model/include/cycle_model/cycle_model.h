@@ -27,10 +27,12 @@
 #include "cycle_model/component/regfile.h"
 #include "cycle_model/component/rob.h"
 #include "cycle_model/component/store_buffer.h"
+#include "cycle_model/component/retired_store_buffer.h"
 #include "cycle_model/component/branch_predictor_set.h"
 #include "cycle_model/component/checkpoint.h"
 #include "cycle_model/component/load_queue.h"
 #include "cycle_model/component/wait_table.h"
+#include "cycle_model/component/pma_unit.h"
 #include "cycle_model/pipeline/pipeline_common.h"
 #include "cycle_model/pipeline/fetch1.h"
 #include "cycle_model/pipeline/fetch1_fetch2.h"
@@ -118,7 +120,8 @@ namespace cycle_model
             component::port<pipeline::execute_commit_pack_t> *sau_commit_port[SAU_UNIT_NUM];
             component::port<pipeline::execute_commit_pack_t> *sdu_commit_port[SDU_UNIT_NUM];
             
-            component::bus bus;
+            component::bus cacheable_bus;
+            component::bus noncacheable_bus;
             component::csrfile csr_file;
             component::free_list phy_id_free_list;
             component::interrupt_interface interrupt_interface;
@@ -127,12 +130,14 @@ namespace cycle_model
             component::regfile<uint32_t> phy_regfile;
             component::rob rob;
             component::store_buffer store_buffer;
+            component::retired_store_buffer retired_store_buffer;
             component::slave::memory memory;
             component::slave::clint clint;
             component::branch_predictor_set branch_predictor_set;
             component::fifo<component::checkpoint_t> checkpoint_buffer;
             component::load_queue load_queue;
             component::wait_table wait_table;
+            component::pma_unit pma_unit;
             
             pipeline::fetch1 fetch1_stage;
             pipeline::fetch2 fetch2_stage;

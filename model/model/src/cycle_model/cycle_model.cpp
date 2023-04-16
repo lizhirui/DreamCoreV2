@@ -126,13 +126,15 @@ namespace cycle_model
     retire_rat(PHY_REG_NUM, ARCH_REG_NUM),
     phy_regfile(PHY_REG_NUM),
     rob(ROB_SIZE),
-    store_buffer(STORE_BUFFER_SIZE, &bus),
-    memory(&bus, 0),
-    clint(&bus, &interrupt_interface),
+    store_buffer(STORE_BUFFER_SIZE),
+    retired_store_buffer(RETIRED_STORE_BUFFER_SIZE, &cacheable_bus),
+    memory(&cacheable_bus, 10, 10),
+    clint(&noncacheable_bus, &interrupt_interface),
     checkpoint_buffer(CHECKPOINT_BUFFER_SIZE),
     load_queue(LOAD_QUEUE_SIZE),
     wait_table(WAIT_TABLE_SIZE),
-    fetch1_stage(&global, &bus, &fetch1_fetch2_port, &store_buffer, &branch_predictor_set, INIT_PC),
+    pma_unit(),
+    fetch1_stage(&global, &cacheable_bus, &fetch1_fetch2_port, &store_buffer, &retired_store_buffer, &branch_predictor_set, INIT_PC),
     fetch2_stage(&global, &fetch1_fetch2_port, &fetch2_decode_fifo, &branch_predictor_set),
     decode_stage(&global, &fetch2_decode_fifo, &decode_rename_fifo),
     rename_stage(&global, &decode_rename_fifo, &rename_dispatch_port, &speculative_rat, &rob, &phy_id_free_list, &checkpoint_buffer, &load_queue, &store_buffer),
@@ -150,11 +152,11 @@ namespace cycle_model
     execute_sau_stage{nullptr},
     execute_sdu_stage{nullptr},
     wb_stage(&global, alu_wb_port, bru_wb_port, csr_wb_port, div_wb_port, mul_wb_port, lu_wb_port, &phy_regfile),
-    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue, &store_buffer, &decode_rename_fifo, &bus)
+    commit_stage(&global, alu_commit_port, bru_commit_port, csr_commit_port, div_commit_port, mul_commit_port, lu_commit_port, sau_commit_port, sdu_commit_port, &speculative_rat, &retire_rat, &rob, &csr_file, &phy_regfile, &phy_id_free_list, &interrupt_interface, &branch_predictor_set, &checkpoint_buffer, &load_queue, &store_buffer, &retired_store_buffer, &decode_rename_fifo, &noncacheable_bus, &pma_unit)
     {
         //bus.map(MEMORY_BASE, MEMORY_SIZE, std::make_shared<component::slave::memory>(&bus, 0), true);
-        bus.map(MEMORY_BASE, MEMORY_SIZE, std::shared_ptr<component::slave::memory>(&memory, boost::null_deleter()), true);
-        bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
+        cacheable_bus.map(MEMORY_BASE, MEMORY_SIZE, std::shared_ptr<component::slave::memory>(&memory, boost::null_deleter()), true);
+        noncacheable_bus.map(CLINT_BASE, CLINT_SIZE, std::shared_ptr<component::slave::clint>(&clint, boost::null_deleter()), false);
         
         for(uint32_t i = 0;i < ALU_UNIT_NUM;i++)
         {
@@ -201,7 +203,7 @@ namespace cycle_model
             readreg_lu_hdff[i] = new component::handshake_dff<pipeline::lsu_readreg_execute_pack_t>();
             lu_wb_port[i] = new component::port<pipeline::execute_wb_pack_t>(pipeline::execute_wb_pack_t());
             lu_commit_port[i] = new component::port<pipeline::execute_commit_pack_t>(pipeline::execute_commit_pack_t());
-            execute_lu_stage[i] = new pipeline::execute::lu(&global, i, readreg_lu_hdff[i], lu_wb_port[i], &bus, &store_buffer, &clint, &load_queue, &wait_table);
+            execute_lu_stage[i] = new pipeline::execute::lu(&global, i, readreg_lu_hdff[i], lu_wb_port[i], &cacheable_bus, &noncacheable_bus, &store_buffer, &retired_store_buffer, &clint, &load_queue, &wait_table, &pma_unit);
         }
     
         for(uint32_t i = 0;i < SAU_UNIT_NUM;i++)
@@ -268,6 +270,9 @@ namespace cycle_model
         {
             csr_file.map(0x3B0 + i, false, std::make_shared<component::csr::pmpaddr>(i));
         }
+        
+        pma_unit.add_fixed_pma_item({.addr = 0x00000000, .size = 0x80000000, .is_cacheable = false});
+        pma_unit.add_fixed_pma_item({.addr = 0x80000000, .size = 0x80000000, .is_cacheable = true});
     
         wb_stage.init();
         commit_stage.init();
@@ -340,7 +345,7 @@ namespace cycle_model
         
         for(size_t i = 0;i < size;i++)
         {
-            bus.write8(MEMORY_BASE + i, buf[i]);
+            cacheable_bus.write8_sys(MEMORY_BASE + i, buf[i]);
         }
     }
     
@@ -442,14 +447,16 @@ namespace cycle_model
             sdu_commit_port[i]->reset();
         }
         
-        bus.reset();
+        cacheable_bus.reset();
+        noncacheable_bus.reset();
         rob.reset();
         csr_file.reset();
         store_buffer.reset();
+        retired_store_buffer.reset();
         load_queue.reset();
         checkpoint_buffer.reset();
         interrupt_interface.reset();
-        ((component::slave::memory *)bus.get_slave_obj(0x80000000, false))->reset();
+        ((component::slave::memory *)cacheable_bus.get_slave_obj(0x80000000, false))->reset();
         clint.reset();
         checkpoint_buffer.reset();
         wait_table.reset();
@@ -568,9 +575,11 @@ namespace cycle_model
         interrupt_interface.run();
         memory.run_post();
         clint.run_post();
-        //store_buffer.run(bru_feedback_pack, sau_feedback_pack, commit_feedback_pack);
-        bus.run();
-        bus.sync();
+        retired_store_buffer.run();
+        cacheable_bus.run();
+        cacheable_bus.sync();
+        noncacheable_bus.run();
+        noncacheable_bus.sync();
         wait_table.run(cpu_clock_cycle);
         component::branch_predictor_base::batch_sync();
         cpu_clock_cycle++;

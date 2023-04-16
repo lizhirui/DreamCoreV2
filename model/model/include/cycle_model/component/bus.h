@@ -26,6 +26,12 @@ namespace cycle_model::component
         bool support_fetch = false;
     }slave_info_t;
     
+    enum class bus_errno_t
+    {
+        none,
+        error
+    };
+    
     class bus : public if_reset_t
     {
         private:
@@ -55,6 +61,8 @@ namespace cycle_model::component
             dff<bool> instruction_value_valid;
             dff<uint32_t> data_value;
             dff<bool> data_value_valid;
+            dff<bool> data_write_ack;
+            dff<bus_errno_t> data_write_errno;
             
             uint32_t revoke_data_cnt;
             
@@ -85,7 +93,7 @@ namespace cycle_model::component
         
             std::queue<error_msg_t> error_msg_queue;
             
-            bus() : instruction_value_valid(false), data_value_valid(false), tdb(TRACE_BUS)
+            bus() : instruction_value_valid(false), data_value_valid(false), data_write_ack(false), tdb(TRACE_BUS)
             {
                 this->bus::reset();
             }
@@ -184,6 +192,8 @@ namespace cycle_model::component
                     error_msg.is_write = true;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_write_ack.set(true);
+                    data_write_errno.set(bus_errno_t::error);
                 }
             }
             
@@ -212,6 +222,8 @@ namespace cycle_model::component
                     error_msg.is_write = true;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_write_ack.set(true);
+                    data_write_errno.set(bus_errno_t::error);
                 }
             }
             
@@ -240,6 +252,8 @@ namespace cycle_model::component
                     error_msg.is_write = true;
                     error_msg.is_fetch = false;
                     error_msg_queue.push(error_msg);
+                    data_write_ack.set(true);
+                    data_write_errno.set(bus_errno_t::error);
                 }
             }
             
@@ -251,6 +265,30 @@ namespace cycle_model::component
                 t_req.arg1 = addr;
                 t_req.arg2.u32 = value;
                 sync_request_q.push(t_req);
+            }
+            
+            void write8_sys(uint32_t addr, uint8_t value)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->write8_sys(addr - slave_info_list[slave_index].base, value);
+                }
+            }
+            
+            void write16_sys(uint32_t addr, uint16_t value)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->write16_sys(addr - slave_info_list[slave_index].base, value);
+                }
+            }
+            
+            void write32_sys(uint32_t addr, uint32_t value)
+            {
+                if(auto slave_index = find_slave_info(addr, false);slave_index >= 0)
+                {
+                    return slave_info_list[slave_index].slave->write32_sys(addr - slave_info_list[slave_index].base, value);
+                }
             }
             
             void read8(uint32_t addr)
@@ -423,6 +461,23 @@ namespace cycle_model::component
                 }
             }
             
+            bool get_data_write_ack(bus_errno_t *write_errno)
+            {
+                if(data_write_ack)
+                {
+                    *write_errno = data_write_errno;
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            void set_data_write_ack(bus_errno_t write_errno)
+            {
+                data_write_ack.set(true);
+                data_write_errno.set(write_errno);
+            }
+            
             void run()
             {
                 if(!instruction_value_valid.is_changed())
@@ -433,6 +488,11 @@ namespace cycle_model::component
                 if(!data_value_valid.is_changed())
                 {
                     data_value_valid.set(false);
+                }
+                
+                if(!data_write_ack.is_changed())
+                {
+                    data_write_ack.set(false);
                 }
             }
             

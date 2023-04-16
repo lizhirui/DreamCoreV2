@@ -17,12 +17,13 @@
 
 namespace cycle_model::pipeline
 {
-    fetch1::fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc) : tdb(TRACE_FETCH1)
+    fetch1::fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::retired_store_buffer *retired_store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc) : tdb(TRACE_FETCH1)
     {
         this->global = global;
         this->bus = bus;
         this->fetch1_fetch2_port = fetch1_fetch2_port;
         this->store_buffer = store_buffer;
+        this->retired_store_buffer = retired_store_buffer;
         this->branch_predictor_set = branch_predictor_set;
         this->init_pc = init_pc;
         this->next_inst_id = 0;
@@ -81,7 +82,7 @@ namespace cycle_model::pipeline
                         bool rd_is_link = (rd == 1) || (rd == 5);
                         bool rs1_is_link = (rs1 == 1) || (rs1 == 5);
     
-                        if(fence_i && ((i != 0) || (!fetch2_feedback_pack.idle) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || (!commit_feedback_pack.idle) || (!store_buffer->customer_is_empty())))
+                        if(fence_i && ((i != 0) || (!fetch2_feedback_pack.idle) || (!decode_feedback_pack.idle) || (!rename_feedback_pack.idle) || (!commit_feedback_pack.idle) || (!store_buffer->customer_is_empty()) || (!retired_store_buffer->customer_is_empty())))
                         {
                             break;
                         }

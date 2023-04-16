@@ -115,7 +115,7 @@ static std::string socket_cmd_read_memory(std::vector<std::string> args)
     for(auto addr = address;addr < (address + size);addr++)
     {
 #ifdef NEED_CYCLE_MODEL
-        result << "," << std::hex << (uint32_t)cycle_model_inst->bus.read8_sys(addr);
+        result << "," << std::hex << (uint32_t)cycle_model_inst->cacheable_bus.read8_sys(addr);
 #else
         result << "," << std::hex << (uint32_t)isa_model_inst->bus.read8(addr, false);
 #endif
@@ -146,7 +146,7 @@ static std::string socket_cmd_write_memory(std::vector<std::string> args)
         uint32_t value = 0;
         hex_str >> value;
 #ifdef NEED_CYCLE_MODEL
-        cycle_model_inst->bus.write8(address + offset, (uint8_t)value);
+        cycle_model_inst->cacheable_bus.write8_sys(address + offset, (uint8_t)value);
 #else
         isa_model_inst->bus.write8(address + offset, (uint8_t)value);
 #endif

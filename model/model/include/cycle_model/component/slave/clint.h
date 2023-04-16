@@ -63,12 +63,12 @@ namespace cycle_model::component::slave
     
             virtual void _write8(uint32_t addr, uint8_t value)
             {
-        
+                bus_if->set_data_write_ack(bus_errno_t::error);
             }
     
             virtual void _write16(uint32_t addr, uint16_t value)
             {
-        
+                bus_if->set_data_write_ack(bus_errno_t::error);
             }
     
             virtual void _write32(uint32_t addr, uint32_t value)
@@ -77,25 +77,31 @@ namespace cycle_model::component::slave
                 {
                     case MSIP_ADDR:
                         msip.set((value & 0x01) != 0);
+                        bus_if->set_data_write_ack(bus_errno_t::none);
                         break;
             
                     case MTIMECMP_ADDR:
                         mtimecmp.set((mtimecmp.get() & 0xFFFFFFFF00000000ULL) | value);
+                        bus_if->set_data_write_ack(bus_errno_t::none);
                         break;
             
                     case MTIMECMP_ADDR + 4:
                         mtimecmp.set((mtimecmp.get() & 0xFFFFFFFFULL) | (((uint64_t)value) << 32));
+                        bus_if->set_data_write_ack(bus_errno_t::none);
                         break;
             
                     case MTIME_ADDR:
                         mtime.set((mtime.get() & 0xFFFFFFFF00000000ULL) | value);
+                        bus_if->set_data_write_ack(bus_errno_t::none);
                         break;
             
                     case MTIME_ADDR + 4:
                         mtime.set((mtime.get() & 0xFFFFFFFFULL) | (((uint64_t)value) << 32));
+                        bus_if->set_data_write_ack(bus_errno_t::none);
                         break;
                         
                     default:
+                        bus_if->set_data_write_ack(bus_errno_t::error);
                         break;
                 }
             }

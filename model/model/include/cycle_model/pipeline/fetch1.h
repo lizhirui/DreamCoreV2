@@ -13,6 +13,7 @@
 #include "../component/port.h"
 #include "../component/bus.h"
 #include "../component/store_buffer.h"
+#include "../component/retired_store_buffer.h"
 #include "../component/branch_predictor_set.h"
 #include "fetch1_fetch2.h"
 #include "fetch2.h"
@@ -31,6 +32,7 @@ namespace cycle_model::pipeline
             component::bus *bus;
             component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port;
             component::store_buffer *store_buffer;
+            component::retired_store_buffer *retired_store_buffer;
             component::branch_predictor_set *branch_predictor_set;
             uint32_t init_pc = 0;
             uint32_t pc = 0;
@@ -39,7 +41,7 @@ namespace cycle_model::pipeline
             trace::trace_database tdb;
     
         public:
-            fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc);
+            fetch1(global_inst *global, component::bus *bus, component::port<fetch1_fetch2_pack_t> *fetch1_fetch2_port, component::store_buffer *store_buffer, component::retired_store_buffer *retired_store_buffer, component::branch_predictor_set *branch_predictor_set, uint32_t init_pc);
             virtual void reset();
             void run(const fetch2_feedback_pack_t &fetch2_feedback_pack_t, const decode_feedback_pack_t &decode_feedback_pack, const rename_feedback_pack_t &rename_feedback_pack, const execute::bru_feedback_pack_t &bru_feedback_pack, const execute::sau_feedback_pack_t &sau_feedback_pack, const commit_feedback_pack_t &commit_feedback_pack);
             uint32_t get_pc() const;

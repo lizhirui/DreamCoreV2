@@ -264,7 +264,8 @@ static void run(const command_line_arg_t &arg)
                 clear_queue(isa_model_inst->bus.error_msg_queue);
 #endif
 #ifdef NEED_CYCLE_MODEL
-                clear_queue(cycle_model_inst->bus.error_msg_queue);
+                clear_queue(cycle_model_inst->cacheable_bus.error_msg_queue);
+                clear_queue(cycle_model_inst->noncacheable_bus.error_msg_queue);
                 
                 if(last_retire_cycle > cycle_model_inst->cpu_clock_cycle)
                 {
@@ -307,9 +308,14 @@ static void run(const command_line_arg_t &arg)
         cycle_model_inst->rob.set_committed(false);
         cycle_model_inst->run();
         
-        while(!cycle_model_inst->bus.error_msg_queue.empty())
+        while(!cycle_model_inst->cacheable_bus.error_msg_queue.empty())
         {
-            cycle_model_inst->bus.error_msg_queue.pop();
+            cycle_model_inst->cacheable_bus.error_msg_queue.pop();
+        }
+        
+        while(!cycle_model_inst->noncacheable_bus.error_msg_queue.empty())
+        {
+            cycle_model_inst->noncacheable_bus.error_msg_queue.pop();
         }
         
 #ifdef NEED_ISA_MODEL
@@ -576,7 +582,7 @@ static void run(const command_line_arg_t &arg)
 #endif
         
 #ifdef NEED_CYCLE_MODEL
-        if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle >= 100)
+        if(cycle_model_inst->cpu_clock_cycle - last_retire_cycle >= RETIRE_TIMEOUT)
         {
             std::cout << MESSAGE_OUTPUT_PREFIX << "Error: Retire Timeout, last instruction retire cycle is " << last_retire_cycle << "!" << std::endl;
             last_retire_cycle = cycle_model_inst->cpu_clock_cycle;
@@ -645,9 +651,9 @@ static void sub_main(const command_line_arg_t &arg)
         //load_bin_file("../../../testcase/benchmark/coremark_10_12_2.bin");
         //load_bin_file("../../../testcase/benchmark/dhrystone_500_12_2.bin");
         //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-fence_i");
-        load_elf_file("../../../testcase/riscv-tests/rv32ui-p-sw");
+        //load_elf_file("../../../testcase/riscv-tests/rv32ui-p-sb");
         //load_bin_file("../../../testcase/base-tests/div_ipc_test_12_2.bin");
-        //load_bin_file("../../../testcase/os/rtthread.bin");
+        load_bin_file("../../../testcase/os/rtthread.bin");
     }
     
     if(!arg.no_controller)

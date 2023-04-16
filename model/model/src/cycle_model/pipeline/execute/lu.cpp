@@ -20,17 +20,20 @@
 
 namespace cycle_model::pipeline::execute
 {
-    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *bus, component::store_buffer *store_buffer, component::slave::clint *clint, component::load_queue *load_queue, component::wait_table *wait_table) : tdb(TRACE_EXECUTE_LSU)
+    lu::lu(global_inst *global, uint32_t id, component::handshake_dff<lsu_readreg_execute_pack_t> *readreg_lu_hdff, component::port<execute_wb_pack_t> *lu_wb_port, component::bus *cacheable_bus, component::bus *noncacheable_bus, component::store_buffer *store_buffer, component::retired_store_buffer *retired_store_buffer, component::slave::clint *clint, component::load_queue *load_queue, component::wait_table *wait_table, component::pma_unit *pma_unit) : tdb(TRACE_EXECUTE_LSU)
     {
         this->global = global;
         this->id = id;
         this->readreg_lu_hdff = readreg_lu_hdff;
         this->lu_wb_port = lu_wb_port;
-        this->bus = bus;
+        this->cacheable_bus = cacheable_bus;
+        this->noncacheable_bus = noncacheable_bus;
         this->store_buffer = store_buffer;
+        this->retired_store_buffer = retired_store_buffer;
         this->clint = clint;
         this->load_queue = load_queue;
         this->wait_table = wait_table;
+        this->pma_unit = pma_unit;
         this->lu::reset();
     }
     
@@ -49,6 +52,7 @@ namespace cycle_model::pipeline::execute
         execute_wb_pack_t send_pack;
         lu_feedback_pack_t lu_feedback_pack;
         bool load_stall = false;
+        auto l2_bus = l2_is_cacheable ? cacheable_bus : noncacheable_bus;
         
         if(!need_lu_feedback_only)
         {
@@ -117,31 +121,31 @@ namespace cycle_model::pipeline::execute
                 switch(l2_rev_pack.sub_op.lu_op)
                 {
                     case lu_op_t::lb:
-                        load_stall = !bus->get_data_value(&bus_value);
+                        load_stall = !l2_bus->get_data_value(&bus_value);
                         feedback_value = (bus_value & (~l2_feedback_mask)) | l2_feedback_value;
                         send_pack.rd_value = sign_extend(feedback_value, 8);
                         break;
                     
                     case lu_op_t::lbu:
-                        load_stall = !bus->get_data_value(&bus_value);
+                        load_stall = !l2_bus->get_data_value(&bus_value);
                         feedback_value = (bus_value & (~l2_feedback_mask)) | l2_feedback_value;
                         send_pack.rd_value = feedback_value;
                         break;
                     
                     case lu_op_t::lh:
-                        load_stall = !bus->get_data_value(&bus_value);
+                        load_stall = !l2_bus->get_data_value(&bus_value);
                         feedback_value = (bus_value & (~l2_feedback_mask)) | l2_feedback_value;
                         send_pack.rd_value = sign_extend(feedback_value, 16);
                         break;
                     
                     case lu_op_t::lhu:
-                        load_stall = !bus->get_data_value(&bus_value);
+                        load_stall = !l2_bus->get_data_value(&bus_value);
                         feedback_value = (bus_value & (~l2_feedback_mask)) | l2_feedback_value;
                         send_pack.rd_value = feedback_value;
                         break;
                     
                     case lu_op_t::lw:
-                        load_stall = !bus->get_data_value(&bus_value);
+                        load_stall = !l2_bus->get_data_value(&bus_value);
                         feedback_value = (bus_value & (~l2_feedback_mask)) | l2_feedback_value;
                         send_pack.rd_value = feedback_value;
                         break;
@@ -162,7 +166,7 @@ namespace cycle_model::pipeline::execute
         }
         else if(!need_lu_feedback_only && l2_rev_pack.enable && !l2_rev_pack.has_exception)
         {
-            bus->revoke_data_request();
+            l2_bus->revoke_data_request();
         }
     
         if(!need_lu_feedback_only)
@@ -253,7 +257,11 @@ namespace cycle_model::pipeline::execute
                             if(!rev_pack.has_exception)
                             {
                                 l2_addr = rev_pack.src1_value + rev_pack.imm;
+                                l2_is_cacheable = pma_unit->is_cacheable(l2_addr);
                                 l2_rev_pack.exception_value = l2_addr;
+                                auto bus = l2_is_cacheable ? cacheable_bus : noncacheable_bus;
+                                uint32_t l2_retired_feedback_value = 0;
+                                uint32_t l2_retired_feedback_mask = 0;
                                 
                                 switch(rev_pack.sub_op.lu_op)
                                 {
@@ -270,6 +278,7 @@ namespace cycle_model::pipeline::execute
                                         l2_length = 1;
                                         
                                         {
+                                            std::tie(l2_retired_feedback_value, l2_retired_feedback_mask) = retired_store_buffer->get_feedback_value(l2_addr, 1);
                                             auto feedback_param = store_buffer->get_feedback_value(l2_addr, 1, rev_pack.rob_id, rev_pack.rob_id_stage);
                                             
                                             if(feedback_param == std::nullopt)
@@ -298,6 +307,7 @@ namespace cycle_model::pipeline::execute
                                         l2_length = 2;
                                         
                                         {
+                                            std::tie(l2_retired_feedback_value, l2_retired_feedback_mask) = retired_store_buffer->get_feedback_value(l2_addr, 2);
                                             auto feedback_param = store_buffer->get_feedback_value(l2_addr, 2, rev_pack.rob_id, rev_pack.rob_id_stage);
         
                                             if(feedback_param == std::nullopt)
@@ -325,6 +335,7 @@ namespace cycle_model::pipeline::execute
                                         l2_length = 4;
             
                                         {
+                                            std::tie(l2_retired_feedback_value, l2_retired_feedback_mask) = retired_store_buffer->get_feedback_value(l2_addr, 4);
                                             auto feedback_param = store_buffer->get_feedback_value(l2_addr, 4, rev_pack.rob_id, rev_pack.rob_id_stage);
         
                                             if(feedback_param == std::nullopt)
@@ -343,6 +354,16 @@ namespace cycle_model::pipeline::execute
                                     default:
                                         verify_only(0);
                                         break;
+                                }
+                                
+                                //combine retired feedback param to feedback param
+                                for(size_t i = 0;i < sizeof(uint32_t) * 8;i += 8)
+                                {
+                                    if((l2_retired_feedback_mask & (0xff << i)) && !(l2_feedback_mask & (0xff << i)))
+                                    {
+                                        l2_feedback_value |= (l2_retired_feedback_value & (0xff << i));
+                                        l2_feedback_mask |= (0xff << i);
+                                    }
                                 }
                                 
                                 component::load_queue_item_t load_queue_item;

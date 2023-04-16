@@ -19,6 +19,7 @@ const uint32_t INTEGER_ISSUE_QUEUE_SIZE = 16;
 const uint32_t LSU_ISSUE_QUEUE_SIZE = 16;
 const uint32_t ROB_SIZE = 64;
 const uint32_t STORE_BUFFER_SIZE = 16;
+const uint32_t RETIRED_STORE_BUFFER_SIZE = 16;
 const uint32_t CHECKPOINT_BUFFER_SIZE = 64;
 const uint32_t LOAD_QUEUE_SIZE = 32;
 #define ENABLE_CHECKPOINT
@@ -59,6 +60,8 @@ const uint32_t MEMORY_SIZE = 1048576;
 
 const uint32_t CLINT_BASE = 0x20000000;
 const uint32_t CLINT_SIZE = 0x10000;
+
+const uint32_t RETIRE_TIMEOUT = 1000;
 
 const uint32_t L0_BTB_ADDR_WIDTH = 4;
 const uint32_t L0_BTB_SIZE = 1 << L0_BTB_ADDR_WIDTH;
@@ -208,6 +211,7 @@ const std::string TRACE_DIR = "../../../trace/coremark_10/";
     const bool TRACE_ROB = false;
     const bool TRACE_PHY_REGFILE = false;
     const bool TRACE_STORE_BUFFER = false;
+    const bool TRACE_RETIRED_STORE_BUFFER = false;
     const bool TRACE_CHECKPOINT_BUFFER = false;
     const bool TRACE_CSRFILE = false;
     const bool TRACE_INTERRUPT_INTERFACE = false;
